@@ -50,6 +50,15 @@ void UExoCharacterModel::BuildModel(bool bIsBot)
 
 	// Visor (wider, glowing)
 	AddPart(FVector(10.f, 0.f, 55.f), FVector(0.03f, 0.15f, 0.05f), Accent);
+	// Visor glow — illuminates face area
+	UPointLightComponent* VisorGlow = NewObject<UPointLightComponent>(GetOwner());
+	VisorGlow->SetupAttachment(this);
+	VisorGlow->SetRelativeLocation(FVector(12.f, 0.f, 55.f));
+	VisorGlow->SetIntensity(600.f);
+	VisorGlow->SetAttenuationRadius(80.f);
+	VisorGlow->SetLightColor(Accent);
+	VisorGlow->CastShadows = false;
+	VisorGlow->RegisterComponent();
 
 	// Antenna on right side of helmet
 	AddPart(FVector(-5.f, 10.f, 68.f), FVector(0.01f, 0.01f, 0.1f), DarkGrey);
@@ -146,6 +155,13 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		// Bright accent colors get emissive glow
+		float Luminance = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+		if (Luminance > 0.15f)
+		{
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
+		}
 		Part->SetMaterial(0, Mat);
 	}
 
