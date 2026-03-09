@@ -173,6 +173,22 @@ void AExoHUD::DrawHUD()
 void AExoHUD::ShowDeathScreen(const FString& KillerName, const FString& WeaponName,
 	int32 Placement, int32 TotalPlayers)
 {
+	// Populate stats from player state
+	AExoPlayerState* PS = GetOwningPawn()
+		? GetOwningPawn()->GetPlayerState<AExoPlayerState>() : nullptr;
+	if (PS)
+	{
+		DeathCam.CachedKills = PS->Kills;
+		DeathCam.CachedDamage = PS->DamageDealt;
+		int32 Accuracy = (PS->ShotsFired > 0)
+			? FMath::RoundToInt32(100.f * PS->ShotsHit / PS->ShotsFired) : 0;
+		DeathCam.CachedAccuracy = Accuracy;
+
+		AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+		int32 TimeSec = GS ? FMath::FloorToInt(GS->MatchElapsedTime) : 0;
+		DeathCam.SurvivalTime = FString::Printf(TEXT("%d:%02d"), TimeSec / 60, TimeSec % 60);
+	}
+
 	DeathCam.Init(KillerName, WeaponName, Placement, TotalPlayers);
 }
 

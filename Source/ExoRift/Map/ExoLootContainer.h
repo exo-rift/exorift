@@ -44,6 +44,7 @@ private:
 	void StartOpening(AExoCharacter* Interactor);
 	void FinishOpening();
 	void SpawnLoot();
+	void BuildVisuals();
 	FVector ComputeEjectVelocity() const;
 
 	/** Rarity roll: 60% Common, 25% Rare, 10% Epic, 5% Legendary. */
@@ -51,6 +52,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ContainerMesh;
+
+	// Runtime-built parts
+	UPROPERTY()
+	UStaticMeshComponent* LidComp = nullptr;
+	UPROPERTY()
+	class UPointLightComponent* ContainerGlow = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Loot")
 	int32 MinItems = 2;

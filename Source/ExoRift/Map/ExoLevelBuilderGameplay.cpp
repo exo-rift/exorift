@@ -2,6 +2,7 @@
 #include "Map/ExoLevelBuilder.h"
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoLootSpawner.h"
+#include "Map/ExoLootContainer.h"
 #include "Map/ExoHazardZone.h"
 #include "Map/ExoExplodingBarrel.h"
 #include "Map/ExoZoneSystem.h"
@@ -107,6 +108,38 @@ void AExoLevelBuilder::PlaceLootSpawners()
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 13 loot spawners"));
+
+	// Loot containers (openable crates) inside buildings
+	TArray<FVector> ContainerPositions = {
+		// Central hub
+		{2000.f, 1000.f, GroundZ + 50.f}, {-2000.f, -1500.f, GroundZ + 50.f},
+		{500.f, -500.f, GroundZ + 2550.f}, // Second floor
+		// North compound
+		{-3000.f, 81000.f, GroundZ + 50.f}, {4000.f, 79000.f, GroundZ + 50.f},
+		// South compound
+		{2000.f, -81000.f, GroundZ + 50.f}, {-5000.f, -79000.f, GroundZ + 50.f},
+		// East compound
+		{81000.f, -1000.f, GroundZ + 50.f}, {79000.f, 2000.f, GroundZ + 50.f},
+		// West compound
+		{-81000.f, -2000.f, GroundZ + 50.f}, {-79000.f, 3000.f, GroundZ + 50.f},
+		// Corner outposts
+		{121000.f, 121000.f, GroundZ + 50.f}, {-121000.f, 121000.f, GroundZ + 50.f},
+		{121000.f, -121000.f, GroundZ + 50.f}, {-121000.f, -121000.f, GroundZ + 50.f},
+		// Scattered buildings
+		{40000.f, 40000.f, GroundZ + 50.f}, {-50000.f, 50000.f, GroundZ + 50.f},
+		{60000.f, -40000.f, GroundZ + 50.f}, {-30000.f, -50000.f, GroundZ + 50.f},
+		{20000.f, -70000.f, GroundZ + 50.f},
+	};
+
+	for (const FVector& Pos : ContainerPositions)
+	{
+		FRotator ContainerRot(0.f, FMath::RandRange(0.f, 360.f), 0.f);
+		GetWorld()->SpawnActor<AExoLootContainer>(
+			AExoLootContainer::StaticClass(), Pos, ContainerRot, Params);
+	}
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d loot containers"),
+		ContainerPositions.Num());
 }
 
 void AExoLevelBuilder::PlaceHazardZones()

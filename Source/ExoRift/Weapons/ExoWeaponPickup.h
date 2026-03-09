@@ -41,6 +41,7 @@ protected:
 
 	void SpawnWeaponForPlayer(AExoCharacter* Character);
 	void SetPickupActive(bool bActive);
+	void BuildPickupModel();
 
 	FString GetWeaponDisplayName() const;
 
