@@ -1,29 +1,61 @@
 // ExoLevelBuilderStructures.cpp — Buildings, towers, walls, ramps, cover
 #include "Map/ExoLevelBuilder.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 void AExoLevelBuilder::BuildStructures()
 {
 	// === CENTRAL HUB — large command center ===
 	SpawnBuilding(FVector(0.f, 0.f, 0.f), FVector(8000.f, 6000.f, 2500.f));
-	SpawnBuilding(FVector(0.f, 0.f, 2500.f), FVector(4000.f, 3000.f, 1500.f)); // Second floor
-	SpawnPlatform(FVector(5000.f, 0.f, 1500.f), FVector(3000.f, 2000.f, 100.f)); // Balcony
+	SpawnBuilding(FVector(0.f, 0.f, 2500.f), FVector(4000.f, 3000.f, 1500.f));
+	SpawnPlatform(FVector(5000.f, 0.f, 1500.f), FVector(3000.f, 2000.f, 100.f));
 	SpawnRamp(FVector(6500.f, 0.f, 0.f), 2000.f, 1500.f, 500.f, 180.f);
+	// Hub interior platforms
+	SpawnPlatform(FVector(-2000.f, 0.f, 1200.f), FVector(2000.f, 1500.f, 80.f));
+	SpawnRamp(FVector(-3500.f, 0.f, 0.f), 1500.f, 1200.f, 500.f, 0.f);
+
+	// Hub comm tower (center roof)
+	SpawnTower(FVector(0.f, 0.f, 4000.f), 400.f, 2000.f);
+	SpawnAntenna(FVector(0.f, 0.f, 6000.f), 2000.f);
 
 	// === NORTH COMPOUND — industrial facility ===
 	float NY = 80000.f;
+	// Main warehouse
 	SpawnBuilding(FVector(-5000.f, NY, 0.f), FVector(6000.f, 4000.f, 3000.f), 15.f);
 	SpawnBuilding(FVector(5000.f, NY, 0.f), FVector(4000.f, 5000.f, 2000.f));
+	// Crane/gantry structure
+	SpawnPlatform(FVector(0.f, NY, 4000.f), FVector(12000.f, 800.f, 200.f));
+	SpawnStaticMesh(FVector(-5500.f, NY, 2000.f), FVector(0.5f, 0.5f, 40.f),
+		FRotator::ZeroRotator, CylinderMesh, FLinearColor(0.12f, 0.12f, 0.14f));
+	SpawnStaticMesh(FVector(5500.f, NY, 2000.f), FVector(0.5f, 0.5f, 40.f),
+		FRotator::ZeroRotator, CylinderMesh, FLinearColor(0.12f, 0.12f, 0.14f));
+	// Perimeter wall with walkway
 	SpawnWall(FVector(-10000.f, NY - 4000.f, 0.f), FVector(10000.f, NY - 4000.f, 0.f), 1500.f);
+	SpawnPlatform(FVector(0.f, NY - 4000.f, 1500.f), FVector(20000.f, 600.f, 80.f));
 	SpawnTower(FVector(0.f, NY + 5000.f, 0.f), 800.f, 5000.f);
+	// Storage tanks
+	for (int32 i = 0; i < 3; i++)
+	{
+		float TankX = -8000.f + i * 4000.f;
+		SpawnStaticMesh(FVector(TankX, NY + 6000.f, 1500.f),
+			FVector(10.f, 10.f, 30.f), FRotator::ZeroRotator, CylinderMesh,
+			FLinearColor(0.1f, 0.1f, 0.12f));
+	}
 
 	// === SOUTH COMPOUND — research labs ===
 	float SY = -80000.f;
 	SpawnBuilding(FVector(3000.f, SY, 0.f), FVector(5000.f, 7000.f, 2200.f), -10.f);
 	SpawnBuilding(FVector(-6000.f, SY + 2000.f, 0.f), FVector(3500.f, 3500.f, 1800.f));
 	SpawnBuilding(FVector(-6000.f, SY - 3000.f, 0.f), FVector(3500.f, 3000.f, 2000.f));
+	// Elevated walkway between labs
 	SpawnPlatform(FVector(-1000.f, SY, 2500.f), FVector(5000.f, 1500.f, 100.f));
+	// Research dome (large sphere slice)
+	SpawnStaticMesh(FVector(3000.f, SY, 2200.f), FVector(25.f, 25.f, 12.f),
+		FRotator::ZeroRotator, SphereMesh, FLinearColor(0.08f, 0.1f, 0.14f));
+	// Containment area
+	SpawnWall(FVector(-9000.f, SY - 5000.f, 0.f), FVector(-9000.f, SY + 5000.f, 0.f), 1800.f);
+	SpawnWall(FVector(-9000.f, SY + 5000.f, 0.f), FVector(9000.f, SY + 5000.f, 0.f), 1800.f);
 
 	// === EAST COMPOUND — power station ===
 	float EX = 80000.f;
@@ -32,6 +64,28 @@ void AExoLevelBuilder::BuildStructures()
 	SpawnTower(FVector(EX + 5000.f, -5000.f, 0.f), 1000.f, 6000.f);
 	SpawnWall(FVector(EX - 4000.f, -8000.f, 0.f), FVector(EX - 4000.f, 8000.f, 0.f), 1200.f);
 	SpawnRamp(FVector(EX + 3000.f, 0.f, 0.f), 2500.f, 3500.f, 600.f, 270.f);
+	// Power pylons
+	for (int32 i = 0; i < 4; i++)
+	{
+		float PylonY = -6000.f + i * 4000.f;
+		// H-frame pylon
+		SpawnStaticMesh(FVector(EX + 8000.f, PylonY, 2000.f),
+			FVector(0.3f, 0.3f, 40.f), FRotator::ZeroRotator, CylinderMesh,
+			FLinearColor(0.12f, 0.12f, 0.14f));
+		SpawnStaticMesh(FVector(EX + 8400.f, PylonY, 2000.f),
+			FVector(0.3f, 0.3f, 40.f), FRotator::ZeroRotator, CylinderMesh,
+			FLinearColor(0.12f, 0.12f, 0.14f));
+		SpawnStaticMesh(FVector(EX + 8200.f, PylonY, 3800.f),
+			FVector(5.f, 0.3f, 0.15f), FRotator::ZeroRotator, CubeMesh,
+			FLinearColor(0.12f, 0.12f, 0.14f));
+	}
+	// Cooling towers
+	SpawnStaticMesh(FVector(EX - 5000.f, 5000.f, 1500.f),
+		FVector(15.f, 15.f, 30.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.09f, 0.1f, 0.11f));
+	SpawnStaticMesh(FVector(EX - 5000.f, -5000.f, 1500.f),
+		FVector(15.f, 15.f, 30.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.09f, 0.1f, 0.11f));
 
 	// === WEST COMPOUND — barracks ===
 	float WX = -80000.f;
@@ -40,9 +94,14 @@ void AExoLevelBuilder::BuildStructures()
 		float OffsetY = (i - 1.5f) * 5000.f;
 		SpawnBuilding(FVector(WX, OffsetY, 0.f), FVector(3000.f, 3500.f, 1800.f));
 	}
+	// Central parade ground platform
+	SpawnPlatform(FVector(WX + 5000.f, 0.f, 50.f), FVector(6000.f, 12000.f, 50.f));
 	SpawnWall(FVector(WX - 3000.f, -12000.f, 0.f), FVector(WX - 3000.f, 12000.f, 0.f), 1000.f);
 	SpawnTower(FVector(WX - 3000.f, -12000.f, 0.f), 600.f, 4000.f);
 	SpawnTower(FVector(WX - 3000.f, 12000.f, 0.f), 600.f, 4000.f);
+	// Guard posts at entrance
+	SpawnBuilding(FVector(WX + 4000.f, -6000.f, 0.f), FVector(1500.f, 1500.f, 2500.f));
+	SpawnBuilding(FVector(WX + 4000.f, 6000.f, 0.f), FVector(1500.f, 1500.f, 2500.f));
 
 	// === CORNER OUTPOSTS ===
 	float CornerDist = 120000.f;
@@ -54,6 +113,8 @@ void AExoLevelBuilder::BuildStructures()
 	{
 		SpawnBuilding(C, FVector(4000.f, 4000.f, 2000.f), FMath::RandRange(0.f, 45.f));
 		SpawnTower(C + FVector(3000.f, 3000.f, 0.f), 500.f, 3500.f);
+		// Small bunker nearby
+		SpawnBuilding(C + FVector(-2500.f, 1500.f, 0.f), FVector(2000.f, 2000.f, 1200.f));
 	}
 
 	// === SCATTERED STRUCTURES across the map ===
@@ -78,8 +139,9 @@ void AExoLevelBuilder::BuildStructures()
 
 void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size, float Rotation)
 {
-	FLinearColor WallColor(0.08f, 0.09f, 0.11f);  // Dark metallic
-	FLinearColor RoofColor(0.06f, 0.07f, 0.09f);   // Darker roof
+	FLinearColor WallColor(0.08f, 0.09f, 0.11f);
+	FLinearColor RoofColor(0.06f, 0.07f, 0.09f);
+	FLinearColor TrimColor(0.12f, 0.14f, 0.18f);
 	float WallThickness = 80.f;
 	FRotator Rot(0.f, Rotation, 0.f);
 
@@ -92,7 +154,7 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 		FVector(Size.X / 100.f, Size.Y / 100.f, 0.2f), Rot, CubeMesh,
 		FLinearColor(0.07f, 0.07f, 0.08f));
 
-	// Four walls (with door gaps in front wall)
+	// Four walls (with door gap in front wall)
 	// Back wall
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY, HalfZ)),
 		FVector(Size.X / 100.f, WallThickness / 100.f, Size.Z / 100.f), Rot, CubeMesh, WallColor);
@@ -105,7 +167,7 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(HalfX, 0.f, HalfZ)),
 		FVector(WallThickness / 100.f, Size.Y / 100.f, Size.Z / 100.f), Rot, CubeMesh, WallColor);
 
-	// Front wall — two segments with door gap (1200 units wide)
+	// Front wall — two segments with door gap
 	float DoorHalf = 600.f;
 	float SegX_Left = (-HalfX + (-DoorHalf)) * 0.5f;
 	float SegX_Right = (DoorHalf + HalfX) * 0.5f;
@@ -117,16 +179,36 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(SegX_Right, HalfY, HalfZ)),
 		FVector(SegW_Right / 100.f, WallThickness / 100.f, Size.Z / 100.f), Rot, CubeMesh, WallColor);
 
+	// Door frame header
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY, Size.Z - 200.f)),
+		FVector(DoorHalf * 2.f / 100.f, WallThickness / 100.f + 0.1f, 2.f), Rot, CubeMesh, TrimColor);
+
 	// Roof
 	SpawnStaticMesh(Center + FVector(0.f, 0.f, Size.Z),
 		FVector(Size.X / 100.f + 0.3f, Size.Y / 100.f + 0.3f, 0.3f), Rot, CubeMesh, RoofColor);
+
+	// Roof edge trim
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY + 15.f, Size.Z + 20.f)),
+		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY - 15.f, Size.Z + 20.f)),
+		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
+
+	// Interior light
+	UPointLightComponent* IntLight = NewObject<UPointLightComponent>(this);
+	IntLight->SetupAttachment(RootComponent);
+	IntLight->SetWorldLocation(Center + FVector(0.f, 0.f, Size.Z - 100.f));
+	IntLight->SetIntensity(1500.f);
+	IntLight->SetAttenuationRadius(FMath::Max(Size.X, Size.Y) * 0.5f);
+	IntLight->SetLightColor(FLinearColor(0.5f, 0.6f, 0.8f));
+	IntLight->CastShadows = false;
+	IntLight->RegisterComponent();
 }
 
 void AExoLevelBuilder::SpawnTower(const FVector& Base, float Radius, float Height)
 {
 	if (!CylinderMesh) return;
-	float ScaleXY = Radius / 50.f; // Cylinder is 100 units diameter
-	float ScaleZ = Height / 100.f;  // Cylinder is 100 units tall
+	float ScaleXY = Radius / 50.f;
+	float ScaleZ = Height / 100.f;
 	SpawnStaticMesh(Base + FVector(0.f, 0.f, Height * 0.5f),
 		FVector(ScaleXY, ScaleXY, ScaleZ), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.1f, 0.11f, 0.13f));
@@ -135,6 +217,15 @@ void AExoLevelBuilder::SpawnTower(const FVector& Base, float Radius, float Heigh
 	SpawnStaticMesh(Base + FVector(0.f, 0.f, Height),
 		FVector(Radius * 1.8f / 100.f, Radius * 1.8f / 100.f, 0.3f),
 		FRotator::ZeroRotator, CubeMesh, FLinearColor(0.07f, 0.08f, 0.1f));
+
+	// Railing around observation deck
+	float RailR = Radius * 1.8f;
+	SpawnStaticMesh(Base + FVector(RailR, 0.f, Height + 50.f),
+		FVector(0.1f, RailR * 2.f / 100.f, 0.5f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.12f, 0.12f, 0.14f));
+	SpawnStaticMesh(Base + FVector(-RailR, 0.f, Height + 50.f),
+		FVector(0.1f, RailR * 2.f / 100.f, 0.5f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.12f, 0.12f, 0.14f));
 }
 
 void AExoLevelBuilder::SpawnWall(const FVector& Start, const FVector& End,
@@ -160,7 +251,6 @@ void AExoLevelBuilder::SpawnPlatform(const FVector& Center, const FVector& Size)
 void AExoLevelBuilder::SpawnRamp(const FVector& Base, float Length, float Height,
 	float Width, float Yaw)
 {
-	// Approximate ramp with 5 stepped segments
 	int32 Steps = 5;
 	float StepLen = Length / Steps;
 	float StepH = Height / Steps;

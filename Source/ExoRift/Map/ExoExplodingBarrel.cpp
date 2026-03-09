@@ -3,7 +3,9 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoTracerManager.h"
+#include "Core/ExoAudioManager.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 #include "ExoRift.h"
@@ -24,12 +26,22 @@ AExoExplodingBarrel::AExoExplodingBarrel()
 		BarrelMesh->SetStaticMesh(CylFinder.Object);
 	}
 
-	// Warning glow
+	// Apply red-tinted barrel material
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFinder.Succeeded())
+	{
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.15f, 0.04f, 0.02f));
+		BarrelMesh->SetMaterial(0, Mat);
+	}
+
+	// Warning light
 	UPointLightComponent* WarnLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("WarnLight"));
 	WarnLight->SetupAttachment(BarrelMesh);
 	WarnLight->SetRelativeLocation(FVector(0.f, 0.f, 80.f));
-	WarnLight->SetIntensity(2000.f);
-	WarnLight->SetAttenuationRadius(300.f);
+	WarnLight->SetIntensity(3000.f);
+	WarnLight->SetAttenuationRadius(400.f);
 	WarnLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
 	WarnLight->CastShadows = false;
 }
@@ -62,20 +74,26 @@ void AExoExplodingBarrel::Explode(AController* InstigatorController)
 	// Radial damage with linear falloff
 	UGameplayStatics::ApplyRadialDamageWithFalloff(
 		GetWorld(),
-		ExplosionDamage,             // BaseDamage
-		ExplosionDamage * 0.2f,      // MinimumDamage (20% at edge)
-		GetActorLocation(),          // Origin
-		ExplosionRadius * 0.3f,      // DamageInnerRadius (full damage)
-		ExplosionRadius,             // DamageOuterRadius
-		1.f,                         // DamageFalloff exponent
-		nullptr,                     // DamageTypeClass
-		TArray<AActor*>{this},       // IgnoreActors (don't damage self)
-		this,                        // DamageCauser
-		InstigatorController         // InstigatedBy
+		ExplosionDamage,
+		ExplosionDamage * 0.2f,
+		GetActorLocation(),
+		ExplosionRadius * 0.3f,
+		ExplosionRadius,
+		1.f,
+		nullptr,
+		TArray<AActor*>{this},
+		this,
+		InstigatorController
 	);
 
-	// Explosion VFX
+	// VFX
 	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
+
+	// Audio
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayExplosionSound(GetActorLocation());
+	}
 
 	Destroy();
 }
