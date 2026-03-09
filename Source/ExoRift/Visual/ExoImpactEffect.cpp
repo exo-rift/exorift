@@ -14,7 +14,7 @@ AExoImpactEffect::AExoImpactEffect()
 	CoreMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CoreMesh->CastShadow = false;
 	CoreMesh->SetGenerateOverlapEvents(false);
-	CoreMesh->SetWorldScale3D(FVector(0.1f));
+	CoreMesh->SetWorldScale3D(FVector(0.2f));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
@@ -52,8 +52,8 @@ AExoImpactEffect::AExoImpactEffect()
 
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(CoreMesh);
-	FlashLight->SetIntensity(10000.f);
-	FlashLight->SetAttenuationRadius(350.f);
+	FlashLight->SetIntensity(25000.f);
+	FlashLight->SetAttenuationRadius(600.f);
 	FlashLight->CastShadows = false;
 }
 
@@ -61,16 +61,16 @@ void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 {
 	// Color scheme: red/orange for characters, bright cyan-white for surfaces
 	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(8.f, 1.f, 0.3f, 1.f)
-		: FLinearColor(4.f, 6.f, 8.f, 1.f);
+		? FLinearColor(12.f, 2.f, 0.5f, 1.f)
+		: FLinearColor(6.f, 10.f, 14.f, 1.f);
 
 	FLinearColor LightColor = bHitCharacter
-		? FLinearColor(1.f, 0.2f, 0.1f)
-		: FLinearColor(0.4f, 0.7f, 1.f);
+		? FLinearColor(1.f, 0.3f, 0.1f)
+		: FLinearColor(0.5f, 0.8f, 1.f);
 
 	FLinearColor DustColor = bHitCharacter
-		? FLinearColor(0.4f, 0.05f, 0.02f, 1.f)
-		: FLinearColor(0.15f, 0.15f, 0.18f, 1.f);
+		? FLinearColor(0.5f, 0.08f, 0.03f, 1.f)
+		: FLinearColor(0.2f, 0.2f, 0.25f, 1.f);
 
 	FlashLight->SetLightColor(LightColor);
 	BaseIntensity = FlashLight->Intensity;
@@ -92,8 +92,8 @@ void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 		for (auto* Spark : SparkMeshes)
 		{
 			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-			SM->SetVectorParameterValue(TEXT("BaseColor"), SparkColor * 0.8f);
-			SM->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor * 0.6f);
+			SM->SetVectorParameterValue(TEXT("BaseColor"), SparkColor);
+			SM->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor * 1.5f);
 			Spark->SetMaterial(0, SM);
 		}
 	}
@@ -106,13 +106,13 @@ void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 	SparkVelocities.SetNum(SparkMeshes.Num());
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
-		FVector Vel = HitNormal * FMath::RandRange(100.f, 250.f);
-		Vel += Tangent * FMath::RandRange(-120.f, 120.f);
-		Vel += Bitangent * FMath::RandRange(-120.f, 120.f);
+		FVector Vel = HitNormal * FMath::RandRange(200.f, 500.f);
+		Vel += Tangent * FMath::RandRange(-200.f, 200.f);
+		Vel += Bitangent * FMath::RandRange(-200.f, 200.f);
 		SparkVelocities[i] = Vel;
 
-		float S = FMath::RandRange(0.015f, 0.03f);
-		SparkMeshes[i]->SetWorldScale3D(FVector(S * 3.f, S, S));
+		float S = FMath::RandRange(0.02f, 0.05f);
+		SparkMeshes[i]->SetWorldScale3D(FVector(S * 4.f, S, S));
 	}
 }
 
@@ -130,19 +130,22 @@ void AExoImpactEffect::Tick(float DeltaTime)
 		FlashLight->SetIntensity(BaseIntensity * Alpha * Alpha * Alpha);
 	}
 
-	// Core: rapid shrink
+	// Core: rapid expand then shrink
 	if (CoreMesh)
 	{
-		float S = 0.1f * FMath::Max(Alpha * 2.f - 1.f, 0.f);
+		float CorePhase = FMath::Clamp(Age / (Lifetime * 0.3f), 0.f, 1.f);
+		float S = 0.2f * (1.f - CorePhase * CorePhase);
+		// Flicker for energy-burst feel
+		S *= 1.f + 0.3f * FMath::Sin(Age * 80.f);
 		CoreMesh->SetWorldScale3D(FVector(FMath::Max(S, 0.001f)));
 	}
 
 	// Dust puff: expand outward and fade
 	if (DustPuff)
 	{
-		float PuffScale = FMath::Lerp(0.05f, 0.4f, FMath::Sqrt(T));
+		float PuffScale = FMath::Lerp(0.08f, 0.5f, FMath::Sqrt(T));
 		DustPuff->SetWorldScale3D(FVector(PuffScale));
-		DustPuff->SetRelativeLocation(FVector(0.f, 0.f, Age * 30.f)); // Drift upward
+		DustPuff->SetRelativeLocation(FVector(0.f, 0.f, Age * 40.f));
 	}
 
 	// Sparks: fly outward with gravity
@@ -150,13 +153,14 @@ void AExoImpactEffect::Tick(float DeltaTime)
 	{
 		if (!SparkMeshes[i]) continue;
 		FVector Pos = SparkVelocities[i] * Age;
-		Pos.Z -= 300.f * Age * Age;
+		Pos.Z -= 400.f * Age * Age;
 		SparkMeshes[i]->SetRelativeLocation(Pos);
 
-		// Shrink and orient along velocity
-		float S = 0.025f * Alpha;
-		SparkMeshes[i]->SetWorldScale3D(FVector(S * 2.f, S * 0.5f, S * 0.5f));
-		FVector Dir = SparkVelocities[i] + FVector(0.f, 0.f, -600.f * Age);
+		// Elongate sparks along velocity for streak effect
+		float S = 0.04f * Alpha;
+		float Stretch = FMath::Min(SparkVelocities[i].Size() / 200.f, 6.f);
+		SparkMeshes[i]->SetWorldScale3D(FVector(S * Stretch, S * 0.4f, S * 0.4f));
+		FVector Dir = SparkVelocities[i] + FVector(0.f, 0.f, -800.f * Age);
 		if (!Dir.IsNearlyZero()) SparkMeshes[i]->SetWorldRotation(Dir.Rotation());
 	}
 

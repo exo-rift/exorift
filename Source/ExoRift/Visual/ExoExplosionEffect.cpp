@@ -12,7 +12,7 @@ static constexpr int32 NUM_DEBRIS = 8;
 AExoExplosionEffect::AExoExplosionEffect()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	InitialLifeSpan = 1.2f;
+	InitialLifeSpan = 1.5f;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
@@ -48,16 +48,16 @@ AExoExplosionEffect::AExoExplosionEffect()
 	// Main explosion light (orange, lingers)
 	ExplosionLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ExplosionLight"));
 	ExplosionLight->SetupAttachment(FireballMesh);
-	ExplosionLight->SetIntensity(60000.f);
-	ExplosionLight->SetAttenuationRadius(2500.f);
+	ExplosionLight->SetIntensity(100000.f);
+	ExplosionLight->SetAttenuationRadius(4000.f);
 	ExplosionLight->SetLightColor(FLinearColor(1.f, 0.45f, 0.1f));
 	ExplosionLight->CastShadows = false;
 
 	// Flash light (white, very brief)
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(FireballMesh);
-	FlashLight->SetIntensity(100000.f);
-	FlashLight->SetAttenuationRadius(3000.f);
+	FlashLight->SetIntensity(200000.f);
+	FlashLight->SetAttenuationRadius(5000.f);
 	FlashLight->SetLightColor(FLinearColor(1.f, 0.9f, 0.7f));
 	FlashLight->CastShadows = false;
 
@@ -73,6 +73,24 @@ AExoExplosionEffect::AExoExplosionEffect()
 		if (CubeFinder.Succeeded()) Debris->SetStaticMesh(CubeFinder.Object);
 		DebrisMeshes.Add(Debris);
 	}
+
+	// Ground scorch mark — flat dark cylinder
+	ScorchMark = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ScorchMark"));
+	ScorchMark->SetupAttachment(FireballMesh);
+	ScorchMark->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ScorchMark->CastShadow = false;
+	ScorchMark->SetGenerateOverlapEvents(false);
+	ScorchMark->SetVisibility(false);
+	if (CylinderFinder.Succeeded()) ScorchMark->SetStaticMesh(CylinderFinder.Object);
+
+	// Smoke column — rising dark cylinder
+	SmokeColumn = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SmokeColumn"));
+	SmokeColumn->SetupAttachment(FireballMesh);
+	SmokeColumn->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SmokeColumn->CastShadow = false;
+	SmokeColumn->SetGenerateOverlapEvents(false);
+	SmokeColumn->SetVisibility(false);
+	if (CylinderFinder.Succeeded()) SmokeColumn->SetStaticMesh(CylinderFinder.Object);
 }
 
 void AExoExplosionEffect::InitExplosion(float Radius)
@@ -91,21 +109,44 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 	if (BaseMat)
 	{
 		UMaterialInstanceDynamic* FBMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		FBMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.35f, 0.05f));
-		FBMat->SetScalarParameterValue(TEXT("Emissive"), 8.f);
+		FBMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.4f, 0.08f));
+		FBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(8.f, 3.f, 0.5f));
 		FireballMesh->SetMaterial(0, FBMat);
 
 		// Inner flash — white-hot
 		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(BaseMat, this);
 		FlashMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.95f, 0.7f));
-		FlashMat->SetScalarParameterValue(TEXT("Emissive"), 20.f);
+		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(20.f, 18.f, 12.f));
 		InnerFlashMesh->SetMaterial(0, FlashMat);
 
 		// Shockwave — cyan-white
 		UMaterialInstanceDynamic* SwMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		SwMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.5f, 0.7f, 1.f));
-		SwMat->SetScalarParameterValue(TEXT("Emissive"), 5.f);
+		SwMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.6f, 0.8f, 1.f));
+		SwMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(3.f, 4.f, 6.f));
 		ShockwaveRing->SetMaterial(0, SwMat);
+
+		// Ground scorch — dark burn mark
+		if (ScorchMark)
+		{
+			UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
+				FLinearColor(0.015f, 0.012f, 0.01f));
+			ScorchMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.3f, 0.08f, 0.02f));
+			ScorchMark->SetMaterial(0, ScorchMat);
+		}
+
+		// Smoke column — dark translucent rising pillar
+		if (SmokeColumn)
+		{
+			UMaterialInstanceDynamic* SmokeMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
+				FLinearColor(0.06f, 0.05f, 0.04f));
+			SmokeColumn->SetMaterial(0, SmokeMat);
+		}
 	}
 
 	// Screen shake
@@ -208,6 +249,33 @@ void AExoExplosionEffect::Tick(float DeltaTime)
 		// Shrink and fade debris
 		float S = FMath::Lerp(0.08f, 0.005f, T * T);
 		DebrisMeshes[i]->SetWorldScale3D(FVector(S, S * 0.6f, S * 0.4f));
+	}
+
+	// Ground scorch: appears after initial flash, expands to final size
+	if (ScorchMark)
+	{
+		float ScorchT = FMath::Clamp((Age - Lifetime * 0.1f) / (Lifetime * 0.3f), 0.f, 1.f);
+		if (ScorchT > 0.f && !ScorchMark->IsVisible())
+		{
+			ScorchMark->SetVisibility(true);
+		}
+		float ScorchScale = ExpRadius / 400.f * FMath::Sqrt(ScorchT);
+		ScorchMark->SetRelativeLocation(FVector(0.f, 0.f, -GetActorLocation().Z + 2.f));
+		ScorchMark->SetWorldScale3D(FVector(ScorchScale, ScorchScale, 0.02f));
+	}
+
+	// Smoke column: rises from explosion center, expanding and fading
+	if (SmokeColumn)
+	{
+		float SmokeT = FMath::Clamp((Age - Lifetime * 0.15f) / (Lifetime * 0.7f), 0.f, 1.f);
+		if (SmokeT > 0.f && !SmokeColumn->IsVisible())
+		{
+			SmokeColumn->SetVisibility(true);
+		}
+		float SmokeHeight = ExpRadius * 2.f * SmokeT;
+		float SmokeWidth = ExpRadius / 800.f * (0.5f + SmokeT * 0.5f);
+		SmokeColumn->SetRelativeLocation(FVector(0.f, 0.f, SmokeHeight * 0.5f));
+		SmokeColumn->SetWorldScale3D(FVector(SmokeWidth, SmokeWidth, SmokeHeight / 100.f));
 	}
 
 	if (Age >= Lifetime) Destroy();

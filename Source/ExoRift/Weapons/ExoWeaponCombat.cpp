@@ -7,6 +7,7 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoWeaponViewModel.h"
+#include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "UI/ExoPickupNotification.h"
@@ -40,6 +41,22 @@ void AExoWeaponBase::FireShot()
 			PC->SetControlRotation(PC->GetControlRotation() +
 				FRotator(RecoilPitch, RecoilY, 0.f));
 		}
+	}
+
+	// Per-weapon fire shake and bloom kick
+	{
+		float ShakeIntensity = 0.f;
+		switch (WeaponType)
+		{
+		case EWeaponType::Rifle:          ShakeIntensity = 0.12f; break;
+		case EWeaponType::SMG:            ShakeIntensity = 0.06f; break;
+		case EWeaponType::Pistol:         ShakeIntensity = 0.10f; break;
+		case EWeaponType::Shotgun:        ShakeIntensity = 0.35f; break;
+		case EWeaponType::Sniper:         ShakeIntensity = 0.50f; break;
+		case EWeaponType::GrenadeLauncher: ShakeIntensity = 0.40f; break;
+		default: ShakeIntensity = 0.10f; break;
+		}
+		FExoScreenShake::AddShake(ShakeIntensity, 0.08f);
 	}
 
 	// Track shots

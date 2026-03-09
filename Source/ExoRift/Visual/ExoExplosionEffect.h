@@ -37,6 +37,14 @@ private:
 	UPROPERTY()
 	UPointLightComponent* FlashLight;
 
+	/** Ground scorch mark left after explosion fades. */
+	UPROPERTY()
+	UStaticMeshComponent* ScorchMark;
+
+	/** Secondary upward smoke column. */
+	UPROPERTY()
+	UStaticMeshComponent* SmokeColumn;
+
 	// Debris chunks
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> DebrisMeshes;
