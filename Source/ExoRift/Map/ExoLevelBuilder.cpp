@@ -4,6 +4,8 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/PostProcessComponent.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
@@ -112,6 +114,28 @@ void AExoLevelBuilder::BuildLighting()
 	Fog->SetFogDensity(0.001f);
 	Fog->SetFogHeightFalloff(0.2f);
 	Fog->SetFogInscatteringColor(FLinearColor(0.15f, 0.2f, 0.3f));
+
+	// Global post-process: slight bloom, vignette, color grading
+	UPostProcessComponent* PP = NewObject<UPostProcessComponent>(this);
+	PP->SetupAttachment(RootComponent);
+	PP->bUnbound = true; // Affects entire level
+	PP->Settings.bOverride_BloomIntensity = true;
+	PP->Settings.BloomIntensity = 0.8f;
+	PP->Settings.bOverride_VignetteIntensity = true;
+	PP->Settings.VignetteIntensity = 0.3f;
+	PP->Settings.bOverride_AutoExposureBias = true;
+	PP->Settings.AutoExposureBias = 0.5f;
+	PP->RegisterComponent();
+
+	// Nav mesh bounds for bot navigation
+	FActorSpawnParameters NavParams;
+	NavParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ANavMeshBoundsVolume* NavBounds = GetWorld()->SpawnActor<ANavMeshBoundsVolume>(
+		ANavMeshBoundsVolume::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, NavParams);
+	if (NavBounds)
+	{
+		NavBounds->SetActorScale3D(FVector(MapHalfSize / 100.f, MapHalfSize / 100.f, 500.f));
+	}
 }
 
 void AExoLevelBuilder::BuildSkybox()
