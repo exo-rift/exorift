@@ -57,6 +57,14 @@ private:
 	void BuildWaterFeatures();
 	void BuildFoliage();
 
+	// --- Detail & environment (in ExoLevelBuilderDetail.cpp) ---
+	void BuildGroundDetail();
+	void BuildInteriors();
+	void SpawnFloorPanels(const FVector& Center, float Radius, int32 Count);
+	void SpawnEnergyPylon(const FVector& Base, float Height, const FLinearColor& Color);
+	void SpawnConsole(const FVector& Pos, float Yaw);
+	void SpawnCrater(const FVector& Center, float Radius);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);
