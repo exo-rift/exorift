@@ -1,7 +1,11 @@
 #include "Weapons/ExoProjectile.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoTracerManager.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "ExoRift.h"
 
@@ -17,7 +21,22 @@ AExoProjectile::AExoProjectile()
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(CollisionSphere);
-	ProjectileMesh->SetRelativeScale3D(FVector(0.2f));
+	ProjectileMesh->SetRelativeScale3D(FVector(0.3f, 0.15f, 0.15f));
+	ProjectileMesh->CastShadow = false;
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	if (SphereFinder.Succeeded())
+	{
+		ProjectileMesh->SetStaticMesh(SphereFinder.Object);
+	}
+
+	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
+	GlowLight->SetupAttachment(CollisionSphere);
+	GlowLight->SetIntensity(8000.f);
+	GlowLight->SetAttenuationRadius(500.f);
+	GlowLight->SetLightColor(FLinearColor(1.f, 0.4f, 0.1f));
+	GlowLight->CastShadows = false;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = CollisionSphere;
@@ -61,6 +80,9 @@ void AExoProjectile::Explode()
 		this,                    // Damage causer
 		InstigatorController
 	);
+
+	// Explosion VFX
+	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
 	UE_LOG(LogExoRift, Verbose, TEXT("Projectile exploded at %s"), *GetActorLocation().ToString());
 	Destroy();

@@ -1,5 +1,9 @@
 #include "Map/ExoExplodingBarrel.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoTracerManager.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 #include "ExoRift.h"
@@ -11,6 +15,23 @@ AExoExplodingBarrel::AExoExplodingBarrel()
 	BarrelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BarrelMesh"));
 	RootComponent = BarrelMesh;
 	BarrelMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	BarrelMesh->SetRelativeScale3D(FVector(1.2f, 1.2f, 1.5f));
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
+		TEXT("/Engine/BasicShapes/Cylinder"));
+	if (CylFinder.Succeeded())
+	{
+		BarrelMesh->SetStaticMesh(CylFinder.Object);
+	}
+
+	// Warning glow
+	UPointLightComponent* WarnLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("WarnLight"));
+	WarnLight->SetupAttachment(BarrelMesh);
+	WarnLight->SetRelativeLocation(FVector(0.f, 0.f, 80.f));
+	WarnLight->SetIntensity(2000.f);
+	WarnLight->SetAttenuationRadius(300.f);
+	WarnLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
+	WarnLight->CastShadows = false;
 }
 
 float AExoExplodingBarrel::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -52,6 +73,9 @@ void AExoExplodingBarrel::Explode(AController* InstigatorController)
 		this,                        // DamageCauser
 		InstigatorController         // InstigatedBy
 	);
+
+	// Explosion VFX
+	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
 	Destroy();
 }

@@ -8,6 +8,7 @@
 class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class UPointLightComponent;
 
 UCLASS()
 class EXORIFT_API AExoGrenade : public AActor
@@ -44,6 +45,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovement;
+
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* FuseLight;
 
 private:
 	void Explode();

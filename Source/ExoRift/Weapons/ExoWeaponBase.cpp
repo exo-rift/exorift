@@ -5,6 +5,7 @@
 #include "UI/ExoHitMarker.h"
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoTracerManager.h"
+#include "Visual/ExoWeaponViewModel.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -19,6 +20,18 @@ AExoWeaponBase::AExoWeaponBase()
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
+}
+
+void AExoWeaponBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Build procedural weapon view model
+	ViewModel = NewObject<UExoWeaponViewModel>(this);
+	ViewModel->SetupAttachment(RootComponent);
+	ViewModel->SetRelativeLocation(FVector(20.f, 10.f, -8.f)); // Offset to right of camera
+	ViewModel->RegisterComponent();
+	ViewModel->BuildModel(WeaponType, GetRarityColor(Rarity));
 }
 
 float AExoWeaponBase::GetRarityDamageMultiplier() const
@@ -139,7 +152,7 @@ void AExoWeaponBase::FireShot()
 
 	// Tracer & muzzle flash
 	{
-		FVector MuzzleLoc = WeaponMesh ? WeaponMesh->GetSocketLocation(TEXT("Muzzle")) : GetActorLocation();
+		FVector MuzzleLoc = ViewModel ? ViewModel->GetMuzzleLocation() : GetActorLocation();
 		FVector TraceEnd;
 		if (Hit.bBlockingHit)
 		{
@@ -268,6 +281,10 @@ void AExoWeaponBase::FireShot()
 			{
 				Audio->PlayImpactSound(Hit.ImpactPoint, HitChar != nullptr);
 			}
+
+			// Impact sparks at hit location
+			FExoTracerManager::SpawnImpactEffect(GetWorld(), Hit.ImpactPoint,
+				Hit.ImpactNormal, HitChar != nullptr);
 		}
 	}
 }

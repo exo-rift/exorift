@@ -3,15 +3,21 @@
 #include "CoreMinimal.h"
 
 /**
- * Static helper for spawning bullet tracers and muzzle flash effects.
- * Plain C++ class — not a UObject. Uses debug draw as placeholder.
+ * Static helper for spawning actor-based weapon VFX:
+ * tracers, muzzle flashes, bullet impacts, and explosions.
  */
 class FExoTracerManager
 {
 public:
-	/** Spawn a tracer line from Start to End. Cyan for miss, red-tinted for hit. */
+	/** Spawn a glowing tracer beam from Start to End. */
 	static void SpawnTracer(UWorld* World, const FVector& Start, const FVector& End, bool bIsHit);
 
-	/** Spawn a brief muzzle flash (debug point placeholder) at the given location. */
+	/** Spawn a brief muzzle flash at the given location. */
 	static void SpawnMuzzleFlash(UWorld* World, const FVector& Location, const FRotator& Rotation);
+
+	/** Spawn impact sparks at a bullet hit location. */
+	static void SpawnImpactEffect(UWorld* World, const FVector& Location, const FVector& HitNormal, bool bHitCharacter);
+
+	/** Spawn an explosion effect (grenade / projectile). */
+	static void SpawnExplosionEffect(UWorld* World, const FVector& Location, float Radius);
 };

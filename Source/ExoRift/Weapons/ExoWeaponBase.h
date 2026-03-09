@@ -10,6 +10,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnOverheated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCooledDown);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnergyChanged, float, NewEnergy);
 
+class UExoWeaponViewModel;
+
 UCLASS(Abstract)
 class EXORIFT_API AExoWeaponBase : public AActor
 {
@@ -18,6 +20,7 @@ class EXORIFT_API AExoWeaponBase : public AActor
 public:
 	AExoWeaponBase();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void StartFire();
@@ -63,6 +66,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	USkeletalMeshComponent* WeaponMesh;
+
+	UPROPERTY()
+	UExoWeaponViewModel* ViewModel;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FString WeaponName = TEXT("Weapon");

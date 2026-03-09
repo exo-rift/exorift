@@ -11,6 +11,7 @@
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoMapConfig.h"
+#include "Map/ExoLevelBuilder.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoCareerStats.h"
 #include "UI/ExoHUD.h"
@@ -49,7 +50,21 @@ void AExoGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Find zone system in level
+	// Auto-spawn level builder if none placed in level
+	bool bHasBuilder = false;
+	for (TActorIterator<AExoLevelBuilder> BIt(GetWorld()); BIt; ++BIt)
+	{
+		bHasBuilder = true;
+		break;
+	}
+	if (!bHasBuilder)
+	{
+		FActorSpawnParameters BuilderParams;
+		GetWorld()->SpawnActor<AExoLevelBuilder>(AExoLevelBuilder::StaticClass(), BuilderParams);
+		UE_LOG(LogExoRift, Log, TEXT("GameMode: Auto-spawned LevelBuilder"));
+	}
+
+	// Find zone system in level (may have been created by LevelBuilder)
 	for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
 	{
 		ZoneSystem = *It;

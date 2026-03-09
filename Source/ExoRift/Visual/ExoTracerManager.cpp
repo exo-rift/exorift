@@ -1,18 +1,66 @@
 #include "Visual/ExoTracerManager.h"
-#include "DrawDebugHelpers.h"
+#include "Visual/ExoTracer.h"
+#include "Visual/ExoMuzzleFlash.h"
+#include "Visual/ExoImpactEffect.h"
+#include "Visual/ExoExplosionEffect.h"
 
 void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const FVector& End, bool bIsHit)
 {
 	if (!World) return;
 
-	FColor TracerColor = bIsHit ? FColor(255, 80, 80) : FColor(0, 220, 255);
-	DrawDebugLine(World, Start, End, TracerColor, false, 0.1f, 0, 1.f);
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExoTracer* Tracer = World->SpawnActor<AExoTracer>(AExoTracer::StaticClass(),
+		FVector::ZeroVector, FRotator::ZeroRotator, Params);
+	if (Tracer)
+	{
+		Tracer->InitTracer(Start, End, bIsHit);
+	}
 }
 
 void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location, const FRotator& Rotation)
 {
 	if (!World) return;
 
-	// Placeholder: bright yellow point at muzzle position
-	DrawDebugPoint(World, Location, 12.f, FColor(255, 220, 80), false, 0.05f);
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExoMuzzleFlash* Flash = World->SpawnActor<AExoMuzzleFlash>(AExoMuzzleFlash::StaticClass(),
+		Location, FRotator::ZeroRotator, Params);
+	if (Flash)
+	{
+		Flash->InitFlash(Rotation);
+	}
+}
+
+void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location,
+	const FVector& HitNormal, bool bHitCharacter)
+{
+	if (!World) return;
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExoImpactEffect* Impact = World->SpawnActor<AExoImpactEffect>(AExoImpactEffect::StaticClass(),
+		Location, FRotator::ZeroRotator, Params);
+	if (Impact)
+	{
+		Impact->InitEffect(HitNormal, bHitCharacter);
+	}
+}
+
+void FExoTracerManager::SpawnExplosionEffect(UWorld* World, const FVector& Location, float Radius)
+{
+	if (!World) return;
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExoExplosionEffect* Explosion = World->SpawnActor<AExoExplosionEffect>(
+		AExoExplosionEffect::StaticClass(), Location, FRotator::ZeroRotator, Params);
+	if (Explosion)
+	{
+		Explosion->InitExplosion(Radius);
+	}
 }

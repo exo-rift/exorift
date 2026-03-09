@@ -7,6 +7,7 @@
 class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 
 UCLASS()
 class EXORIFT_API AExoProjectile : public AActor
@@ -33,6 +34,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovement;
+
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* GlowLight;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
 	float ExplosionRadius = 500.f;

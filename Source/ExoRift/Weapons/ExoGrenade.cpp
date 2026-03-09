@@ -1,7 +1,9 @@
 #include "Weapons/ExoGrenade.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Visual/ExoTracerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 #include "ExoRift.h"
@@ -25,6 +27,14 @@ AExoGrenade::AExoGrenade()
 	{
 		MeshComp->SetStaticMesh(SphereMesh.Object);
 	}
+
+	// Pulsing fuse light — warns players it's live
+	FuseLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FuseLight"));
+	FuseLight->SetupAttachment(CollisionComp);
+	FuseLight->SetIntensity(5000.f);
+	FuseLight->SetAttenuationRadius(400.f);
+	FuseLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
+	FuseLight->CastShadows = false;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
@@ -65,7 +75,8 @@ void AExoGrenade::Explode()
 		GetInstigatorController()
 	);
 
-	// TODO: Spawn explosion particle effect (placeholder log above)
+	// Explosion VFX
+	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
 	Destroy();
 }
