@@ -5,6 +5,8 @@
 #include "Core/ExoTypes.h"
 #include "ExoZoneSystem.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnZoneEvent, int32, StageIndex);
+
 UCLASS()
 class EXORIFT_API AExoZoneSystem : public AActor
 {
@@ -28,6 +30,29 @@ public:
 	float GetStageTimer() const { return StageTimer; }
 	int32 GetNumStages() const { return Stages.Num(); }
 	const FZoneStage* GetStage(int32 Index) const { return Stages.IsValidIndex(Index) ? &Stages[Index] : nullptr; }
+
+	/** True when zone is paused between shrinks (hold phase). */
+	bool IsInHoldPhase() const { return bIsActive && !bIsShrinking && CurrentStage >= 0; }
+
+	/** Seconds remaining until the next shrink begins (0 if currently shrinking). */
+	float GetHoldTimeRemaining() const;
+
+	/** Seconds remaining until current shrink completes (0 if in hold). */
+	float GetShrinkTimeRemaining() const;
+
+	/** 0-based index of current zone stage. */
+	int32 GetCurrentStageIndex() const { return CurrentStage; }
+
+	// --- Zone event delegates ---
+	UPROPERTY(BlueprintAssignable, Category = "Zone")
+	FOnZoneEvent OnZoneShrinkStart;
+
+	UPROPERTY(BlueprintAssignable, Category = "Zone")
+	FOnZoneEvent OnZoneShrinkEnd;
+
+	/** Fires ~30s before next shrink begins. */
+	UPROPERTY(BlueprintAssignable, Category = "Zone")
+	FOnZoneEvent OnZoneWarning;
 
 protected:
 	void AdvanceStage();
@@ -55,6 +80,12 @@ protected:
 	bool bIsActive = false;
 	bool bIsShrinking = false;
 	float StageTimer = 0.f;
+
+	/** Tracks whether the 30s warning has already fired for the current hold phase. */
+	bool bWarningBroadcasted = false;
+
+	/** Seconds before shrink at which OnZoneWarning fires. */
+	static constexpr float WarningLeadTime = 30.f;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

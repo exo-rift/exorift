@@ -88,10 +88,13 @@ void AExoZoneSystem::AdvanceStage()
 	TargetRadius = Stage.Radius;
 	TargetCenter = Stage.Center;
 	bIsShrinking = true;
+	bWarningBroadcasted = false;
 	StageTimer = 0.f;
 
 	UE_LOG(LogExoRift, Log, TEXT("Zone stage %d: shrinking to %.0f radius over %.0fs"),
 		CurrentStage, TargetRadius, Stage.ShrinkDuration);
+
+	OnZoneShrinkStart.Broadcast(CurrentStage);
 }
 
 void AExoZoneSystem::TickShrink(float DeltaTime)
@@ -113,6 +116,9 @@ void AExoZoneSystem::TickShrink(float DeltaTime)
 	{
 		bIsShrinking = false;
 		StageTimer = 0.f;
+		bWarningBroadcasted = false;
+
+		OnZoneShrinkEnd.Broadcast(CurrentStage);
 	}
 }
 
@@ -122,6 +128,16 @@ void AExoZoneSystem::TickHold(float DeltaTime)
 
 	const FZoneStage& Stage = Stages[CurrentStage];
 	StageTimer += DeltaTime;
+
+	// Fire warning when hold time remaining crosses the threshold
+	float Remaining = Stage.HoldDuration - StageTimer;
+	if (!bWarningBroadcasted && Remaining <= WarningLeadTime && Remaining > 0.f)
+	{
+		bWarningBroadcasted = true;
+		int32 NextStage = CurrentStage + 1;
+		OnZoneWarning.Broadcast(NextStage);
+		UE_LOG(LogExoRift, Log, TEXT("Zone warning: Ring %d closing in %.0fs"), NextStage + 1, Remaining);
+	}
 
 	if (StageTimer >= Stage.HoldDuration)
 	{
@@ -140,6 +156,18 @@ float AExoZoneSystem::GetDamagePerSecond() const
 {
 	if (CurrentStage < 0 || CurrentStage >= Stages.Num()) return 0.f;
 	return Stages[CurrentStage].DamagePerSecond;
+}
+
+float AExoZoneSystem::GetHoldTimeRemaining() const
+{
+	if (bIsShrinking || CurrentStage < 0 || CurrentStage >= Stages.Num()) return 0.f;
+	return FMath::Max(Stages[CurrentStage].HoldDuration - StageTimer, 0.f);
+}
+
+float AExoZoneSystem::GetShrinkTimeRemaining() const
+{
+	if (!bIsShrinking || CurrentStage < 0 || CurrentStage >= Stages.Num()) return 0.f;
+	return FMath::Max(Stages[CurrentStage].ShrinkDuration - StageTimer, 0.f);
 }
 
 void AExoZoneSystem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

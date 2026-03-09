@@ -31,6 +31,18 @@ public:
 	UPROPERTY(Replicated)
 	int32 CurrentZoneStage = 0;
 
+	/** Seconds remaining in current hold phase until next shrink. */
+	UPROPERTY(Replicated)
+	float ZoneHoldTimeRemaining = 0.f;
+
+	/** Seconds remaining in current shrink phase. */
+	UPROPERTY(Replicated)
+	float ZoneShrinkTimeRemaining = 0.f;
+
+	/** True when zone ring is actively closing. */
+	UPROPERTY(Replicated)
+	bool bZoneShrinking = false;
+
 	/** Seconds remaining in WaitingForPlayers countdown (0 when not counting). */
 	UPROPERTY(Replicated)
 	float WaitingTimeRemaining = 0.f;

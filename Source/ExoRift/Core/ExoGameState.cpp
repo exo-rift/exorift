@@ -23,6 +23,9 @@ void AExoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AExoGameState, MatchPhase);
 	DOREPLIFETIME(AExoGameState, MatchElapsedTime);
 	DOREPLIFETIME(AExoGameState, CurrentZoneStage);
+	DOREPLIFETIME(AExoGameState, ZoneHoldTimeRemaining);
+	DOREPLIFETIME(AExoGameState, ZoneShrinkTimeRemaining);
+	DOREPLIFETIME(AExoGameState, bZoneShrinking);
 	DOREPLIFETIME(AExoGameState, WaitingTimeRemaining);
 	DOREPLIFETIME(AExoGameState, DropPhaseTimeRemaining);
 	DOREPLIFETIME(AExoGameState, EndGameTimeRemaining);

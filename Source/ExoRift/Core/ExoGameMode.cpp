@@ -225,19 +225,31 @@ void AExoGameMode::TickDropPhase(float DeltaTime)
 
 void AExoGameMode::TickPlaying(float DeltaTime)
 {
-	if (AExoGameState* GS = GetGameState<AExoGameState>())
+	AExoGameState* GS = GetGameState<AExoGameState>();
+	if (GS)
+	{
 		GS->MatchElapsedTime += DeltaTime;
+	}
 
-	// Track zone shrink state
+	// Push zone system state into replicated GameState every frame
+	if (ZoneSystem && GS)
+	{
+		GS->CurrentZoneStage = ZoneSystem->GetCurrentStageIndex();
+		GS->bZoneShrinking = ZoneSystem->IsShrinking();
+		GS->ZoneHoldTimeRemaining = ZoneSystem->GetHoldTimeRemaining();
+		GS->ZoneShrinkTimeRemaining = ZoneSystem->GetShrinkTimeRemaining();
+	}
+
+	// Track zone shrink state for phase transitions
 	if (ZoneSystem && ZoneSystem->IsShrinking() && CurrentPhase != EBRMatchPhase::ZoneShrinking)
 	{
 		CurrentPhase = EBRMatchPhase::ZoneShrinking;
-		if (AExoGameState* GS = GetGameState<AExoGameState>()) GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
+		if (GS) GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
 	}
 	else if (ZoneSystem && !ZoneSystem->IsShrinking() && CurrentPhase == EBRMatchPhase::ZoneShrinking)
 	{
 		CurrentPhase = EBRMatchPhase::Playing;
-		if (AExoGameState* GS = GetGameState<AExoGameState>()) GS->MatchPhase = EBRMatchPhase::Playing;
+		if (GS) GS->MatchPhase = EBRMatchPhase::Playing;
 	}
 }
 

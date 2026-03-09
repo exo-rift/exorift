@@ -815,45 +815,63 @@ void AExoHUD::DrawZoneTimer()
 	if (GS->MatchPhase != EBRMatchPhase::Playing && GS->MatchPhase != EBRMatchPhase::ZoneShrinking)
 		return;
 
-	AExoZoneSystem* Zone = nullptr;
-	for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
-	{
-		Zone = *It;
-		break;
-	}
-	if (!Zone || Zone->GetCurrentStage() < 0) return;
+	if (GS->CurrentZoneStage < 0) return;
 
-	int32 Stage = Zone->GetCurrentStage() + 1; // 1-indexed for display
-	bool bShrinking = Zone->IsShrinking();
+	// Use replicated GameState data — works on all clients
+	int32 Ring = GS->CurrentZoneStage + 1; // 1-indexed for display
+	bool bShrinking = GS->bZoneShrinking;
 
 	FString ZoneText;
+	FString SubText;
 	FLinearColor ZoneColor;
+	FLinearColor SubColor = FLinearColor::White;
 
 	if (bShrinking)
 	{
-		ZoneText = FString::Printf(TEXT("Zone %d  —  Shrinking!"), Stage);
+		int32 ShrinkSec = FMath::CeilToInt(GS->ZoneShrinkTimeRemaining);
+		ZoneText = TEXT("RING CLOSING");
+		SubText = FString::Printf(TEXT("Ring %d  |  %ds remaining"), Ring, ShrinkSec);
 		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 3.f));
-		ZoneColor = FLinearColor(1.f, 0.4f + Pulse * 0.2f, 0.2f, 0.9f);
+		ZoneColor = FLinearColor(1.f, 0.3f + Pulse * 0.2f, 0.15f, 0.95f);
+		SubColor = FLinearColor(1.f, 0.6f, 0.4f, 0.85f);
 	}
 	else
 	{
-		const FZoneStage* StageData = Zone->GetStage(Zone->GetCurrentStage());
-		float Timer = Zone->GetStageTimer();
-		float HoldDur = StageData ? StageData->HoldDuration : 0.f;
-		int32 Remaining = FMath::CeilToInt(FMath::Max(HoldDur - Timer, 0.f));
-		ZoneText = FString::Printf(TEXT("Zone %d  —  Shrinks in %ds"), Stage, Remaining);
-		ZoneColor = FLinearColor(0.7f, 0.8f, 0.9f, 0.85f);
+		int32 HoldSec = FMath::CeilToInt(GS->ZoneHoldTimeRemaining);
+		bool bWarning = HoldSec <= 30 && HoldSec > 0;
+
+		ZoneText = FString::Printf(TEXT("Ring %d closing in %ds"), Ring + 1, HoldSec);
+		if (bWarning)
+		{
+			float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 4.f));
+			ZoneColor = FLinearColor(1.f, 0.7f + Pulse * 0.15f, 0.2f, 0.9f);
+		}
+		else
+		{
+			ZoneColor = FLinearColor(0.7f, 0.8f, 0.9f, 0.85f);
+		}
 	}
 
-	float TW, TH;
-	GetTextSize(ZoneText, TW, TH, HUDFont, 0.75f);
-
-	// Position below the minimap area (minimap at Y=20, size=200 -> bottom ~225)
+	// Position below the minimap area
 	float X = MinimapConfig.ScreenX;
 	float Y = MinimapConfig.ScreenY + MinimapConfig.Size + 8.f;
 
-	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, TW + 10.f, TH + 6.f);
-	DrawText(ZoneText, ZoneColor, X, Y, HUDFont, 0.75f);
+	// Main zone text
+	float TW, TH;
+	GetTextSize(ZoneText, TW, TH, HUDFont, 0.8f);
+	float PanelW = FMath::Max(TW + 20.f, 200.f);
+	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, PanelW, TH + 8.f);
+	DrawText(ZoneText, ZoneColor, X, Y, HUDFont, 0.8f);
+
+	// Sub-line for shrink progress
+	if (!SubText.IsEmpty())
+	{
+		float SY = Y + TH + 6.f;
+		float SW, SH;
+		GetTextSize(SubText, SW, SH, HUDFont, 0.65f);
+		DrawRect(ColorBgDark, X - 5.f, SY - 2.f, FMath::Max(SW + 20.f, 200.f), SH + 4.f);
+		DrawText(SubText, SubColor, X, SY, HUDFont, 0.65f);
+	}
 }
 
 void AExoHUD::ShowDeathScreen(const FString& KillerName, const FString& WeaponName,

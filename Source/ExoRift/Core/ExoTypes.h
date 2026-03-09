@@ -21,7 +21,8 @@ enum class EWeaponType : uint8
 	GrenadeLauncher,
 	Sniper,
 	Shotgun,
-	SMG
+	SMG,
+	Melee
 };
 
 UENUM(BlueprintType)

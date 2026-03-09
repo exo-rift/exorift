@@ -4,6 +4,7 @@
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
 #include "Weapons/ExoWeaponShotgun.h"
+#include "Weapons/ExoWeaponMelee.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
@@ -125,9 +126,18 @@ bool UExoInventoryComponent::DropWeapon(int32 SlotIndex)
 				break;
 			}
 		}
-		CurrentSlotIndex = NextSlot;
-		if (Next) Next->SetActorHiddenInGame(false);
-		OnWeaponChanged.Broadcast(Next, CurrentSlotIndex);
+
+		if (Next)
+		{
+			CurrentSlotIndex = NextSlot;
+			Next->SetActorHiddenInGame(false);
+			OnWeaponChanged.Broadcast(Next, CurrentSlotIndex);
+		}
+		else
+		{
+			// All slots empty — fall back to melee
+			SwitchToMelee();
+		}
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("Inventory: dropped weapon from slot %d"), SlotIndex);
@@ -137,16 +147,17 @@ bool UExoInventoryComponent::DropWeapon(int32 SlotIndex)
 void UExoInventoryComponent::SwapToSlot(int32 SlotIndex)
 {
 	if (SlotIndex < 0 || SlotIndex >= SlotCount) return;
-	if (SlotIndex == CurrentSlotIndex) return;
+	if (SlotIndex == CurrentSlotIndex && !bMeleeActive) return;
 	if (!Slots[SlotIndex]) return;
 
-	// Hide current weapon
+	// Hide current weapon (could be melee or a slotted weapon)
 	if (AExoWeaponBase* Old = GetCurrentWeapon())
 	{
 		Old->StopFire();
 		Old->SetActorHiddenInGame(true);
 	}
 
+	bMeleeActive = false;
 	CurrentSlotIndex = SlotIndex;
 	AExoWeaponBase* New = Slots[CurrentSlotIndex];
 	if (New)
@@ -185,7 +196,44 @@ AExoWeaponBase* UExoInventoryComponent::GetWeapon(int32 SlotIndex) const
 
 AExoWeaponBase* UExoInventoryComponent::GetCurrentWeapon() const
 {
+	if (bMeleeActive && MeleeWeapon) return MeleeWeapon;
 	return GetWeapon(CurrentSlotIndex);
+}
+
+// ---------------------------------------------------------------------------
+// Melee weapon
+// ---------------------------------------------------------------------------
+
+void UExoInventoryComponent::SwitchToMelee()
+{
+	if (!MeleeWeapon) return;
+	if (bMeleeActive) return;
+
+	// Hide current weapon
+	if (AExoWeaponBase* Old = GetCurrentWeapon())
+	{
+		Old->StopFire();
+		Old->SetActorHiddenInGame(true);
+	}
+
+	bMeleeActive = true;
+	MeleeWeapon->SetActorHiddenInGame(false);
+	OnWeaponChanged.Broadcast(MeleeWeapon, -1);
+}
+
+void UExoInventoryComponent::CheckAutoSwitchToMelee()
+{
+	if (bMeleeActive) return;
+
+	for (int32 i = 0; i < SlotCount; ++i)
+	{
+		if (Slots[i] && Slots[i]->GetCurrentEnergy() > 0.f)
+		{
+			return; // At least one weapon has energy
+		}
+	}
+
+	SwitchToMelee();
 }
 
 // ---------------------------------------------------------------------------
@@ -248,4 +296,15 @@ void UExoInventoryComponent::SpawnDefaultWeapons()
 	AExoWeaponShotgun* Shotgun = GetWorld()->SpawnActor<AExoWeaponShotgun>(
 		AExoWeaponShotgun::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
 	if (Shotgun) AddWeapon(Shotgun);
+
+	// Spawn melee weapon (Plasma Blade) — always available, not in a slot
+	AExoWeaponMelee* Melee = GetWorld()->SpawnActor<AExoWeaponMelee>(
+		AExoWeaponMelee::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
+	if (Melee)
+	{
+		MeleeWeapon = Melee;
+		AttachWeaponToOwner(Melee);
+		Melee->SetActorHiddenInGame(true);
+		UE_LOG(LogExoRift, Log, TEXT("Inventory: spawned Plasma Blade (melee fallback)"));
+	}
 }

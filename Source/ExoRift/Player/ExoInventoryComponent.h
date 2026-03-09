@@ -41,6 +41,9 @@ public:
 	/** Cycle to next/prev weapon. Direction > 0 = next, < 0 = prev. */
 	void CycleWeapon(int32 Direction);
 
+	/** Switch to the always-available melee weapon. */
+	void SwitchToMelee();
+
 	// --- Accessors ---
 
 	AExoWeaponBase* GetWeapon(int32 SlotIndex) const;
@@ -69,8 +72,18 @@ private:
 	/** Spawn the default loadout weapons. Called from BeginPlay on authority. */
 	void SpawnDefaultWeapons();
 
+	/** Check if all slotted weapons are out of energy. If so, auto-switch to melee. */
+	void CheckAutoSwitchToMelee();
+
 	UPROPERTY()
 	TArray<AExoWeaponBase*> Slots; // Always size SlotCount
+
+	/** Dedicated melee weapon — always available, does not occupy a slot. */
+	UPROPERTY()
+	AExoWeaponBase* MeleeWeapon = nullptr;
+
+	/** True when the melee weapon is currently active (overrides slot-based selection). */
+	bool bMeleeActive = false;
 
 	int32 CurrentSlotIndex = 0;
 };
