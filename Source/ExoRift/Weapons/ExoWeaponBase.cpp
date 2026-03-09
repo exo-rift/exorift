@@ -6,6 +6,7 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoTracerManager.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -127,6 +128,13 @@ void AExoWeaponBase::FireShot()
 		}
 	}
 
+	// Track shots fired
+	if (OwnerPawn && OwnerPawn->GetController())
+	{
+		if (AExoPlayerState* PS = OwnerPawn->GetController()->GetPlayerState<AExoPlayerState>())
+			PS->ShotsFired++;
+	}
+
 	FHitResult Hit = DoLineTrace(MaxRange);
 
 	// Tracer & muzzle flash
@@ -210,6 +218,23 @@ void AExoWeaponBase::FireShot()
 
 			FDamageEvent DamageEvent;
 			HitActor->TakeDamage(FinalDamage, DamageEvent, InstigatorController, this);
+
+			// Track combat stats on instigator
+			if (HitChar && InstigatorController)
+			{
+				if (AExoPlayerState* PS = InstigatorController->GetPlayerState<AExoPlayerState>())
+				{
+					PS->DamageDealt += FMath::RoundToInt32(FinalDamage);
+					PS->ShotsHit++;
+					if (bWillKill)
+					{
+						if (HitDistance > PS->LongestKillDistance)
+							PS->LongestKillDistance = HitDistance;
+						if (bHeadshot)
+							PS->HeadshotKills++;
+					}
+				}
+			}
 
 			// Hit marker feedback (only for the shooter)
 			if (HitChar && OwnerPawn && OwnerPawn->IsLocallyControlled())

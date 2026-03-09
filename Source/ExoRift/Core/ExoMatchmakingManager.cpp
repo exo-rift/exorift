@@ -1,4 +1,5 @@
 #include "Core/ExoMatchmakingManager.h"
+#include "Map/ExoMapConfig.h"
 #include "Kismet/GameplayStatics.h"
 #include "ExoRift.h"
 
@@ -65,7 +66,7 @@ void UExoMatchmakingManager::Tick(float DeltaTime)
 		{
 			TransitionTo(EMatchmakingState::Loading);
 			// Transition to gameplay map
-			UGameplayStatics::OpenLevel(GetWorld(), TEXT("/Game/FirstPersonMap"));
+			UGameplayStatics::OpenLevel(GetWorld(), *UExoMapConfig::GetBRMapPath());
 		}
 		break;
 	}

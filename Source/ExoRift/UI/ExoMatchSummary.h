@@ -6,7 +6,10 @@ struct FMatchSummaryEntry
 {
 	FString PlayerName;
 	int32 Kills = 0;
+	int32 Deaths = 0;
+	int32 DamageDealt = 0;
 	int32 Placement = 0;
+	float Accuracy = 0.f;
 	bool bIsLocalPlayer = false;
 };
 

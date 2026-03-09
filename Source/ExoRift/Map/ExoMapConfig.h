@@ -24,6 +24,6 @@ public:
 	/** Content path to the gameplay map (the template FirstPerson map for now). */
 	static FString GetBRMapPath() { return TEXT("/Game/FirstPerson/Lvl_FirstPerson"); }
 
-	/** Content path to the main menu map. */
-	static FString GetMenuMapPath() { return TEXT("/Game/Maps/MainMenu"); }
+	/** Content path to the main menu map (shares the gameplay level; game mode override selects menu behavior). */
+	static FString GetMenuMapPath() { return TEXT("/Game/FirstPerson/Lvl_FirstPerson"); }
 };

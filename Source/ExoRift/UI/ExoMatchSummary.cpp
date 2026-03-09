@@ -32,7 +32,10 @@ void FExoMatchSummary::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font)
 		FMatchSummaryEntry Entry;
 		Entry.PlayerName = ExoPS->DisplayName;
 		Entry.Kills = ExoPS->Kills;
+		Entry.Deaths = ExoPS->Deaths;
+		Entry.DamageDealt = ExoPS->DamageDealt;
 		Entry.Placement = ExoPS->Placement;
+		Entry.Accuracy = ExoPS->GetAccuracy();
 		Entry.bIsLocalPlayer = (PS == HUD->GetOwningPlayerController()->PlayerState);
 
 		if (Entry.bIsLocalPlayer)
@@ -158,20 +161,37 @@ void FExoMatchSummary::DrawPersonalStats(AHUD* HUD, UCanvas* Canvas, UFont* Font
 	const FMatchSummaryEntry& LocalEntry, float MatchDuration)
 {
 	float StatsX = Canvas->SizeX * 0.3f;
-	float StatsY = Canvas->SizeY * 0.72f;
+	float StatsY = Canvas->SizeY * 0.68f;
 
+	FLinearColor LabelColor(0.55f, 0.6f, 0.65f, 0.9f);
 	FLinearColor ValueColor(0.9f, 0.92f, 0.95f, 1.f);
+	float LabelScale = 0.8f;
+	float ValueScale = 1.1f;
+	float ColW = 140.f;
 
-	FString KillStr = FString::Printf(TEXT("Kills: %d"), LocalEntry.Kills);
-	FString PlaceStr = FString::Printf(TEXT("Placement: #%d"), LocalEntry.Placement);
+	// Row 1: Kills, Deaths, Damage
+	HUD->DrawText(TEXT("KILLS"), LabelColor, StatsX, StatsY, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("%d"), LocalEntry.Kills), ValueColor, StatsX, StatsY + 18.f, Font, ValueScale);
+
+	HUD->DrawText(TEXT("DEATHS"), LabelColor, StatsX + ColW, StatsY, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("%d"), LocalEntry.Deaths), ValueColor, StatsX + ColW, StatsY + 18.f, Font, ValueScale);
+
+	HUD->DrawText(TEXT("DAMAGE"), LabelColor, StatsX + ColW * 2, StatsY, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("%d"), LocalEntry.DamageDealt), ValueColor, StatsX + ColW * 2, StatsY + 18.f, Font, ValueScale);
+
+	// Row 2: Accuracy, Placement, Duration
+	float Row2Y = StatsY + 50.f;
+
+	HUD->DrawText(TEXT("ACCURACY"), LabelColor, StatsX, Row2Y, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("%.1f%%"), LocalEntry.Accuracy), ValueColor, StatsX, Row2Y + 18.f, Font, ValueScale);
+
+	HUD->DrawText(TEXT("PLACE"), LabelColor, StatsX + ColW, Row2Y, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("#%d"), LocalEntry.Placement), ValueColor, StatsX + ColW, Row2Y + 18.f, Font, ValueScale);
 
 	int32 Mins = FMath::FloorToInt(MatchDuration / 60.f);
 	int32 Secs = FMath::FloorToInt(FMath::Fmod(MatchDuration, 60.f));
-	FString TimeStr = FString::Printf(TEXT("Duration: %d:%02d"), Mins, Secs);
-
-	HUD->DrawText(KillStr, ValueColor, StatsX, StatsY, Font, 1.1f);
-	HUD->DrawText(PlaceStr, ValueColor, StatsX + 200.f, StatsY, Font, 1.1f);
-	HUD->DrawText(TimeStr, ValueColor, StatsX + 420.f, StatsY, Font, 1.1f);
+	HUD->DrawText(TEXT("DURATION"), LabelColor, StatsX + ColW * 2, Row2Y, Font, LabelScale);
+	HUD->DrawText(FString::Printf(TEXT("%d:%02d"), Mins, Secs), ValueColor, StatsX + ColW * 2, Row2Y + 18.f, Font, ValueScale);
 }
 
 void FExoMatchSummary::DrawCountdownAndOptions(AHUD* HUD, UCanvas* Canvas, UFont* Font,
