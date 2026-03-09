@@ -74,6 +74,7 @@ void AExoPlayerController::SetupInputComponent()
 	EIC->BindAction(In.Ability1, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility1);
 	EIC->BindAction(In.Ability2, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
 	EIC->BindAction(In.Ability3, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
+	EIC->BindAction(In.Ability4, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility4);
 
 	// Emotes
 	EIC->BindAction(In.Emote1, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote1);
@@ -292,6 +293,13 @@ void AExoPlayerController::HandleAbility3()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::ShieldBubble);
+}
+
+void AExoPlayerController::HandleAbility4()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::GrappleHook);
 }
 
 // --- Social ---

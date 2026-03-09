@@ -10,35 +10,67 @@ AExoZoneVisualizer::AExoZoneVisualizer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	ZoneWallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ZoneWallMesh"));
+	// Cache engine meshes in constructor (ConstructorHelpers only work here)
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFind(
+		TEXT("/Engine/BasicShapes/Cylinder"));
+	if (CylFind.Succeeded()) CylinderMesh = CylFind.Object;
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
+
+	// Main zone wall — tall cylinder scaled to zone radius
+	ZoneWallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ZoneWall"));
 	RootComponent = ZoneWallMesh;
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderFinder(
-		TEXT("/Game/LevelPrototyping/Meshes/SM_Cylinder"));
-	if (CylinderFinder.Succeeded())
-	{
-		ZoneWallMesh->SetStaticMesh(CylinderFinder.Object);
-	}
-
+	if (CylinderMesh) ZoneWallMesh->SetStaticMesh(CylinderMesh);
 	ZoneWallMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ZoneWallMesh->CastShadow = false;
+
+	// Target zone ring — shows where zone is shrinking to
+	TargetRingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetRing"));
+	TargetRingMesh->SetupAttachment(nullptr); // Not attached to wall — independent position
+	if (CylinderMesh) TargetRingMesh->SetStaticMesh(CylinderMesh);
+	TargetRingMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TargetRingMesh->CastShadow = false;
+	TargetRingMesh->SetVisibility(false);
+
+	// Ground glow ring — thin bright ring at base of zone wall
+	GroundGlowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GroundGlow"));
+	GroundGlowMesh->SetupAttachment(nullptr);
+	if (CylinderMesh) GroundGlowMesh->SetStaticMesh(CylinderMesh);
+	GroundGlowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GroundGlowMesh->CastShadow = false;
 }
 
 void AExoZoneVisualizer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Create emissive translucent zone wall material
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded() && ZoneWallMesh)
+	// Create dynamic materials for each component
+	if (BaseMaterial && ZoneWallMesh)
 	{
-		ZoneMaterial = UMaterialInstanceDynamic::Create(MatFind.Object, this);
+		ZoneMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 		ZoneMaterial->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(ZoneColor.R, ZoneColor.G, ZoneColor.B, ZoneColor.A));
 		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(ZoneColor.R * 2.f, ZoneColor.G * 2.f, ZoneColor.B * 2.f));
 		ZoneWallMesh->SetMaterial(0, ZoneMaterial);
+	}
+
+	if (BaseMaterial && TargetRingMesh)
+	{
+		TargetMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		TargetMaterial->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(TargetColor.R, TargetColor.G, TargetColor.B, TargetColor.A));
+		TargetRingMesh->SetMaterial(0, TargetMaterial);
+	}
+
+	if (BaseMaterial && GroundGlowMesh)
+	{
+		GlowMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		GlowMaterial->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(ZoneColor.R * 0.5f, ZoneColor.G * 0.5f, ZoneColor.B, 0.4f));
+		GroundGlowMesh->SetMaterial(0, GlowMaterial);
 	}
 }
 
@@ -57,6 +89,8 @@ void AExoZoneVisualizer::Tick(float DeltaTime)
 	}
 
 	UpdateZoneWall();
+	UpdateTargetRing();
+	UpdateGroundGlow();
 }
 
 void AExoZoneVisualizer::UpdateZoneWall()
@@ -75,42 +109,84 @@ void AExoZoneVisualizer::UpdateZoneWall()
 	SetActorLocation(FVector(Center.X, Center.Y, WallHeight * 0.5f));
 	ZoneWallMesh->SetWorldScale3D(FVector(RadiusScale, RadiusScale, HeightScale));
 
-	// Update material emissive pulse
+	// Emissive pulse — intensifies when shrinking
 	if (ZoneMaterial)
 	{
 		float Time = GetWorld()->GetTimeSeconds();
-		float Pulse = 1.f + 0.5f * FMath::Abs(FMath::Sin(Time * 0.8f));
+		float BaseRate = ZoneSystem->IsShrinking() ? 2.f : 0.8f;
+		float PulseStrength = ZoneSystem->IsShrinking() ? 0.8f : 0.5f;
+		float Pulse = 1.f + PulseStrength * FMath::Abs(FMath::Sin(Time * BaseRate));
 		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(ZoneColor.R * Pulse, ZoneColor.G * Pulse, ZoneColor.B * Pulse));
 	}
 }
 
-void AExoZoneVisualizer::GenerateCircleMesh(float Radius, FVector2D Center, float InWallHeight,
-	TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector2D>& UVs)
+void AExoZoneVisualizer::UpdateTargetRing()
 {
-	float AngleStep = 2.f * PI / CircleSegments;
+	if (!ZoneSystem || !TargetRingMesh) return;
 
-	for (int32 i = 0; i <= CircleSegments; i++)
+	bool bShrinking = ZoneSystem->IsShrinking();
+	float TargetRadius = ZoneSystem->GetTargetRadius();
+	float CurrentRadius = ZoneSystem->GetCurrentRadius();
+
+	// Only show target ring when zone is about to shrink or currently shrinking
+	bool bShowTarget = bShrinking || (ZoneSystem->IsInHoldPhase() &&
+		FMath::Abs(TargetRadius - CurrentRadius) > 100.f);
+
+	TargetRingMesh->SetVisibility(bShowTarget);
+	if (!bShowTarget) return;
+
+	FVector2D TargetCenter = ZoneSystem->GetTargetCenter();
+
+	if (FMath::Abs(TargetRadius - CachedTargetRadius) > 10.f)
 	{
-		float Angle = i * AngleStep;
-		float X = Center.X + FMath::Cos(Angle) * Radius;
-		float Y = Center.Y + FMath::Sin(Angle) * Radius;
+		CachedTargetRadius = TargetRadius;
+		float RadiusScale = TargetRadius / 50.f;
+		float RingHeight = 200.f; // Thin ring, not full wall
+		TargetRingMesh->SetWorldScale3D(FVector(RadiusScale, RadiusScale, RingHeight / 100.f));
+	}
 
-		Vertices.Add(FVector(X, Y, 0.f));
-		UVs.Add(FVector2D(static_cast<float>(i) / CircleSegments, 0.f));
+	TargetRingMesh->SetWorldLocation(FVector(TargetCenter.X, TargetCenter.Y, 100.f));
 
-		Vertices.Add(FVector(X, Y, InWallHeight));
-		UVs.Add(FVector2D(static_cast<float>(i) / CircleSegments, 1.f));
+	// Pulsing white-blue emissive
+	if (TargetMaterial)
+	{
+		float Time = GetWorld()->GetTimeSeconds();
+		float Pulse = 0.5f + 0.5f * FMath::Sin(Time * 2.5f);
+		FLinearColor EmCol(0.3f * Pulse, 0.6f * Pulse, 1.f * Pulse);
+		TargetMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), EmCol);
+	}
+}
 
-		if (i < CircleSegments)
+void AExoZoneVisualizer::UpdateGroundGlow()
+{
+	if (!ZoneSystem || !GroundGlowMesh) return;
+
+	float Radius = ZoneSystem->GetCurrentRadius();
+	FVector2D Center = ZoneSystem->GetCurrentCenter();
+
+	// Ground glow is a very flat, slightly larger cylinder at ground level
+	float GlowRadius = (Radius + 200.f) / 50.f;
+	float GlowHeight = 0.1f; // Nearly flat
+	GroundGlowMesh->SetWorldScale3D(FVector(GlowRadius, GlowRadius, GlowHeight));
+	GroundGlowMesh->SetWorldLocation(FVector(Center.X, Center.Y, 5.f));
+
+	if (GlowMaterial)
+	{
+		float Time = GetWorld()->GetTimeSeconds();
+		float Pulse = 0.6f + 0.4f * FMath::Sin(Time * 1.2f);
+		bool bShrinking = ZoneSystem->IsShrinking();
+
+		// Brighter when shrinking, shifts toward red
+		FLinearColor GlowCol;
+		if (bShrinking)
 		{
-			int32 Base = i * 2;
-			Triangles.Add(Base);
-			Triangles.Add(Base + 1);
-			Triangles.Add(Base + 2);
-			Triangles.Add(Base + 1);
-			Triangles.Add(Base + 3);
-			Triangles.Add(Base + 2);
+			GlowCol = FLinearColor(0.8f * Pulse, 0.2f * Pulse, 0.3f * Pulse);
 		}
+		else
+		{
+			GlowCol = FLinearColor(0.2f * Pulse, 0.4f * Pulse, 1.f * Pulse);
+		}
+		GlowMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
 	}
 }

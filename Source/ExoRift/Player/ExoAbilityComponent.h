@@ -5,6 +5,9 @@
 #include "ExoAbilityComponent.generated.h"
 
 class AExoDecoyActor;
+class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UENUM(BlueprintType)
 enum class EExoAbilityType : uint8
@@ -88,6 +91,17 @@ protected:
 	FVector GrappleTarget = FVector::ZeroVector;
 	FVector GrappleStartLocation = FVector::ZeroVector;
 	float GrappleTimer = 0.f;
+
+	// Grapple beam VFX
+	UPROPERTY()
+	UStaticMeshComponent* GrappleBeam = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* GrappleBeamMat = nullptr;
+	UPROPERTY()
+	UPointLightComponent* GrappleLight = nullptr;
+	void CreateGrappleBeam();
+	void UpdateGrappleBeam();
+	void DestroyGrappleBeam();
 
 	static constexpr float DashImpulse = 2000.f;
 	static constexpr float ScanRadius = 5000.f;

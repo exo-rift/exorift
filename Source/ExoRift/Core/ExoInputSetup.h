@@ -34,6 +34,7 @@ struct EXORIFT_API FExoInputSetup
 	UInputAction* Ability1 = nullptr;
 	UInputAction* Ability2 = nullptr;
 	UInputAction* Ability3 = nullptr;
+	UInputAction* Ability4 = nullptr;
 
 	// Menu / UI
 	UInputAction* Pause = nullptr;

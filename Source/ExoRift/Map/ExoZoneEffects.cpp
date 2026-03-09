@@ -64,7 +64,7 @@ void FExoZoneEffects::DrawEdgeWarning(UCanvas* Canvas, float Proximity01)
 	RightStrip.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(RightStrip);
 
-	// Brighter inner edge for sharpness (2px)
+	// Brighter inner edge (2px)
 	float InnerAlpha = Alpha * 1.5f;
 	FLinearColor BrightEdge(1.f, 0.1f, 0.05f, FMath::Min(InnerAlpha, 0.4f));
 	FCanvasTileItem TopInner(FVector2D(0, 0), FVector2D(W, 2.f), BrightEdge);
@@ -80,7 +80,33 @@ void FExoZoneEffects::DrawEdgeWarning(UCanvas* Canvas, float Proximity01)
 	RightInner.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(RightInner);
 
-	// Scan line effect through the border (horizontal sweep)
+	// Corner bracket accents (sci-fi style)
+	float BracketLen = 40.f + Proximity01 * 20.f;
+	float BracketThick = 3.f;
+	FLinearColor BracketCol(1.f, 0.15f, 0.1f, FMath::Min(Alpha * 3.f, 0.6f));
+
+	// Top-left
+	FCanvasTileItem TL_H(FVector2D(0, 0), FVector2D(BracketLen, BracketThick), BracketCol);
+	TL_H.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(TL_H);
+	FCanvasTileItem TL_V(FVector2D(0, 0), FVector2D(BracketThick, BracketLen), BracketCol);
+	TL_V.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(TL_V);
+	// Top-right
+	FCanvasTileItem TR_H(FVector2D(W - BracketLen, 0), FVector2D(BracketLen, BracketThick), BracketCol);
+	TR_H.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(TR_H);
+	FCanvasTileItem TR_V(FVector2D(W - BracketThick, 0), FVector2D(BracketThick, BracketLen), BracketCol);
+	TR_V.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(TR_V);
+	// Bottom-left
+	FCanvasTileItem BL_H(FVector2D(0, H - BracketThick), FVector2D(BracketLen, BracketThick), BracketCol);
+	BL_H.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(BL_H);
+	FCanvasTileItem BL_V(FVector2D(0, H - BracketLen), FVector2D(BracketThick, BracketLen), BracketCol);
+	BL_V.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(BL_V);
+	// Bottom-right
+	FCanvasTileItem BR_H(FVector2D(W - BracketLen, H - BracketThick), FVector2D(BracketLen, BracketThick), BracketCol);
+	BR_H.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(BR_H);
+	FCanvasTileItem BR_V(FVector2D(W - BracketThick, H - BracketLen), FVector2D(BracketThick, BracketLen), BracketCol);
+	BR_V.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(BR_V);
+
+	// Scan line sweep (horizontal)
 	if (Proximity01 > 0.3f)
 	{
 		float ScanY = FMath::Fmod(Time * 150.f, H);
@@ -89,6 +115,38 @@ void FExoZoneEffects::DrawEdgeWarning(UCanvas* Canvas, float Proximity01)
 			FLinearColor(1.f, 0.2f, 0.1f, ScanAlpha));
 		ScanLine.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(ScanLine);
+	}
+
+	// "OUTSIDE ZONE" warning text when fully outside
+	if (Proximity01 > 0.95f)
+	{
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (Font)
+		{
+			float WarnPulse = 0.5f + 0.5f * FMath::Sin(Time * 5.f);
+			FString WarnText = TEXT("! OUTSIDE SAFE ZONE !");
+			float TW, TH;
+			Canvas->TextSize(Font, WarnText, TW, TH);
+			TW *= 1.1f; TH *= 1.1f;
+
+			float TX = W * 0.5f - TW * 0.5f;
+			float TY = H * 0.25f;
+
+			// Dark panel behind text
+			FCanvasTileItem WarnBg(FVector2D(TX - 12.f, TY - 4.f),
+				FVector2D(TW + 24.f, TH + 8.f),
+				FLinearColor(0.15f, 0.f, 0.f, 0.5f * WarnPulse));
+			WarnBg.BlendMode = SE_BLEND_Translucent;
+			Canvas->DrawItem(WarnBg);
+
+			FCanvasTextItem WarnItem(FVector2D(TX, TY),
+				FText::FromString(WarnText), Font,
+				FLinearColor(1.f, 0.15f, 0.1f, WarnPulse));
+			WarnItem.Scale = FVector2D(1.1f, 1.1f);
+			WarnItem.bOutlined = true;
+			WarnItem.OutlineColor = FLinearColor::Black;
+			Canvas->DrawItem(WarnItem);
+		}
 	}
 }
 
@@ -127,7 +185,7 @@ void FExoZoneEffects::DrawDirectionalArrow(UCanvas* Canvas, FVector2D PlayerScre
 	Canvas->K2_DrawLine(ArrowTip, Wing2, 3.f, ArrowColor);
 	Canvas->K2_DrawLine(Wing1, Wing2, 2.f, ArrowColor);
 
-	// "ZONE" label near arrow
+	// "ZONE" label with sci-fi panel
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
 	if (Font)
 	{
@@ -136,13 +194,22 @@ void FExoZoneEffects::DrawDirectionalArrow(UCanvas* Canvas, FVector2D PlayerScre
 		float LW, LH;
 		Canvas->TextSize(Font, ZoneLabel, LW, LH);
 
-		// Background
-		FCanvasTileItem LabelBg(
-			FVector2D(LabelPos.X - LW * 0.5f - 4.f, LabelPos.Y - LH * 0.5f - 2.f),
-			FVector2D(LW + 8.f, LH + 4.f),
+		float PX = LabelPos.X - LW * 0.5f - 6.f;
+		float PY = LabelPos.Y - LH * 0.5f - 3.f;
+		float PW = LW + 12.f;
+		float PH = LH + 6.f;
+
+		// Background panel
+		FCanvasTileItem LabelBg(FVector2D(PX, PY), FVector2D(PW, PH),
 			FLinearColor(0.f, 0.f, 0.f, 0.4f * Pulse));
 		LabelBg.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(LabelBg);
+
+		// Top accent line
+		FCanvasTileItem AccLine(FVector2D(PX, PY), FVector2D(PW, 1.f),
+			FLinearColor(1.f, 0.2f, 0.15f, 0.5f * Pulse));
+		AccLine.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(AccLine);
 
 		FCanvasTextItem LabelItem(
 			FVector2D(LabelPos.X - LW * 0.5f, LabelPos.Y - LH * 0.5f),
@@ -157,9 +224,7 @@ void FExoZoneEffects::DrawShrinkCountdown(UCanvas* Canvas, float SecondsRemainin
 	float CX = Canvas->SizeX * 0.5f;
 
 	int32 Secs = FMath::CeilToInt(SecondsRemaining);
-
-	FString Text = FString::Printf(TEXT("ZONE CLOSING  %d:%02d"),
-		Secs / 60, Secs % 60);
+	FString Text = FString::Printf(TEXT("ZONE CLOSING  %d:%02d"), Secs / 60, Secs % 60);
 
 	float Time = Canvas->GetWorld() ? Canvas->GetWorld()->GetTimeSeconds() : 0.f;
 	float Pulse = 0.7f + 0.3f * FMath::Sin(Time * 3.f);
@@ -170,14 +235,14 @@ void FExoZoneEffects::DrawShrinkCountdown(UCanvas* Canvas, float SecondsRemainin
 
 	float TextW, TextH;
 	Canvas->TextSize(Font, Text, TextW, TextH);
-	TextW *= 1.2f; TextH *= 1.2f; // Account for scale
+	TextW *= 1.2f; TextH *= 1.2f;
 
 	float DrawX = CX - TextW * 0.5f;
 	float DrawY = 58.f;
 	float PW = TextW + 30.f;
-	float PH = TextH + 12.f;
+	float PH = TextH + 16.f;
 	float PX = CX - PW * 0.5f;
-	float PY = DrawY - 5.f;
+	float PY = DrawY - 7.f;
 
 	// Background panel
 	FCanvasTileItem BgPanel(FVector2D(PX, PY), FVector2D(PW, PH),
@@ -197,9 +262,36 @@ void FExoZoneEffects::DrawShrinkCountdown(UCanvas* Canvas, float SecondsRemainin
 	BottomBar.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(BottomBar);
 
+	// Corner bracket accents on countdown panel
+	float BL = 8.f;
+	FLinearColor CornerCol(1.f, 0.2f, 0.1f, 0.4f * Pulse);
+	// TL
+	FCanvasTileItem C1(FVector2D(PX, PY), FVector2D(BL, 1.f), CornerCol);
+	C1.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(C1);
+	FCanvasTileItem C2(FVector2D(PX, PY), FVector2D(1.f, BL), CornerCol);
+	C2.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(C2);
+	// BR
+	FCanvasTileItem C3(FVector2D(PX + PW - BL, PY + PH - 1.f), FVector2D(BL, 1.f), CornerCol);
+	C3.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(C3);
+	FCanvasTileItem C4(FVector2D(PX + PW - 1.f, PY + PH - BL), FVector2D(1.f, BL), CornerCol);
+	C4.BlendMode = SE_BLEND_Translucent; Canvas->DrawItem(C4);
+
 	FCanvasTextItem TextItem(FVector2D(DrawX, DrawY), FText::FromString(Text), Font, TextColor);
 	TextItem.Scale = FVector2D(1.2f, 1.2f);
 	TextItem.bOutlined = true;
 	TextItem.OutlineColor = FLinearColor::Black;
 	Canvas->DrawItem(TextItem);
+
+	// Urgency: if under 10 seconds, flash a warning icon
+	if (SecondsRemaining < 10.f)
+	{
+		float FlashAlpha = 0.5f + 0.5f * FMath::Sin(Time * 8.f);
+		FCanvasTextItem Urgent(FVector2D(PX + 6.f, DrawY),
+			FText::FromString(TEXT("!")), Font,
+			FLinearColor(1.f, 0.1f, 0.05f, FlashAlpha));
+		Urgent.Scale = FVector2D(1.2f, 1.2f);
+		Urgent.bOutlined = true;
+		Urgent.OutlineColor = FLinearColor::Black;
+		Canvas->DrawItem(Urgent);
+	}
 }

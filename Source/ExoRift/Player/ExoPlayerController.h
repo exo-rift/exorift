@@ -50,6 +50,7 @@ protected:
 	void HandleAbility1();
 	void HandleAbility2();
 	void HandleAbility3();
+	void HandleAbility4();
 
 	// Menu
 	void HandlePause();

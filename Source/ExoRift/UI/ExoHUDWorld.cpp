@@ -133,15 +133,17 @@ void AExoHUD::DrawAbilities()
 	float StartX = (Canvas->SizeX - TotalW) * 0.5f;
 	float Y = Canvas->SizeY - 95.f;
 
-	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B") };
+	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B"), TEXT("G"), TEXT("?") };
 	const FLinearColor ReadyColors[] = {
-		FLinearColor(0.f, 0.9f, 1.f, 0.9f),  // Cyan - Dash
-		FLinearColor(1.f, 0.9f, 0.1f, 0.9f),  // Yellow - Scan
-		FLinearColor(0.2f, 0.5f, 1.f, 0.9f)   // Blue - Shield
+		FLinearColor(0.f, 0.9f, 1.f, 0.9f),   // Cyan - Dash
+		FLinearColor(1.f, 0.9f, 0.1f, 0.9f),   // Yellow - Scan
+		FLinearColor(0.2f, 0.5f, 1.f, 0.9f),   // Blue - Shield
+		FLinearColor(0.2f, 1.f, 0.5f, 0.9f),   // Green - Grapple
+		FLinearColor(0.7f, 0.7f, 0.7f, 0.9f)   // Grey - Default
 	};
 	const FLinearColor Grey(0.3f, 0.3f, 0.35f, 0.7f);
 
-	for (int32 i = 0; i < FMath::Min(Abilities.Num(), 3); ++i)
+	for (int32 i = 0; i < FMath::Min(Abilities.Num(), 5); ++i)
 	{
 		const FExoAbility& Ab = Abilities[i];
 		float X = StartX + i * (SlotW + SlotGap);

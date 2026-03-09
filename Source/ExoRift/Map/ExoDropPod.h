@@ -37,6 +37,8 @@ protected:
 	void OnLanded();
 	void BuildPodMesh();
 	void UpdateThrusterVFX(float DeltaTime, float BrakeAlpha);
+	void UpdateLandedSequence(float DeltaTime);
+	void SpawnLandingDust();
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* PodMesh;
@@ -81,8 +83,13 @@ protected:
 	float GroundZ = 0.f;
 	bool bGroundDetected = false;
 	FVector2D SteerInput = FVector2D::ZeroVector;
-	float PodTilt = 0.f;           // Current tilt angle for steering feedback
+	float PodTilt = 0.f;
 	float LandedTimer = 0.f;
+
+	// Camera shake state
+	float ShakeIntensity = 0.f;
+	float ShakeDecay = 0.f;
+	FVector CameraBaseOffset;
 
 	// VFX components built at runtime
 	UPROPERTY()
@@ -95,6 +102,15 @@ protected:
 	UMaterialInstanceDynamic* FlameMat = nullptr;
 	UPROPERTY()
 	UMaterialInstanceDynamic* HeatMat = nullptr;
+
+	// Landing dust ring
+	UPROPERTY()
+	UStaticMeshComponent* DustRing = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* DustMat = nullptr;
+	UPROPERTY()
+	UPointLightComponent* ImpactFlash = nullptr;
+	float DustAge = 0.f;
 
 	// Cached meshes
 	UStaticMesh* CubeMesh = nullptr;
