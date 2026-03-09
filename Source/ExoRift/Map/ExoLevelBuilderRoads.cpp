@@ -2,6 +2,7 @@
 #include "Map/ExoLevelBuilder.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildRoads()
@@ -57,7 +58,37 @@ void AExoLevelBuilder::BuildRoads()
 	// Center island (raised circular platform)
 	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 30.f),
 		FVector(80.f, 80.f, 0.3f), FRotator::ZeroRotator, CylinderMesh,
-		FLinearColor(0.06f, 0.08f, 0.04f)); // Dark green island
+		FLinearColor(0.05f, 0.06f, 0.04f));
+
+	// Emissive ring around roundabout center
+	UStaticMeshComponent* CenterRing = SpawnStaticMesh(
+		FVector(0.f, 0.f, GroundZ + 35.f),
+		FVector(85.f, 85.f, 0.06f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.05f, 0.2f, 0.4f));
+	if (CenterRing && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* RingMat = Cast<UMaterialInstanceDynamic>(
+			CenterRing->GetMaterial(0));
+		if (RingMat)
+		{
+			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.08f, 0.3f, 0.6f));
+		}
+	}
+
+	// Center monument — tall pylon with glow
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 500.f),
+		FVector(2.f, 2.f, 10.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.07f, 0.07f, 0.09f));
+
+	UPointLightComponent* MonumentLight = NewObject<UPointLightComponent>(this);
+	MonumentLight->SetupAttachment(RootComponent);
+	MonumentLight->SetWorldLocation(FVector(0.f, 0.f, GroundZ + 1000.f));
+	MonumentLight->SetIntensity(8000.f);
+	MonumentLight->SetAttenuationRadius(3000.f);
+	MonumentLight->SetLightColor(FLinearColor(0.1f, 0.4f, 0.8f));
+	MonumentLight->CastShadows = false;
+	MonumentLight->RegisterComponent();
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Roads and bridges placed"));
 }
@@ -69,11 +100,20 @@ void AExoLevelBuilder::SpawnRoadSegment(const FVector& Start, const FVector& End
 	float Length = Dir.Size();
 	FRotator Rot = Dir.Rotation();
 
-	// Road surface (slightly above ground to avoid z-fighting)
+	// Road surface
 	FVector RoadPos = Mid + FVector(0.f, 0.f, 2.f);
 	SpawnStaticMesh(RoadPos,
 		FVector(Length / 100.f, Width / 100.f, 0.05f), Rot, CubeMesh,
 		FLinearColor(0.03f, 0.03f, 0.04f));
+
+	// Edge lines — continuous white strips on both sides
+	FVector Right = FRotationMatrix(Rot).GetScaledAxis(EAxis::Y);
+	FVector EdgeOffset = Right * Width * 0.48f;
+	FLinearColor EdgeColor(0.12f, 0.12f, 0.15f);
+	SpawnStaticMesh(RoadPos + EdgeOffset + FVector(0.f, 0.f, 2.f),
+		FVector(Length / 100.f, 0.15f, 0.03f), Rot, CubeMesh, EdgeColor);
+	SpawnStaticMesh(RoadPos - EdgeOffset + FVector(0.f, 0.f, 2.f),
+		FVector(Length / 100.f, 0.15f, 0.03f), Rot, CubeMesh, EdgeColor);
 
 	// Center line (yellow dashes)
 	float DashLen = 500.f;
@@ -153,15 +193,37 @@ void AExoLevelBuilder::BuildWaterFeatures()
 		float Len = Dir.Size();
 		FRotator Rot = Dir.Rotation();
 
-		// Water surface
-		SpawnStaticMesh(Mid, FVector(Len / 100.f, RiverWidth / 100.f, 0.05f),
+		// Water surface with subtle emissive sheen
+		UStaticMeshComponent* Water = SpawnStaticMesh(Mid,
+			FVector(Len / 100.f, RiverWidth / 100.f, 0.05f),
 			Rot, CubeMesh, WaterColor);
+		if (Water && BaseMaterial)
+		{
+			UMaterialInstanceDynamic* WMat = Cast<UMaterialInstanceDynamic>(
+				Water->GetMaterial(0));
+			if (WMat)
+			{
+				WMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.005f, 0.015f, 0.03f));
+			}
+		}
 	}
 
 	// Industrial cooling pond near East compound
-	SpawnStaticMesh(FVector(85000.f, 10000.f, GroundZ - 50.f),
+	UStaticMeshComponent* Pond = SpawnStaticMesh(
+		FVector(85000.f, 10000.f, GroundZ - 50.f),
 		FVector(60.f, 40.f, 0.1f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.03f, 0.06f, 0.08f));
+	if (Pond && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* PMat = Cast<UMaterialInstanceDynamic>(
+			Pond->GetMaterial(0));
+		if (PMat)
+		{
+			PMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.008f, 0.02f, 0.03f));
+		}
+	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Water features placed"));
 }
@@ -195,11 +257,23 @@ void AExoLevelBuilder::BuildFoliage()
 			float CHeight = FMath::RandRange(200.f, 800.f);
 			float CWidth = FMath::RandRange(40.f, 120.f);
 
-			// Crystal shard (tilted elongated cube)
-			SpawnStaticMesh(Pos + FVector(0.f, 0.f, CHeight * 0.4f),
+			// Crystal shard (tilted elongated cube with emissive glow)
+			UStaticMeshComponent* Crystal = SpawnStaticMesh(
+				Pos + FVector(0.f, 0.f, CHeight * 0.4f),
 				FVector(CWidth / 100.f, CWidth * 0.6f / 100.f, CHeight / 100.f),
-				FRotator(FMath::RandRange(-20.f, 20.f), FMath::RandRange(0.f, 360.f), FMath::RandRange(-15.f, 15.f)),
+				FRotator(FMath::RandRange(-20.f, 20.f), FMath::RandRange(0.f, 360.f),
+					FMath::RandRange(-15.f, 15.f)),
 				CubeMesh, CrystalColor);
+			if (Crystal && BaseMaterial)
+			{
+				UMaterialInstanceDynamic* CrysMat = Cast<UMaterialInstanceDynamic>(
+					Crystal->GetMaterial(0));
+				if (CrysMat)
+				{
+					CrysMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+						FLinearColor(0.1f, 0.3f, 0.6f));
+				}
+			}
 		}
 
 		// Ambient glow at cluster center
