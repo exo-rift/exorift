@@ -38,13 +38,22 @@ void FExoNotificationSystem::Tick(float DeltaTime)
 	}
 }
 
+static void NotifDrawRect(UCanvas* C, float X, float Y, float W, float H, const FLinearColor& Col)
+{
+	C->SetDrawColor(
+		FMath::Clamp((int32)(Col.R * 255), 0, 255),
+		FMath::Clamp((int32)(Col.G * 255), 0, 255),
+		FMath::Clamp((int32)(Col.B * 255), 0, 255),
+		FMath::Clamp((int32)(Col.A * 255), 0, 255));
+	C->DrawTile(C->DefaultTexture, X, Y, W, H, 0, 0, 1, 1);
+}
+
 void FExoNotificationSystem::Draw(UCanvas* Canvas, UFont* Font)
 {
 	if (!Canvas || !Font) return;
 
 	const float ScreenW = Canvas->SizeX;
 	float Y = TopMargin;
-	int32 Drawn = 0;
 
 	for (int32 i = FMath::Max(0, Notifications.Num() - MaxVisible); i < Notifications.Num(); i++)
 	{
@@ -55,18 +64,21 @@ void FExoNotificationSystem::Draw(UCanvas* Canvas, UFont* Font)
 		Canvas->TextSize(Font, N.Message, TextW, TextH);
 
 		// Slide in from right
-		float SlideOffset = (1.f - N.Alpha) * 80.f;
-		float X = ScreenW - RightMargin - TextW - SlideOffset;
+		float SlideOffset = (1.f - FMath::Clamp(N.Alpha * 2.f, 0.f, 1.f)) * 60.f;
+		float PanelW = TextW + 24.f;
+		float X = ScreenW - RightMargin - PanelW - SlideOffset;
 
-		// Background pill
-		FLinearColor BgColor(0.02f, 0.02f, 0.05f, 0.7f * N.Alpha);
-		Canvas->SetDrawColor(
-			FMath::Clamp((int32)(BgColor.R * 255), 0, 255),
-			FMath::Clamp((int32)(BgColor.G * 255), 0, 255),
-			FMath::Clamp((int32)(BgColor.B * 255), 0, 255),
-			FMath::Clamp((int32)(BgColor.A * 255), 0, 255));
-		Canvas->DrawTile(Canvas->DefaultTexture, X - 8.f, Y - 2.f, TextW + 16.f,
-			NotificationHeight, 0, 0, 1, 1);
+		// Background panel
+		NotifDrawRect(Canvas, X, Y - 2.f, PanelW, NotificationHeight,
+			FLinearColor(0.02f, 0.02f, 0.05f, 0.75f * N.Alpha));
+
+		// Left color accent stripe
+		NotifDrawRect(Canvas, X, Y - 2.f, 3.f, NotificationHeight,
+			FLinearColor(N.Color.R, N.Color.G, N.Color.B, 0.8f * N.Alpha));
+
+		// Top border line (subtle)
+		NotifDrawRect(Canvas, X, Y - 2.f, PanelW, 1.f,
+			FLinearColor(N.Color.R * 0.5f, N.Color.G * 0.5f, N.Color.B * 0.5f, 0.3f * N.Alpha));
 
 		// Text
 		FLinearColor DrawColor = N.Color;
@@ -76,10 +88,9 @@ void FExoNotificationSystem::Draw(UCanvas* Canvas, UFont* Font)
 			FMath::Clamp((int32)(DrawColor.G * 255), 0, 255),
 			FMath::Clamp((int32)(DrawColor.B * 255), 0, 255),
 			FMath::Clamp((int32)(DrawColor.A * 255), 0, 255));
-		Canvas->DrawText(Font, N.Message, X, Y);
+		Canvas->DrawText(Font, N.Message, X + 12.f, Y);
 
-		Y += NotificationHeight + 4.f;
-		Drawn++;
+		Y += NotificationHeight + 5.f;
 	}
 }
 

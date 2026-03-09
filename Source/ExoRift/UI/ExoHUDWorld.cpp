@@ -14,25 +14,30 @@ void AExoHUD::DrawWeatherIndicator()
 	AExoWeatherSystem* Weather = AExoWeatherSystem::Get(GetWorld());
 	if (!Weather) return;
 
-	// Position: top-left, below kill streak area (Y ~292)
 	float X = 30.f;
 	float Y = 294.f;
 
 	FString Label;
+	FString Icon;
 	FLinearColor Col = ColorWhite;
 	switch (Weather->GetCurrentWeather())
 	{
-	case EExoWeatherState::Clear:    Label = TEXT("CLEAR");    Col = FLinearColor(0.7f, 0.9f, 1.f, 0.8f); break;
-	case EExoWeatherState::Overcast: Label = TEXT("OVERCAST"); Col = FLinearColor(0.6f, 0.6f, 0.65f, 0.8f); break;
-	case EExoWeatherState::Rain:     Label = TEXT("RAIN");     Col = FLinearColor(0.3f, 0.5f, 0.9f, 0.9f); break;
-	case EExoWeatherState::Storm:    Label = TEXT("STORM");    Col = FLinearColor(1.f, 0.4f, 0.2f, 0.9f); break;
-	case EExoWeatherState::Fog:      Label = TEXT("FOG");      Col = FLinearColor(0.7f, 0.7f, 0.75f, 0.9f); break;
+	case EExoWeatherState::Clear:    Label = TEXT("CLEAR");    Icon = TEXT("\u2600"); Col = FLinearColor(0.7f, 0.9f, 1.f, 0.8f); break;
+	case EExoWeatherState::Overcast: Label = TEXT("OVERCAST"); Icon = TEXT("\u2601"); Col = FLinearColor(0.6f, 0.6f, 0.65f, 0.8f); break;
+	case EExoWeatherState::Rain:     Label = TEXT("RAIN");     Icon = TEXT("\u2602"); Col = FLinearColor(0.3f, 0.5f, 0.9f, 0.9f); break;
+	case EExoWeatherState::Storm:    Label = TEXT("STORM");    Icon = TEXT("\u26A1"); Col = FLinearColor(1.f, 0.4f, 0.2f, 0.9f); break;
+	case EExoWeatherState::Fog:      Label = TEXT("FOG");      Icon = TEXT("\u2588"); Col = FLinearColor(0.7f, 0.7f, 0.75f, 0.9f); break;
 	}
 
 	float TW, TH;
 	GetTextSize(Label, TW, TH, HUDFont, 0.85f);
-	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, TW + 10.f, TH + 6.f);
-	DrawText(Label, Col, X, Y, HUDFont, 0.85f);
+	float PanelW = TW + 20.f;
+	float PanelH = TH + 8.f;
+
+	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, PanelW, PanelH);
+	// Left accent stripe
+	DrawRect(FLinearColor(Col.R, Col.G, Col.B, 0.5f), X - 5.f, Y - 3.f, 2.f, PanelH);
+	DrawText(Label, Col, X + 2.f, Y, HUDFont, 0.85f);
 }
 
 void AExoHUD::DrawAbilities()
