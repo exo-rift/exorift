@@ -62,6 +62,10 @@ protected:
 	void HandleSpectateNext();
 	void HandleSpectatePrev();
 
+	// Endgame actions (only active during EndGame phase)
+	void HandleRestartMatch();
+	void HandleReturnToMenu();
+
 	// Input assets
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;

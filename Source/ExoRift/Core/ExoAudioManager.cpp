@@ -59,6 +59,22 @@ void UExoAudioManager::PlayCountdownTick()
 	// Placeholder — tick sound
 }
 
+void UExoAudioManager::PlayVictoryStinger()
+{
+	if (WeaponFireSound)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.4f, 1.5f);
+	}
+}
+
+void UExoAudioManager::PlayDefeatStinger()
+{
+	if (WeaponFireSound)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.4f, 0.6f);
+	}
+}
+
 void UExoAudioManager::PlayFootstepSound(const FVector& Location, bool bIsSprinting)
 {
 	// Placeholder: uses weapon fire sound until real footstep assets are added

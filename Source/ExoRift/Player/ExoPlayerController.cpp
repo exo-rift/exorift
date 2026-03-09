@@ -5,6 +5,9 @@
 #include "Player/ExoInventoryComponent.h"
 #include "Player/ExoAbilityComponent.h"
 #include "Core/ExoGameSettings.h"
+#include "Core/ExoGameState.h"
+#include "Core/ExoGameMode.h"
+#include "Core/ExoTypes.h"
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoSettingsMenu.h"
@@ -233,21 +236,13 @@ void AExoPlayerController::HandleJumpReleased()
 void AExoPlayerController::HandleFire()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-	{
-		HandleSpectateNext();
-		return;
-	}
-
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->StartFire();
+	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectateNext(); return; }
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StartFire();
 }
 
 void AExoPlayerController::HandleFireReleased()
 {
-	// No action needed for spectator; only relevant for live character
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->StopFire();
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopFire();
 }
 
 // --- Swap weapon (spectate-prev in spectator mode) ---
@@ -255,14 +250,8 @@ void AExoPlayerController::HandleFireReleased()
 void AExoPlayerController::HandleSwapWeapon()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-	{
-		HandleSpectatePrev();
-		return;
-	}
-
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->SwapWeapon();
+	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectatePrev(); return; }
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->SwapWeapon();
 }
 
 // --- Spectator cycling ---
@@ -270,17 +259,13 @@ void AExoPlayerController::HandleSwapWeapon()
 void AExoPlayerController::HandleSpectateNext()
 {
 	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-	{
 		Spec->CycleSpectateTarget(1);
-	}
 }
 
 void AExoPlayerController::HandleSpectatePrev()
 {
 	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-	{
 		Spec->CycleSpectateTarget(-1);
-	}
 }
 
 // --- Sprint ---
@@ -288,14 +273,12 @@ void AExoPlayerController::HandleSpectatePrev()
 void AExoPlayerController::HandleSprint()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->StartSprint();
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StartSprint();
 }
 
 void AExoPlayerController::HandleSprintReleased()
 {
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->StopSprint();
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopSprint();
 }
 
 // --- Crouch / Slide ---
@@ -305,30 +288,14 @@ void AExoPlayerController::HandleCrouch()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (!C) return;
-
-	if (C->IsSprinting())
-	{
-		C->StartSlide();
-	}
-	else
-	{
-		C->Crouch();
-	}
+	C->IsSprinting() ? C->StartSlide() : C->Crouch();
 }
 
 void AExoPlayerController::HandleCrouchReleased()
 {
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (!C) return;
-
-	if (C->IsSliding())
-	{
-		C->StopSlide();
-	}
-	else
-	{
-		C->UnCrouch();
-	}
+	C->IsSliding() ? C->StopSlide() : C->UnCrouch();
 }
 
 // --- Interaction ---
@@ -338,12 +305,7 @@ void AExoPlayerController::HandleInteract()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
 	if (!ExoChar) return;
-
-	UExoInteractionComponent* InterComp = ExoChar->GetInteractionComponent();
-	if (InterComp)
-	{
-		InterComp->TryInteract();
-	}
+	if (UExoInteractionComponent* IC = ExoChar->GetInteractionComponent()) IC->TryInteract();
 }
 
 // --- Drop weapon ---
@@ -353,12 +315,8 @@ void AExoPlayerController::HandleDropWeapon()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
 	if (!ExoChar) return;
-
-	UExoInventoryComponent* Inv = ExoChar->GetInventoryComponent();
-	if (Inv)
-	{
+	if (UExoInventoryComponent* Inv = ExoChar->GetInventoryComponent())
 		Inv->DropWeapon(Inv->GetCurrentSlotIndex());
-	}
 }
 
 // --- Ping ---
@@ -368,21 +326,16 @@ void AExoPlayerController::HandlePing()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
 	if (!ExoChar) return;
-
 	UCameraComponent* Cam = ExoChar->GetFirstPersonCamera();
 	if (!Cam) return;
-
 	FVector Start = Cam->GetComponentLocation();
 	FVector End = Start + Cam->GetForwardVector() * 50000.f;
-
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(ExoChar);
-
 	FHitResult Hit;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-
-	FVector PingLocation = bHit ? Hit.ImpactPoint : End;
-	FExoPingSystem::AddPing(PingLocation, TEXT("Enemy Here"), FLinearColor(1.f, 0.4f, 0.1f, 1.f));
+	FExoPingSystem::AddPing(bHit ? Hit.ImpactPoint : End, TEXT("Enemy Here"),
+		FLinearColor(1.f, 0.4f, 0.1f, 1.f));
 }
 
 // --- Abilities ---
@@ -416,10 +369,7 @@ void AExoPlayerController::HandleCommsOpen()
 	FExoCommsWheel::Open();
 }
 
-void AExoPlayerController::HandleCommsClose()
-{
-	FExoCommsWheel::Close(GetWorld());
-}
+void AExoPlayerController::HandleCommsClose() { FExoCommsWheel::Close(GetWorld()); }
 
 // --- Settings Menu ---
 
@@ -428,3 +378,19 @@ void AExoPlayerController::HandleMenuUp() { FExoSettingsMenu::NavigateUp(); }
 void AExoPlayerController::HandleMenuDown() { FExoSettingsMenu::NavigateDown(); }
 void AExoPlayerController::HandleMenuLeft() { FExoSettingsMenu::AdjustValue(-1.f); }
 void AExoPlayerController::HandleMenuRight() { FExoSettingsMenu::AdjustValue(1.f); }
+
+// --- Endgame ---
+
+void AExoPlayerController::HandleRestartMatch()
+{
+	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+	if (!GS || GS->MatchPhase != EBRMatchPhase::EndGame) return;
+	if (AExoGameMode* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->RestartMatch();
+}
+
+void AExoPlayerController::HandleReturnToMenu()
+{
+	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+	if (!GS || GS->MatchPhase != EBRMatchPhase::EndGame) return;
+	if (AExoGameMode* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->ReturnToMainMenu();
+}

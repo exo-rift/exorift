@@ -22,5 +22,7 @@ private:
 	static void DrawLeaderboard(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 		const TArray<FMatchSummaryEntry>& Entries);
 	static void DrawPersonalStats(AHUD* HUD, UCanvas* Canvas, UFont* Font,
-		const FMatchSummaryEntry& LocalEntry);
+		const FMatchSummaryEntry& LocalEntry, float MatchDuration);
+	static void DrawCountdownAndOptions(AHUD* HUD, UCanvas* Canvas, UFont* Font,
+		float TimeRemaining);
 };

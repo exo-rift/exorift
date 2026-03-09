@@ -17,6 +17,7 @@
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoMatchSummary.h"
+#include "UI/ExoCountdown.h"
 #include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoAbilityComponent.h"
 #include "Visual/ExoWeatherSystem.h"
@@ -99,6 +100,10 @@ void AExoHUD::DrawHUD()
 
 	// Minimap
 	FExoMinimap::Draw(this, Canvas, MinimapConfig);
+
+	// Match timer & zone timer (during active match)
+	DrawMatchTimer();
+	DrawZoneTimer();
 
 	// FPS counter (drawn on top of gameplay HUD)
 	DrawFPS();
@@ -407,35 +412,26 @@ void AExoHUD::DrawMatchPhase()
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (!GS) return;
 
-	FString PhaseText;
-	FLinearColor PhaseColor = ColorWhite;
-
 	switch (GS->MatchPhase)
 	{
 	case EBRMatchPhase::WaitingForPlayers:
-		PhaseText = TEXT("WAITING FOR PLAYERS...");
+		FExoCountdown::DrawPreMatchCountdown(this, Canvas, HUDFont,
+			GS->WaitingTimeRemaining, GS->TotalPlayers, 1);
 		break;
 	case EBRMatchPhase::DropPhase:
-		PhaseText = TEXT("DEPLOYING DROP PODS");
-		PhaseColor = FLinearColor(0.3f, 0.8f, 1.f, 1.f);
+		FExoCountdown::DrawDropPhaseHUD(this, Canvas, HUDFont,
+			GS->DropPhaseTimeRemaining);
 		break;
 	case EBRMatchPhase::Playing:
-		return; // No text during normal play
-	case EBRMatchPhase::ZoneShrinking:
-		PhaseText = TEXT("ZONE COLLAPSING");
-		PhaseColor = FLinearColor(1.f, 0.5f, 0.2f, 1.f);
+		// Show "GO!" banner during the first 2 seconds
+		FExoCountdown::DrawMatchStartBanner(this, Canvas, HUDFont,
+			GS->MatchElapsedTime);
 		break;
+	case EBRMatchPhase::ZoneShrinking:
+		break; // Zone shrinking is shown by DrawZoneTimer + DrawZoneWarning
 	case EBRMatchPhase::EndGame:
-		return; // Handled by match summary
+		break; // Handled by match summary
 	}
-
-	float TextW, TextH;
-	GetTextSize(PhaseText, TextW, TextH, HUDFont, 1.5f);
-	float X = (Canvas->SizeX - TextW) * 0.5f;
-
-	// Subtle background
-	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X - 15.f, 32.f, TextW + 30.f, TextH + 16.f);
-	DrawText(PhaseText, PhaseColor, X, 40.f, HUDFont, 1.5f);
 }
 
 void AExoHUD::DrawZoneWarning()
@@ -767,6 +763,79 @@ void AExoHUD::DrawFPS()
 	float X = Canvas->SizeX - TextW - 20.f;
 	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X - 6.f, 8.f, TextW + 12.f, TextH + 4.f);
 	DrawText(FPSText, FPSColor, X, 10.f, HUDFont, 0.85f);
+}
+
+void AExoHUD::DrawMatchTimer()
+{
+	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+	if (!GS) return;
+
+	// Only show during active match phases
+	if (GS->MatchPhase != EBRMatchPhase::Playing && GS->MatchPhase != EBRMatchPhase::ZoneShrinking)
+		return;
+
+	int32 TotalSec = FMath::FloorToInt(GS->MatchElapsedTime);
+	int32 Minutes = TotalSec / 60;
+	int32 Seconds = TotalSec % 60;
+	FString TimeText = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+
+	float TW, TH;
+	GetTextSize(TimeText, TW, TH, HUDFont, 1.2f);
+	float X = (Canvas->SizeX - TW) * 0.5f;
+	float Y = 10.f;
+
+	DrawRect(ColorBgDark, X - 12.f, Y - 4.f, TW + 24.f, TH + 8.f);
+	DrawText(TimeText, ColorWhite, X, Y, HUDFont, 1.2f);
+}
+
+void AExoHUD::DrawZoneTimer()
+{
+	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+	if (!GS) return;
+
+	// Only show during active match
+	if (GS->MatchPhase != EBRMatchPhase::Playing && GS->MatchPhase != EBRMatchPhase::ZoneShrinking)
+		return;
+
+	AExoZoneSystem* Zone = nullptr;
+	for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
+	{
+		Zone = *It;
+		break;
+	}
+	if (!Zone || Zone->GetCurrentStage() < 0) return;
+
+	int32 Stage = Zone->GetCurrentStage() + 1; // 1-indexed for display
+	bool bShrinking = Zone->IsShrinking();
+
+	FString ZoneText;
+	FLinearColor ZoneColor;
+
+	if (bShrinking)
+	{
+		ZoneText = FString::Printf(TEXT("Zone %d  —  Shrinking!"), Stage);
+		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 3.f));
+		ZoneColor = FLinearColor(1.f, 0.4f + Pulse * 0.2f, 0.2f, 0.9f);
+	}
+	else
+	{
+		const FZoneStage* StageData = Zone->GetStage(Zone->GetCurrentStage());
+		float Timer = Zone->GetStageTimer();
+		float HoldDur = StageData ? StageData->HoldDuration : 0.f;
+		int32 Remaining = FMath::CeilToInt(FMath::Max(HoldDur - Timer, 0.f));
+		ZoneText = FString::Printf(TEXT("Zone %d  —  Shrinks in %ds"), Stage, Remaining);
+		ZoneColor = FLinearColor(0.7f, 0.8f, 0.9f, 0.85f);
+	}
+
+	float TW, TH;
+	GetTextSize(ZoneText, TW, TH, HUDFont, 0.75f);
+
+	// Position below the minimap area (minimap at Y=20, size=200 -> bottom ~225)
+	float X = MinimapConfig.ScreenX;
+	float Y = MinimapConfig.ScreenY + MinimapConfig.Size + 8.f;
+
+	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, TW + 10.f, TH + 6.f);
+	DrawText(ZoneText, ZoneColor, X, Y, HUDFont, 0.75f);
 }
 
 FVector2D AExoHUD::GetScreenCenter() const

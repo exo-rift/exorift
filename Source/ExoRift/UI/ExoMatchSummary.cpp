@@ -15,11 +15,16 @@ void FExoMatchSummary::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font)
 	TArray<FMatchSummaryEntry> Entries;
 	FMatchSummaryEntry LocalEntry;
 	int32 LocalPlacement = 0;
+	float MatchDuration = 0.f;
+	float TimeRemaining = 0.f;
 
-	AGameStateBase* GS = HUD->GetWorld()->GetGameState<AGameStateBase>();
-	if (!GS) return;
+	AExoGameState* ExoGS = HUD->GetWorld()->GetGameState<AExoGameState>();
+	if (!ExoGS) return;
 
-	for (APlayerState* PS : GS->PlayerArray)
+	MatchDuration = ExoGS->MatchElapsedTime;
+	TimeRemaining = ExoGS->EndGameTimeRemaining;
+
+	for (APlayerState* PS : ExoGS->PlayerArray)
 	{
 		AExoPlayerState* ExoPS = Cast<AExoPlayerState>(PS);
 		if (!ExoPS) continue;
@@ -48,7 +53,8 @@ void FExoMatchSummary::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font)
 	DrawBackground(HUD, Canvas);
 	DrawTitle(HUD, Canvas, Font, LocalPlacement);
 	DrawLeaderboard(HUD, Canvas, Font, Entries);
-	DrawPersonalStats(HUD, Canvas, Font, LocalEntry);
+	DrawPersonalStats(HUD, Canvas, Font, LocalEntry, MatchDuration);
+	DrawCountdownAndOptions(HUD, Canvas, Font, TimeRemaining);
 }
 
 void FExoMatchSummary::DrawBackground(AHUD* HUD, UCanvas* Canvas)
@@ -149,17 +155,61 @@ void FExoMatchSummary::DrawLeaderboard(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 }
 
 void FExoMatchSummary::DrawPersonalStats(AHUD* HUD, UCanvas* Canvas, UFont* Font,
-	const FMatchSummaryEntry& LocalEntry)
+	const FMatchSummaryEntry& LocalEntry, float MatchDuration)
 {
 	float StatsX = Canvas->SizeX * 0.3f;
-	float StatsY = Canvas->SizeY * 0.75f;
+	float StatsY = Canvas->SizeY * 0.72f;
 
-	FLinearColor LabelColor(0.5f, 0.6f, 0.7f, 0.8f);
 	FLinearColor ValueColor(0.9f, 0.92f, 0.95f, 1.f);
 
 	FString KillStr = FString::Printf(TEXT("Kills: %d"), LocalEntry.Kills);
 	FString PlaceStr = FString::Printf(TEXT("Placement: #%d"), LocalEntry.Placement);
 
+	int32 Mins = FMath::FloorToInt(MatchDuration / 60.f);
+	int32 Secs = FMath::FloorToInt(FMath::Fmod(MatchDuration, 60.f));
+	FString TimeStr = FString::Printf(TEXT("Duration: %d:%02d"), Mins, Secs);
+
 	HUD->DrawText(KillStr, ValueColor, StatsX, StatsY, Font, 1.1f);
-	HUD->DrawText(PlaceStr, ValueColor, StatsX + 250.f, StatsY, Font, 1.1f);
+	HUD->DrawText(PlaceStr, ValueColor, StatsX + 200.f, StatsY, Font, 1.1f);
+	HUD->DrawText(TimeStr, ValueColor, StatsX + 420.f, StatsY, Font, 1.1f);
+}
+
+void FExoMatchSummary::DrawCountdownAndOptions(AHUD* HUD, UCanvas* Canvas, UFont* Font,
+	float TimeRemaining)
+{
+	// Countdown timer
+	int32 SecsLeft = FMath::CeilToInt(FMath::Max(TimeRemaining, 0.f));
+	FString CountdownStr = FString::Printf(TEXT("Returning to lobby in %ds"), SecsLeft);
+	float CDW, CDH;
+	HUD->GetTextSize(CountdownStr, CDW, CDH, Font, 0.9f);
+	float CDX = (Canvas->SizeX - CDW) * 0.5f;
+	float CDY = Canvas->SizeY * 0.80f;
+
+	FLinearColor CountdownColor(0.6f, 0.7f, 0.8f, 0.9f);
+	HUD->DrawText(CountdownStr, CountdownColor, CDX, CDY, Font, 0.9f);
+
+	// Action options
+	float OptY = Canvas->SizeY * 0.86f;
+	FLinearColor OptColor(0.3f, 0.8f, 1.f, 0.9f);
+	FLinearColor KeyColor(1.f, 0.85f, 0.2f, 1.f);
+
+	// "PLAY AGAIN (R)"
+	FString PlayAgain = TEXT("[R]  PLAY AGAIN");
+	float PAW, PAH;
+	HUD->GetTextSize(PlayAgain, PAW, PAH, Font, 1.f);
+	float PAX = Canvas->SizeX * 0.35f;
+
+	HUD->DrawRect(FLinearColor(0.08f, 0.1f, 0.15f, 0.8f),
+		PAX - 10.f, OptY - 5.f, PAW + 20.f, PAH + 10.f);
+	HUD->DrawText(PlayAgain, OptColor, PAX, OptY, Font, 1.f);
+
+	// "MAIN MENU (M)"
+	FString MainMenu = TEXT("[M]  MAIN MENU");
+	float MMW, MMH;
+	HUD->GetTextSize(MainMenu, MMW, MMH, Font, 1.f);
+	float MMX = Canvas->SizeX * 0.55f;
+
+	HUD->DrawRect(FLinearColor(0.08f, 0.1f, 0.15f, 0.8f),
+		MMX - 10.f, OptY - 5.f, MMW + 20.f, MMH + 10.f);
+	HUD->DrawText(MainMenu, OptColor, MMX, OptY, Font, 1.f);
 }

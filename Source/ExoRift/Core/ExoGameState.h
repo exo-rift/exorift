@@ -31,6 +31,17 @@ public:
 	UPROPERTY(Replicated)
 	int32 CurrentZoneStage = 0;
 
+	/** Seconds remaining in WaitingForPlayers countdown (0 when not counting). */
+	UPROPERTY(Replicated)
+	float WaitingTimeRemaining = 0.f;
+
+	/** Seconds remaining in DropPhase countdown. */
+	UPROPERTY(Replicated)
+	float DropPhaseTimeRemaining = 0.f;
+
+	UPROPERTY(Replicated)
+	float EndGameTimeRemaining = 0.f;
+
 	/** Broadcast announcement text (e.g., supply drop incoming). */
 	FString SupplyDropAnnouncement;
 	float AnnouncementTimer = 0.f;

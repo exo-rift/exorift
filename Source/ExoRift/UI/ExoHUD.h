@@ -36,6 +36,8 @@ protected:
 	void DrawWeatherIndicator();
 	void DrawSupplyDropMarkers();
 	void DrawSupplyDropAnnouncement();
+	void DrawMatchTimer();
+	void DrawZoneTimer();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

@@ -25,6 +25,9 @@ public:
 	float GetTargetRadius() const { return TargetRadius; }
 	FVector2D GetTargetCenter() const { return TargetCenter; }
 	int32 GetCurrentStage() const { return CurrentStage; }
+	float GetStageTimer() const { return StageTimer; }
+	int32 GetNumStages() const { return Stages.Num(); }
+	const FZoneStage* GetStage(int32 Index) const { return Stages.IsValidIndex(Index) ? &Stages[Index] : nullptr; }
 
 protected:
 	void AdvanceStage();

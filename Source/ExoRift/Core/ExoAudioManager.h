@@ -23,6 +23,8 @@ public:
 	void PlayZoneWarningSound();
 	void PlayMatchPhaseSound();
 	void PlayCountdownTick();
+	void PlayVictoryStinger();
+	void PlayDefeatStinger();
 
 	// Footstep sounds
 	void PlayFootstepSound(const FVector& Location, bool bIsSprinting);

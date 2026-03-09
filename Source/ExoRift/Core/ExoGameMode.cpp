@@ -10,6 +10,7 @@
 #include "Map/ExoDropPodManager.h"
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSpawnPoint.h"
+#include "Core/ExoAudioManager.h"
 #include "UI/ExoHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
@@ -73,6 +74,7 @@ void AExoGameMode::Tick(float DeltaTime)
 		TickZoneDamage(DeltaTime);
 		break;
 	case EBRMatchPhase::EndGame:
+		TickEndGame(DeltaTime);
 		break;
 	}
 }
@@ -80,24 +82,26 @@ void AExoGameMode::Tick(float DeltaTime)
 void AExoGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+	if (!NewPlayer) return;
 
-	if (NewPlayer)
+	AlivePlayers.AddUnique(NewPlayer);
+	AliveCount = AlivePlayers.Num();
+	TotalPlayers = AliveCount;
+	if (AExoGameState* GS = GetGameState<AExoGameState>())
 	{
-		AlivePlayers.AddUnique(NewPlayer);
-		AliveCount = AlivePlayers.Num();
-		TotalPlayers = AliveCount;
-
-		if (AExoGameState* GS = GetGameState<AExoGameState>())
-		{
-			GS->AliveCount = AliveCount;
-			GS->TotalPlayers = TotalPlayers;
-		}
-
-		if (AExoPlayerState* PS = NewPlayer->GetPlayerState<AExoPlayerState>())
-		{
-			PS->bIsAlive = true;
-			PS->DisplayName = FString::Printf(TEXT("Player_%d"), AlivePlayers.Num());
-		}
+		GS->AliveCount = AliveCount;
+		GS->TotalPlayers = TotalPlayers;
+	}
+	if (AExoPlayerState* PS = NewPlayer->GetPlayerState<AExoPlayerState>())
+	{
+		PS->bIsAlive = true;
+		PS->DisplayName = FString::Printf(TEXT("Player_%d"), AlivePlayers.Num());
+	}
+	// During warmup, grant invulnerability
+	if (!bMatchStarted)
+	{
+		if (AExoCharacter* Char = Cast<AExoCharacter>(NewPlayer->GetPawn()))
+			SetWarmupInvulnerability(Char, true);
 	}
 }
 
@@ -105,33 +109,17 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 {
 	AlivePlayers.Remove(EliminatedPlayer);
 	AliveCount = AlivePlayers.Num();
-
-	// Update player state
 	if (AExoPlayerState* PS = EliminatedPlayer->GetPlayerState<AExoPlayerState>())
 	{
 		PS->bIsAlive = false;
 		PS->Placement = AliveCount + 1;
 	}
-
-	// Credit killer
 	if (Killer && Killer != EliminatedPlayer)
 	{
-		if (AExoPlayerState* KillerPS = Killer->GetPlayerState<AExoPlayerState>())
-		{
-			KillerPS->Kills++;
-		}
-
-		// Register kill for streak tracking
-		if (AExoCharacter* KillerChar = Cast<AExoCharacter>(Killer->GetPawn()))
-		{
-			if (UExoKillStreakComponent* StreakComp = KillerChar->GetKillStreakComponent())
-			{
-				StreakComp->RegisterKill();
-			}
-		}
+		if (AExoPlayerState* KPS = Killer->GetPlayerState<AExoPlayerState>()) KPS->Kills++;
+		if (AExoCharacter* KC = Cast<AExoCharacter>(Killer->GetPawn()))
+			if (UExoKillStreakComponent* SC = KC->GetKillStreakComponent()) SC->RegisterKill();
 	}
-
-	// Kill feed
 	if (AExoGameState* GS = GetGameState<AExoGameState>())
 	{
 		FKillFeedEntry Entry;
@@ -142,12 +130,14 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 		GS->AddKillFeedEntry(Entry);
 		GS->AliveCount = AliveCount;
 	}
-
 	CheckWinCondition();
 }
 
 void AExoGameMode::StartMatch()
 {
+	bMatchStarted = true;
+	for (AController* PC : AlivePlayers)
+		if (AExoCharacter* C = Cast<AExoCharacter>(PC->GetPawn())) SetWarmupInvulnerability(C, false);
 	SpawnBots();
 	TransitionToPhase(EBRMatchPhase::DropPhase);
 }
@@ -167,15 +157,25 @@ void AExoGameMode::TransitionToPhase(EBRMatchPhase NewPhase)
 	switch (NewPhase)
 	{
 	case EBRMatchPhase::DropPhase:
-		if (DropPodManager)
-		{
-			DropPodManager->StartDropPhase(AlivePlayers);
-		}
+		if (DropPodManager) DropPodManager->StartDropPhase(AlivePlayers);
 		break;
 	case EBRMatchPhase::Playing:
-		if (ZoneSystem)
+		if (ZoneSystem) ZoneSystem->StartZoneSequence();
+		break;
+	case EBRMatchPhase::EndGame:
 		{
-			ZoneSystem->StartZoneSequence();
+			EndGameTimer = 0.f;
+			if (AExoGameState* EndGS = GetGameState<AExoGameState>())
+			{
+				EndGS->EndGameTimeRemaining = EndGameDuration;
+			}
+			// Victory/defeat stinger
+			APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
+			bool bWon = LocalPC && AlivePlayers.Contains(LocalPC);
+			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			{
+				bWon ? Audio->PlayVictoryStinger() : Audio->PlayDefeatStinger();
+			}
 		}
 		break;
 	default:
@@ -185,112 +185,93 @@ void AExoGameMode::TransitionToPhase(EBRMatchPhase NewPhase)
 
 void AExoGameMode::TickWaiting(float DeltaTime)
 {
-	int32 PlayerCount = GetNumPlayers();
-	if (PlayerCount >= MinPlayersToStart)
+	AExoGameState* GS = GetGameState<AExoGameState>();
+	if (GetNumPlayers() >= MinPlayersToStart)
 	{
 		PhaseTimer += DeltaTime;
-		if (PhaseTimer >= WaitingDuration)
-		{
-			StartMatch();
-		}
+		if (GS) GS->WaitingTimeRemaining = FMath::Max(WaitingDuration - PhaseTimer, 0.f);
+		if (PhaseTimer >= WaitingDuration) StartMatch();
+	}
+	else
+	{
+		PhaseTimer = 0.f;
+		if (GS) GS->WaitingTimeRemaining = 0.f;
 	}
 }
 
 void AExoGameMode::TickDropPhase(float DeltaTime)
 {
 	PhaseTimer += DeltaTime;
-	if (PhaseTimer >= DropPhaseDuration)
-	{
-		TransitionToPhase(EBRMatchPhase::Playing);
-	}
+	if (AExoGameState* GS = GetGameState<AExoGameState>())
+		GS->DropPhaseTimeRemaining = FMath::Max(DropPhaseDuration - PhaseTimer, 0.f);
+	if (PhaseTimer >= DropPhaseDuration) TransitionToPhase(EBRMatchPhase::Playing);
 }
 
 void AExoGameMode::TickPlaying(float DeltaTime)
 {
 	if (AExoGameState* GS = GetGameState<AExoGameState>())
-	{
 		GS->MatchElapsedTime += DeltaTime;
-	}
 
-	// Check if zone is shrinking and update phase accordingly
+	// Track zone shrink state
 	if (ZoneSystem && ZoneSystem->IsShrinking() && CurrentPhase != EBRMatchPhase::ZoneShrinking)
 	{
 		CurrentPhase = EBRMatchPhase::ZoneShrinking;
-		if (AExoGameState* GS = GetGameState<AExoGameState>())
-		{
-			GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
-		}
+		if (AExoGameState* GS = GetGameState<AExoGameState>()) GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
 	}
 	else if (ZoneSystem && !ZoneSystem->IsShrinking() && CurrentPhase == EBRMatchPhase::ZoneShrinking)
 	{
 		CurrentPhase = EBRMatchPhase::Playing;
-		if (AExoGameState* GS = GetGameState<AExoGameState>())
-		{
-			GS->MatchPhase = EBRMatchPhase::Playing;
-		}
+		if (AExoGameState* GS = GetGameState<AExoGameState>()) GS->MatchPhase = EBRMatchPhase::Playing;
 	}
 }
 
 void AExoGameMode::TickZoneDamage(float DeltaTime)
 {
 	if (!ZoneSystem) return;
-
 	for (AController* PC : AlivePlayers)
 	{
 		if (!PC || !PC->GetPawn()) continue;
-
-		FVector PawnLoc = PC->GetPawn()->GetActorLocation();
-		if (!ZoneSystem->IsInsideZone(PawnLoc))
-		{
-			float Damage = ZoneSystem->GetDamagePerSecond() * DeltaTime;
-			PC->GetPawn()->TakeDamage(Damage, FDamageEvent(), nullptr, ZoneSystem);
-		}
+		if (!ZoneSystem->IsInsideZone(PC->GetPawn()->GetActorLocation()))
+			PC->GetPawn()->TakeDamage(ZoneSystem->GetDamagePerSecond() * DeltaTime, FDamageEvent(), nullptr, ZoneSystem);
 	}
 }
 
 void AExoGameMode::CheckWinCondition()
 {
-	if (AliveCount <= 1 && CurrentPhase != EBRMatchPhase::WaitingForPlayers && CurrentPhase != EBRMatchPhase::EndGame)
+	if (AliveCount > 1 || CurrentPhase == EBRMatchPhase::WaitingForPlayers || CurrentPhase == EBRMatchPhase::EndGame)
+		return;
+	if (AlivePlayers.Num() > 0)
 	{
-		if (AlivePlayers.Num() > 0)
+		if (AExoPlayerState* WPS = AlivePlayers[0]->GetPlayerState<AExoPlayerState>())
 		{
-			if (AExoPlayerState* WinnerPS = AlivePlayers[0]->GetPlayerState<AExoPlayerState>())
-			{
-				WinnerPS->Placement = 1;
-				UE_LOG(LogExoRift, Log, TEXT("Winner: %s"), *WinnerPS->DisplayName);
-			}
+			WPS->Placement = 1;
+			UE_LOG(LogExoRift, Log, TEXT("Winner: %s"), *WPS->DisplayName);
 		}
-		TransitionToPhase(EBRMatchPhase::EndGame);
 	}
+	TransitionToPhase(EBRMatchPhase::EndGame);
 }
 
 void AExoGameMode::SpawnBots()
 {
+	FActorSpawnParameters SpawnParams;
 	for (int32 i = 0; i < TargetBotCount; i++)
 	{
-		FActorSpawnParameters SpawnParams;
-		AExoBotController* BotController = GetWorld()->SpawnActor<AExoBotController>(AExoBotController::StaticClass(), SpawnParams);
-		if (BotController)
+		AExoBotController* BC = GetWorld()->SpawnActor<AExoBotController>(AExoBotController::StaticClass(), SpawnParams);
+		if (!BC) continue;
+		FTransform ST = GetNextSpawnTransform();
+		AExoBotCharacter* BP = GetWorld()->SpawnActor<AExoBotCharacter>(
+			AExoBotCharacter::StaticClass(), ST.GetLocation(), ST.GetRotation().Rotator(), SpawnParams);
+		if (!BP) continue;
+		BC->Possess(BP);
+		AlivePlayers.Add(BC);
+		if (AExoPlayerState* PS = BC->GetPlayerState<AExoPlayerState>())
 		{
-			FTransform SpawnTransform = GetNextSpawnTransform();
-			AExoBotCharacter* BotPawn = GetWorld()->SpawnActor<AExoBotCharacter>(
-				AExoBotCharacter::StaticClass(), SpawnTransform.GetLocation(), SpawnTransform.GetRotation().Rotator(), SpawnParams);
-			if (BotPawn)
-			{
-				BotController->Possess(BotPawn);
-				AlivePlayers.Add(BotController);
-
-				if (AExoPlayerState* PS = BotController->GetPlayerState<AExoPlayerState>())
-				{
-					PS->DisplayName = FString::Printf(TEXT("Bot_%02d"), i);
-					PS->bIsAlive = true;
-				}
-			}
+			PS->DisplayName = FString::Printf(TEXT("Bot_%02d"), i);
+			PS->bIsAlive = true;
 		}
 	}
 	AliveCount = AlivePlayers.Num();
 	TotalPlayers = AliveCount;
-
 	if (AExoGameState* GS = GetGameState<AExoGameState>())
 	{
 		GS->AliveCount = AliveCount;
@@ -300,18 +281,87 @@ void AExoGameMode::SpawnBots()
 
 FTransform AExoGameMode::GetNextSpawnTransform() const
 {
-	// Find spawn points in the level
 	TArray<AActor*> SpawnPoints;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AExoSpawnPoint::StaticClass(), SpawnPoints);
-
 	if (SpawnPoints.Num() > 0)
+		return SpawnPoints[FMath::RandRange(0, SpawnPoints.Num() - 1)]->GetActorTransform();
+	return FTransform(FVector(FMath::RandRange(-200000.f, 200000.f), FMath::RandRange(-200000.f, 200000.f), 1000.f));
+}
+
+void AExoGameMode::SetWarmupInvulnerability(AExoCharacter* Char, bool bEnable)
+{
+	if (Char) Char->SetCanBeDamaged(!bEnable);
+}
+
+void AExoGameMode::TickEndGame(float DeltaTime)
+{
+	EndGameTimer += DeltaTime;
+	float Remaining = FMath::Max(EndGameDuration - EndGameTimer, 0.f);
+	if (AExoGameState* GS = GetGameState<AExoGameState>())
 	{
-		int32 Index = FMath::RandRange(0, SpawnPoints.Num() - 1);
-		return SpawnPoints[Index]->GetActorTransform();
+		GS->EndGameTimeRemaining = Remaining;
+	}
+	if (EndGameTimer >= EndGameDuration) { RestartMatch(); }
+}
+
+void AExoGameMode::RestartMatch()
+{
+	UE_LOG(LogExoRift, Log, TEXT("Restarting match"));
+	bMatchStarted = false;
+	RemoveAllBots();
+	AlivePlayers.Empty();
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (!PC) continue;
+		AlivePlayers.AddUnique(PC);
+		if (AExoPlayerState* PS = PC->GetPlayerState<AExoPlayerState>())
+		{
+			PS->Kills = 0; PS->Placement = 0; PS->bIsAlive = true;
+		}
+		// Respawn if dead or spectating
+		APawn* Pawn = PC->GetPawn();
+		if (!Pawn || !Pawn->IsA(AExoCharacter::StaticClass()))
+		{
+			if (Pawn) { PC->UnPossess(); Pawn->Destroy(); }
+			FTransform ST = GetNextSpawnTransform();
+			AExoCharacter* NewChar = GetWorld()->SpawnActor<AExoCharacter>(
+				AExoCharacter::StaticClass(), ST.GetLocation(), ST.GetRotation().Rotator());
+			if (NewChar) { PC->Possess(NewChar); }
+		}
 	}
 
-	// Fallback: random position in a 4km area
-	float X = FMath::RandRange(-200000.f, 200000.f);
-	float Y = FMath::RandRange(-200000.f, 200000.f);
-	return FTransform(FVector(X, Y, 1000.f));
+	AliveCount = AlivePlayers.Num();
+	TotalPlayers = AliveCount;
+	EndGameTimer = 0.f;
+	if (AExoGameState* GS = GetGameState<AExoGameState>())
+	{
+		GS->AliveCount = AliveCount;
+		GS->TotalPlayers = TotalPlayers;
+		GS->MatchElapsedTime = 0.f;
+		GS->EndGameTimeRemaining = 0.f;
+	}
+	TransitionToPhase(EBRMatchPhase::WaitingForPlayers);
+}
+
+void AExoGameMode::ReturnToMainMenu()
+{
+	UE_LOG(LogExoRift, Log, TEXT("Returning to main menu"));
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("/Game/Maps/MainMenu"));
+}
+
+void AExoGameMode::RemoveAllBots()
+{
+	TArray<AController*> BotsToRemove;
+	for (AController* C : AlivePlayers)
+	{
+		if (C && C->IsA(AExoBotController::StaticClass())) { BotsToRemove.Add(C); }
+	}
+	for (AController* Bot : BotsToRemove)
+	{
+		AlivePlayers.Remove(Bot);
+		if (APawn* P = Bot->GetPawn()) { Bot->UnPossess(); P->Destroy(); }
+		Bot->Destroy();
+	}
 }
