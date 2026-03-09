@@ -80,7 +80,53 @@ void AExoLevelBuilder::BuildProps()
 			CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
 	}
 
-	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Props and accent lighting placed"));
+	// === CARGO CONTAINERS at compound loading areas ===
+	struct FContainer { FVector Pos; float Yaw; FLinearColor Color; };
+	TArray<FContainer> Containers = {
+		// North compound dock
+		{{-8000.f, 84000.f, 300.f},  10.f,  FLinearColor(0.15f, 0.06f, 0.03f)},
+		{{-5000.f, 84000.f, 300.f},  5.f,   FLinearColor(0.03f, 0.08f, 0.12f)},
+		{{-6500.f, 84000.f, 900.f},  8.f,   FLinearColor(0.1f, 0.1f, 0.04f)}, // stacked
+		// East compound yard
+		{{82000.f, 6000.f, 300.f},   85.f,  FLinearColor(0.04f, 0.1f, 0.05f)},
+		{{82000.f, 8000.f, 300.f},   90.f,  FLinearColor(0.12f, 0.04f, 0.04f)},
+		// West compound parade ground
+		{{-78000.f, -8000.f, 300.f}, 0.f,   FLinearColor(0.06f, 0.06f, 0.08f)},
+		{{-78000.f, 8000.f, 300.f},  0.f,   FLinearColor(0.08f, 0.06f, 0.03f)},
+		// South compound
+		{{6000.f, -83000.f, 300.f},  -25.f, FLinearColor(0.03f, 0.06f, 0.1f)},
+		// Central hub
+		{{6500.f, 3000.f, 300.f},    45.f,  FLinearColor(0.1f, 0.08f, 0.04f)},
+	};
+	for (const auto& C : Containers)
+	{
+		SpawnStaticMesh(C.Pos, FVector(12.f, 5.f, 6.f),
+			FRotator(0.f, C.Yaw, 0.f), CubeMesh, C.Color);
+	}
+
+	// === CRASHED VEHICLE HULKS at road intersections ===
+	// Flattened elongated boxes as wrecked transports
+	auto SpawnWreck = [&](const FVector& Pos, float Yaw, float Tilt)
+	{
+		FLinearColor HullCol(0.06f, 0.06f, 0.07f);
+		FRotator WRot(Tilt, Yaw, 0.f);
+		// Main hull
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 150.f),
+			FVector(8.f, 3.5f, 2.5f), WRot, CubeMesh, HullCol);
+		// Cab/front section (slightly raised)
+		SpawnStaticMesh(Pos + WRot.RotateVector(FVector(450.f, 0.f, 200.f)),
+			FVector(3.f, 3.f, 3.f), WRot, CubeMesh, FLinearColor(0.05f, 0.05f, 0.06f));
+		// Wheel axle stubs
+		SpawnStaticMesh(Pos + WRot.RotateVector(FVector(-250.f, 0.f, 40.f)),
+			FVector(0.6f, 4.f, 0.6f), WRot, CylinderMesh, FLinearColor(0.04f, 0.04f, 0.04f));
+	};
+
+	SpawnWreck(FVector(15000.f, 3000.f, GroundZ), 35.f, 3.f);
+	SpawnWreck(FVector(-25000.f, -1500.f, GroundZ), -10.f, -2.f);
+	SpawnWreck(FVector(45000.f, 45000.f, GroundZ), 70.f, 5.f);
+	SpawnWreck(FVector(-60000.f, -50000.f, GroundZ), 140.f, -4.f);
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Props, containers, and vehicles placed"));
 }
 
 void AExoLevelBuilder::SpawnLightPost(const FVector& Base, float Height, const FLinearColor& Color)

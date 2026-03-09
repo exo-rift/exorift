@@ -47,6 +47,7 @@ protected:
 	void DrawDBNOOverlay();
 	void DrawEnergyBar();
 	void DrawWeatherIndicator();
+	void DrawRainOverlay();
 	void DrawSupplyDropMarkers();
 	void DrawSupplyDropAnnouncement();
 	void DrawMatchTimer();

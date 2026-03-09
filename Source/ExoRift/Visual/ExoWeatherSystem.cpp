@@ -43,6 +43,7 @@ void AExoWeatherSystem::BeginPlay()
 
 	ChangeTimer = WeatherChangeInterval;
 	TransitionAlpha = 1.f;
+	LightningCooldown = FMath::RandRange(5.f, 15.f);
 }
 
 AExoWeatherSystem* AExoWeatherSystem::Get(UWorld* World)
@@ -106,6 +107,21 @@ void AExoWeatherSystem::Tick(float DeltaTime)
 	{
 		SpawnRainParticles(DeltaTime);
 	}
+
+	// Lightning during storms
+	if (CurrentWeather == EExoWeatherState::Storm || TargetWeather == EExoWeatherState::Storm)
+	{
+		if (LightningCooldown > 0.f)
+		{
+			LightningCooldown -= DeltaTime;
+		}
+		else if (LightningAlpha <= 0.01f)
+		{
+			LightningAlpha = 1.f;
+			LightningCooldown = FMath::RandRange(4.f, 12.f);
+		}
+	}
+	LightningAlpha = FMath::Max(LightningAlpha - DeltaTime * 3.f, 0.f);
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +257,17 @@ void AExoWeatherSystem::ApplyToPostProcess()
 	// Auto-exposure darkens during storms
 	float ExposureBias = CurrentVisibility * 0.5f - 0.2f;
 	PP->PostProcessComp->Settings.AutoExposureBias = ExposureBias;
+}
+
+float AExoWeatherSystem::GetRainIntensity() const
+{
+	if (!bCurrentRaining && !bTargetRaining) return 0.f;
+	float Intensity = bCurrentRaining ? CurrentWindStrength : 0.f;
+	if (bTargetRaining && bTransitioning)
+	{
+		Intensity = FMath::Max(Intensity, TransitionAlpha * TargetWindStrength);
+	}
+	return Intensity;
 }
 
 // ---------------------------------------------------------------------------

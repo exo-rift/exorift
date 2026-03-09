@@ -18,26 +18,107 @@ void AExoHUD::DrawWeatherIndicator()
 	float Y = 294.f;
 
 	FString Label;
-	FString Icon;
 	FLinearColor Col = ColorWhite;
 	switch (Weather->GetCurrentWeather())
 	{
-	case EExoWeatherState::Clear:    Label = TEXT("CLEAR");    Icon = TEXT("\u2600"); Col = FLinearColor(0.7f, 0.9f, 1.f, 0.8f); break;
-	case EExoWeatherState::Overcast: Label = TEXT("OVERCAST"); Icon = TEXT("\u2601"); Col = FLinearColor(0.6f, 0.6f, 0.65f, 0.8f); break;
-	case EExoWeatherState::Rain:     Label = TEXT("RAIN");     Icon = TEXT("\u2602"); Col = FLinearColor(0.3f, 0.5f, 0.9f, 0.9f); break;
-	case EExoWeatherState::Storm:    Label = TEXT("STORM");    Icon = TEXT("\u26A1"); Col = FLinearColor(1.f, 0.4f, 0.2f, 0.9f); break;
-	case EExoWeatherState::Fog:      Label = TEXT("FOG");      Icon = TEXT("\u2588"); Col = FLinearColor(0.7f, 0.7f, 0.75f, 0.9f); break;
+	case EExoWeatherState::Clear:    Label = TEXT("CLEAR");    Col = FLinearColor(0.7f, 0.9f, 1.f, 0.8f); break;
+	case EExoWeatherState::Overcast: Label = TEXT("OVERCAST"); Col = FLinearColor(0.6f, 0.6f, 0.65f, 0.8f); break;
+	case EExoWeatherState::Rain:     Label = TEXT("RAIN");     Col = FLinearColor(0.3f, 0.5f, 0.9f, 0.9f); break;
+	case EExoWeatherState::Storm:    Label = TEXT("STORM");    Col = FLinearColor(1.f, 0.4f, 0.2f, 0.9f); break;
+	case EExoWeatherState::Fog:      Label = TEXT("FOG");      Col = FLinearColor(0.7f, 0.7f, 0.75f, 0.9f); break;
 	}
 
 	float TW, TH;
 	GetTextSize(Label, TW, TH, HUDFont, 0.85f);
-	float PanelW = TW + 20.f;
-	float PanelH = TH + 8.f;
+	float PanelW = FMath::Max(TW + 20.f, 90.f);
+	float PanelH = TH + 18.f;
 
 	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, PanelW, PanelH);
 	// Left accent stripe
 	DrawRect(FLinearColor(Col.R, Col.G, Col.B, 0.5f), X - 5.f, Y - 3.f, 2.f, PanelH);
 	DrawText(Label, Col, X + 2.f, Y, HUDFont, 0.85f);
+
+	// Visibility bar below label
+	float VisMul = Weather->GetVisibilityMultiplier();
+	float BarX = X - 3.f;
+	float BarY = Y + TH + 4.f;
+	float BarW = PanelW - 4.f;
+	float BarH = 3.f;
+	DrawRect(FLinearColor(0.1f, 0.1f, 0.12f, 0.5f), BarX, BarY, BarW, BarH);
+	FLinearColor VisCol = FMath::Lerp(FLinearColor(1.f, 0.3f, 0.1f, 0.7f),
+		FLinearColor(0.3f, 0.8f, 0.4f, 0.7f), VisMul);
+	DrawRect(VisCol, BarX, BarY, BarW * VisMul, BarH);
+}
+
+void AExoHUD::DrawRainOverlay()
+{
+	AExoWeatherSystem* Weather = AExoWeatherSystem::Get(GetWorld());
+	if (!Weather) return;
+
+	float RainIntensity = Weather->GetRainIntensity();
+	float LightningAlpha = Weather->GetLightningAlpha();
+
+	// Lightning flash (drawn even if not raining, storm may be transitioning)
+	if (LightningAlpha > 0.01f)
+	{
+		DrawRect(FLinearColor(0.85f, 0.9f, 1.f, LightningAlpha * 0.35f),
+			0.f, 0.f, Canvas->SizeX, Canvas->SizeY);
+	}
+
+	if (RainIntensity <= 0.01f) return;
+
+	const float W = Canvas->SizeX;
+	const float H = Canvas->SizeY;
+	float Time = GetWorld()->GetTimeSeconds();
+	float WindStr = Weather->GetWindStrength();
+
+	// Screen-space rain streaks
+	int32 NumStreaks = FMath::RoundToInt(RainIntensity * 80.f);
+	float WindAngle = WindStr * 0.35f;
+
+	for (int32 i = 0; i < NumStreaks; i++)
+	{
+		float Seed = i * 137.508f;
+		float Speed = 800.f + (i % 5) * 200.f;
+		float Y = FMath::Fmod(Seed * 7.31f + Time * Speed, H + 200.f) - 100.f;
+		float X = FMath::Fmod(Seed * 11.71f + Time * WindStr * 150.f, W);
+
+		float StreakLen = 25.f + (i % 4) * 15.f;
+		float Alpha = RainIntensity * (0.05f + 0.03f * FMath::Sin(Seed * 0.3f));
+
+		float EndX = X + WindAngle * StreakLen;
+		float EndY = Y + StreakLen;
+
+		FLinearColor StreakCol(0.55f, 0.65f, 0.82f, Alpha);
+		DrawLine(X, Y, EndX, EndY, StreakCol, 1.f);
+	}
+
+	// Bottom wetness — subtle blue tint at screen bottom
+	float WetAlpha = RainIntensity * 0.06f;
+	float WetH = H * 0.05f;
+	DrawRect(FLinearColor(0.08f, 0.12f, 0.25f, WetAlpha), 0.f, H - WetH, W, WetH);
+
+	// Screen droplets — small water spots that fade in/out
+	int32 NumDroplets = FMath::RoundToInt(RainIntensity * 15.f);
+	for (int32 i = 0; i < NumDroplets; i++)
+	{
+		float Seed = i * 97.f + 3.14f;
+		float Lifetime = 0.6f + (i % 3) * 0.4f;
+		float Phase = FMath::Fmod(Time + Seed, Lifetime);
+		float FadeIn = FMath::Clamp(Phase / 0.1f, 0.f, 1.f);
+		float FadeOut = FMath::Clamp(1.f - Phase / Lifetime, 0.f, 1.f);
+		float DropAlpha = FadeIn * FadeOut * RainIntensity * 0.12f;
+
+		float DX = FMath::Fmod(Seed * 13.7f, W);
+		float DY = FMath::Fmod(Seed * 9.3f, H);
+		float DSize = 2.f + (i % 3);
+
+		DrawRect(FLinearColor(0.45f, 0.55f, 0.75f, DropAlpha),
+			DX, DY, DSize, DSize * 1.5f);
+		// Highlight dot at top of droplet
+		DrawRect(FLinearColor(0.7f, 0.8f, 0.95f, DropAlpha * 0.6f),
+			DX + DSize * 0.3f, DY, DSize * 0.4f, DSize * 0.4f);
+	}
 }
 
 void AExoHUD::DrawAbilities()

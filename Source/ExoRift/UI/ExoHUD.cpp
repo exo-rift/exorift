@@ -84,6 +84,7 @@ void AExoHUD::DrawHUD()
 	DrawKillCount();
 	DrawKillStreak();
 	DrawWeatherIndicator();
+	DrawRainOverlay();
 	DrawAbilities();
 	DrawInteractionPrompt();
 

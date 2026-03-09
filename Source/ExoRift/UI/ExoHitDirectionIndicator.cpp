@@ -51,12 +51,18 @@ void FExoHitDirectionIndicator::Draw(AHUD* HUD, UCanvas* Canvas)
 		float Alpha = 1.f - (Ind.Age / Ind.Lifetime);
 		Alpha = Alpha * Alpha; // Fast fade
 
+		// Scale-up on fresh hit then settle
+		float HitScale = 1.f;
+		if (Ind.Age < 0.15f)
+		{
+			HitScale = 1.f + (1.f - Ind.Age / 0.15f) * 0.3f;
+		}
+
 		// Get direction from player to damage source
 		FVector ToSource = Ind.SourceWorldLocation - PlayerLoc;
-		ToSource.Z = 0.f; // Flatten to 2D
+		ToSource.Z = 0.f;
 		ToSource.Normalize();
 
-		// Convert to screen-relative angle
 		FVector Forward = PlayerRot.Vector();
 		Forward.Z = 0.f;
 		Forward.Normalize();
@@ -67,35 +73,43 @@ void FExoHitDirectionIndicator::Draw(AHUD* HUD, UCanvas* Canvas)
 		float DotRight = FVector::DotProduct(ToSource, Right);
 		float Angle = FMath::Atan2(DotRight, DotForward);
 
-		// Position on circle around crosshair
 		float DirX = FMath::Sin(Angle);
 		float DirY = -FMath::Cos(Angle);
 
-		float IndicatorX = CX + DirX * IndicatorDist;
-		float IndicatorY = CY + DirY * IndicatorDist;
+		float ScaledDist = IndicatorDist * HitScale;
+		float ScaledLen = ArrowLength * HitScale;
+		float ScaledWidth = ArrowWidth * HitScale;
 
-		// Draw arrow pointing inward (toward the center, indicating source direction)
-		FLinearColor ArrowColor(1.f, 0.15f, 0.05f, Alpha * 0.9f);
+		float IX = CX + DirX * ScaledDist;
+		float IY = CY + DirY * ScaledDist;
 
-		// Arrow tip points inward
-		FVector2D Tip(IndicatorX - DirX * ArrowLength, IndicatorY - DirY * ArrowLength);
-		FVector2D Base(IndicatorX + DirX * ArrowLength * 0.3f, IndicatorY + DirY * ArrowLength * 0.3f);
-
-		// Perpendicular for arrow width
+		FVector2D Tip(IX - DirX * ScaledLen, IY - DirY * ScaledLen);
+		FVector2D Base(IX + DirX * ScaledLen * 0.3f, IY + DirY * ScaledLen * 0.3f);
 		FVector2D Perp(-DirY, DirX);
+		FVector2D Left = Base + Perp * ScaledWidth;
+		FVector2D Right2D = Base - Perp * ScaledWidth;
 
-		FVector2D Left = Base + Perp * ArrowWidth;
-		FVector2D Right2D = Base - Perp * ArrowWidth;
+		// Outer glow (wide, dim)
+		FLinearColor GlowCol(1.f, 0.15f, 0.08f, Alpha * 0.2f);
+		HUD->DrawLine(Tip.X, Tip.Y, Left.X, Left.Y, GlowCol, 6.f);
+		HUD->DrawLine(Tip.X, Tip.Y, Right2D.X, Right2D.Y, GlowCol, 6.f);
+		HUD->DrawLine(Left.X, Left.Y, Right2D.X, Right2D.Y, GlowCol, 4.f);
 
-		// Draw three lines to form arrow
+		// Main arrow outline
+		FLinearColor ArrowColor(1.f, 0.15f, 0.05f, Alpha * 0.9f);
 		HUD->DrawLine(Tip.X, Tip.Y, Left.X, Left.Y, ArrowColor, 2.5f);
 		HUD->DrawLine(Tip.X, Tip.Y, Right2D.X, Right2D.Y, ArrowColor, 2.5f);
 		HUD->DrawLine(Left.X, Left.Y, Right2D.X, Right2D.Y, ArrowColor, 1.5f);
 
-		// Fill center with a red rect for visibility
-		float FillX = (Tip.X + Base.X) * 0.5f - 3.f;
-		float FillY = (Tip.Y + Base.Y) * 0.5f - 3.f;
-		HUD->DrawRect(FLinearColor(1.f, 0.1f, 0.05f, Alpha * 0.4f),
-			FillX, FillY, 6.f, 6.f);
+		// Inner bright core line (tip to base center)
+		FVector2D MidBase = (Left + Right2D) * 0.5f;
+		FLinearColor CoreCol(1.f, 0.35f, 0.15f, Alpha * 0.55f);
+		HUD->DrawLine(Tip.X, Tip.Y, MidBase.X, MidBase.Y, CoreCol, 1.5f);
+
+		// Center glow rect
+		float FillX = (Tip.X + MidBase.X) * 0.5f - 4.f;
+		float FillY = (Tip.Y + MidBase.Y) * 0.5f - 4.f;
+		HUD->DrawRect(FLinearColor(1.f, 0.1f, 0.05f, Alpha * 0.3f),
+			FillX, FillY, 8.f, 8.f);
 	}
 }

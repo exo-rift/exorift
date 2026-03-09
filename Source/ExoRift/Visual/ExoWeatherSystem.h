@@ -43,6 +43,15 @@ public:
 	/** Current weather state (for HUD display etc.). */
 	EExoWeatherState GetCurrentWeather() const { return CurrentWeather; }
 
+	/** Rain intensity (0-1) for screen effects. */
+	float GetRainIntensity() const;
+
+	/** Current wind strength (0-1). */
+	float GetWindStrength() const { return CurrentWindStrength; }
+
+	/** Lightning flash alpha (0-1) for screen flash. */
+	float GetLightningAlpha() const { return LightningAlpha; }
+
 	/** Broadcast when weather finishes transitioning. */
 	UPROPERTY(BlueprintAssignable, Category = "Weather")
 	FOnWeatherChanged OnWeatherChanged;
@@ -109,4 +118,8 @@ private:
 	float TargetWindStrength = 0.f;
 	float TargetVisibility = 1.f;
 	bool bTargetRaining = false;
+
+	// Lightning flash state
+	float LightningAlpha = 0.f;
+	float LightningCooldown = 0.f;
 };

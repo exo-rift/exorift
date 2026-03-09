@@ -58,48 +58,85 @@ void FExoHitMarker::DrawHitMarkers(AHUD* HUD, UCanvas* Canvas)
 
 	for (const FHitMarkerEntry& Entry : HitMarkers)
 	{
-		float Alpha = FMath::Clamp(Entry.Lifetime / 0.4f, 0.f, 1.f);
-		float Size = 10.f + (1.f - Alpha) * 5.f; // Expands slightly as it fades
+		float MaxLife = Entry.bIsKill ? 0.8f : 0.4f;
+		float Alpha = FMath::Clamp(Entry.Lifetime / MaxLife, 0.f, 1.f);
+		float Size = 10.f + (1.f - Alpha) * 5.f;
 		float Gap = 5.f;
 		float Thickness = 2.f;
 
 		FLinearColor Color;
 		if (Entry.bIsKill)
-			Color = FLinearColor(1.f, 0.2f, 0.2f, Alpha); // Red for kills
+			Color = FLinearColor(1.f, 0.2f, 0.2f, Alpha);
 		else if (Entry.bIsHeadshot)
-			Color = FLinearColor(1.f, 0.8f, 0.1f, Alpha); // Gold for headshots
+			Color = FLinearColor(1.f, 0.8f, 0.1f, Alpha);
 		else
-			Color = FLinearColor(1.f, 1.f, 1.f, Alpha);    // White for normal hits
+			Color = FLinearColor(1.f, 1.f, 1.f, Alpha);
 
-		// Four diagonal lines forming an X around crosshair
-		float Diag = 0.707f; // sin(45) = cos(45)
-		for (int32 Quadrant = 0; Quadrant < 4; Quadrant++)
+		// Shadow behind X for contrast
+		FLinearColor Shadow(0.f, 0.f, 0.f, Alpha * 0.35f);
+		float Diag = 0.707f;
+		for (int32 Q = 0; Q < 4; Q++)
 		{
-			float DirX = (Quadrant < 2) ? 1.f : -1.f;
-			float DirY = (Quadrant % 2 == 0) ? 1.f : -1.f;
+			float DX = (Q < 2) ? 1.f : -1.f;
+			float DY = (Q % 2 == 0) ? 1.f : -1.f;
+			float X1 = CX + DX * Diag * Gap;
+			float Y1 = CY + DY * Diag * Gap;
+			float X2 = CX + DX * Diag * (Gap + Size);
+			float Y2 = CY + DY * Diag * (Gap + Size);
 
-			float X1 = CX + DirX * Diag * Gap;
-			float Y1 = CY + DirY * Diag * Gap;
-			float X2 = CX + DirX * Diag * (Gap + Size);
-			float Y2 = CY + DirY * Diag * (Gap + Size);
-
+			HUD->DrawLine(X1 + 1.f, Y1 + 1.f, X2 + 1.f, Y2 + 1.f, Shadow, Thickness + 1.f);
 			HUD->DrawLine(X1, Y1, X2, Y2, Color, Thickness);
 		}
 
-		// Kill confirmed: extra circle
+		// Headshot: radial burst lines (star pattern)
+		if (Entry.bIsHeadshot)
+		{
+			float BurstAlpha = Alpha * FMath::Clamp(Entry.Lifetime / 0.3f, 0.f, 1.f);
+			float BurstRadius = Gap + Size + 8.f + (1.f - BurstAlpha) * 12.f;
+			float BurstLen = 10.f + (1.f - BurstAlpha) * 6.f;
+			FLinearColor BurstCol(1.f, 0.9f, 0.3f, BurstAlpha * 0.7f);
+			for (int32 i = 0; i < 8; i++)
+			{
+				float A = i * (PI / 4.f);
+				float IX = FMath::Cos(A);
+				float IY = FMath::Sin(A);
+				HUD->DrawLine(
+					CX + IX * BurstRadius, CY + IY * BurstRadius,
+					CX + IX * (BurstRadius + BurstLen), CY + IY * (BurstRadius + BurstLen),
+					BurstCol, 1.5f);
+			}
+		}
+
+		// Kill confirmed: glow ring expanding outward
 		if (Entry.bIsKill)
 		{
-			int32 Segments = 16;
-			float Radius = Gap + Size + 4.f;
+			float ExpandFrac = 1.f - Alpha;
+			float GlowRadius = Gap + Size + 4.f + ExpandFrac * 8.f;
+
+			// Outer glow (wide, dim)
+			int32 Segments = 24;
 			float AngleStep = 2.f * PI / Segments;
+			FLinearColor GlowCol(1.f, 0.15f, 0.1f, Alpha * 0.2f);
 			for (int32 i = 0; i < Segments; i++)
 			{
 				float A1 = i * AngleStep;
 				float A2 = (i + 1) * AngleStep;
 				HUD->DrawLine(
-					CX + FMath::Cos(A1) * Radius, CY + FMath::Sin(A1) * Radius,
-					CX + FMath::Cos(A2) * Radius, CY + FMath::Sin(A2) * Radius,
-					Color, 1.5f);
+					CX + FMath::Cos(A1) * GlowRadius, CY + FMath::Sin(A1) * GlowRadius,
+					CX + FMath::Cos(A2) * GlowRadius, CY + FMath::Sin(A2) * GlowRadius,
+					GlowCol, 4.f);
+			}
+
+			// Inner kill ring
+			FLinearColor RingCol(1.f, 0.2f, 0.15f, Alpha * 0.8f);
+			for (int32 i = 0; i < Segments; i++)
+			{
+				float A1 = i * AngleStep;
+				float A2 = (i + 1) * AngleStep;
+				HUD->DrawLine(
+					CX + FMath::Cos(A1) * GlowRadius, CY + FMath::Sin(A1) * GlowRadius,
+					CX + FMath::Cos(A2) * GlowRadius, CY + FMath::Sin(A2) * GlowRadius,
+					RingCol, 1.5f);
 			}
 		}
 	}
