@@ -17,7 +17,10 @@
 #include "Core/ExoGameMode.h"
 #include "Core/ExoPlayerState.h"
 #include "Visual/ExoPostProcess.h"
+#include "Visual/ExoCharacterModel.h"
+#include "Visual/ExoScreenShake.h"
 #include "UI/ExoHitMarker.h"
+#include "UI/ExoHitDirectionIndicator.h"
 #include "UI/ExoPingSystem.h"
 #include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
@@ -88,6 +91,14 @@ void AExoCharacter::BeginPlay()
 	Super::BeginPlay();
 	Health = MaxHealth;
 	// Default weapons are now spawned by UExoInventoryComponent::BeginPlay
+
+	// Build procedural character model (visible to other players)
+	UExoCharacterModel* CharModel = NewObject<UExoCharacterModel>(this);
+	CharModel->SetupAttachment(GetMesh());
+	CharModel->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	CharModel->RegisterComponent();
+	bool bIsBot = !IsPlayerControlled();
+	CharModel->BuildModel(bIsBot);
 }
 
 void AExoCharacter::Tick(float DeltaTime)
@@ -112,6 +123,15 @@ void AExoCharacter::Tick(float DeltaTime)
 
 		FExoHitMarker::Tick(DeltaTime);
 		FExoPingSystem::Tick(DeltaTime);
+		FExoHitDirectionIndicator::Tick(DeltaTime);
+		FExoScreenShake::Tick(DeltaTime);
+
+		// Apply screen shake to camera
+		if (FExoScreenShake::IsShaking())
+		{
+			AddControllerPitchInput(FExoScreenShake::GetShakeOffset().Pitch * DeltaTime * 10.f);
+			AddControllerYawInput(FExoScreenShake::GetShakeOffset().Yaw * DeltaTime * 10.f);
+		}
 	}
 }
 
@@ -144,11 +164,14 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 	{
 		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
 		if (PP) PP->TriggerDamageFlash(FMath::Clamp(DamageAmount / 30.f, 0.2f, 1.f));
+		// Screen shake proportional to damage
+		FExoScreenShake::AddShake(FMath::Clamp(DamageAmount / 50.f, 0.1f, 0.8f), 0.25f);
 		if (DamageCauser && DamageCauser != this)
 		{
 			float RelativeAngle = (DamageCauser->GetActorLocation() - GetActorLocation()).Rotation().Yaw
 				- GetControlRotation().Yaw;
 			FExoHitMarker::AddDamageIndicator(RelativeAngle);
+			FExoHitDirectionIndicator::AddHit(DamageCauser->GetActorLocation());
 		}
 	}
 

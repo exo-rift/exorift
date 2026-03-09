@@ -1,6 +1,8 @@
 #include "Visual/ExoExplosionEffect.h"
+#include "Visual/ExoScreenShake.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 
 static constexpr int32 NUM_DEBRIS = 6;
@@ -78,6 +80,14 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 	ShockwaveRing->SetWorldScale3D(FVector(0.01f, 0.01f, 0.001f));
 
 	BaseIntensity = ExplosionLight->Intensity;
+
+	// Screen shake for nearby player
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC && PC->GetPawn())
+	{
+		FExoScreenShake::AddExplosionShake(GetActorLocation(),
+			PC->GetPawn()->GetActorLocation(), Radius * 3.f, 2.f);
+	}
 
 	// Random debris velocities
 	DebrisVelocities.SetNum(DebrisMeshes.Num());
