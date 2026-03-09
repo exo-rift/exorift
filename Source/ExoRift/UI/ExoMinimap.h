@@ -11,13 +11,13 @@ struct FMinimapConfig
 {
 	float ScreenX = 20.f;
 	float ScreenY = 20.f;
-	float Size = 200.f;
-	float WorldRange = 200000.f; // How much of the world the minimap covers
+	float Size = 220.f;
+	float WorldRange = 60000.f; // Local range centered on player
 	float PlayerDotSize = 4.f;
 	float BorderWidth = 2.f;
 };
 
-// Static helper — not an actor, just drawing functions called from ExoHUD
+// Static helper — drawing functions called from ExoHUD
 class EXORIFT_API FExoMinimap
 {
 public:
@@ -25,7 +25,13 @@ public:
 
 private:
 	static FVector2D WorldToMinimap(const FVector& WorldPos, const FVector& CenterPos,
-		const FMinimapConfig& Config);
+		float PlayerYaw, const FMinimapConfig& Config);
 	static void DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config,
-		const FVector& CenterPos, AExoZoneSystem* Zone);
+		const FVector& CenterPos, float PlayerYaw, AExoZoneSystem* Zone);
+	static void DrawFOVCone(AHUD* HUD, float CenterX, float CenterY,
+		const FMinimapConfig& Config);
+	static void DrawCardinals(AHUD* HUD, UFont* Font, float CenterX, float CenterY,
+		float PlayerYaw, const FMinimapConfig& Config);
+	static void DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
+		const FMinimapConfig& Config);
 };

@@ -1,4 +1,7 @@
 #include "Map/ExoZoneSystem.h"
+#include "Player/ExoCharacter.h"
+#include "Engine/DamageEvents.h"
+#include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
 #include "ExoRift.h"
 
@@ -63,6 +66,8 @@ void AExoZoneSystem::Tick(float DeltaTime)
 	{
 		TickHold(DeltaTime);
 	}
+
+	ApplyZoneDamage(DeltaTime);
 }
 
 void AExoZoneSystem::StartZoneSequence()
@@ -168,6 +173,23 @@ float AExoZoneSystem::GetShrinkTimeRemaining() const
 {
 	if (!bIsShrinking || CurrentStage < 0 || CurrentStage >= Stages.Num()) return 0.f;
 	return FMath::Max(Stages[CurrentStage].ShrinkDuration - StageTimer, 0.f);
+}
+
+void AExoZoneSystem::ApplyZoneDamage(float DeltaTime)
+{
+	float DPS = GetDamagePerSecond();
+	if (DPS <= 0.f) return;
+
+	float FrameDamage = DPS * DeltaTime;
+	for (TActorIterator<AExoCharacter> It(GetWorld()); It; ++It)
+	{
+		AExoCharacter* Char = *It;
+		if (!Char || !Char->IsAlive()) continue;
+		if (IsInsideZone(Char->GetActorLocation())) continue;
+
+		FDamageEvent DamageEvent;
+		Char->TakeDamage(FrameDamage, DamageEvent, nullptr, this);
+	}
 }
 
 void AExoZoneSystem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

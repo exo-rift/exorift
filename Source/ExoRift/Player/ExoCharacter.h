@@ -246,5 +246,12 @@ protected:
 	float FootstepInterval = 0.5f;
 	void TickFootsteps(float DeltaTime);
 
+	// Camera bob
+	float CameraBobTimer = 0.f;
+	void TickCameraBob(float DeltaTime);
+
+	// Zone damage VFX/audio tracking (local only)
+	float ZoneDamageAudioTimer = 0.f;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -1,29 +1,20 @@
 #include "Visual/ExoImpactEffect.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
-
-static UStaticMeshComponent* CreateSparkSubobject(AActor* Owner, USceneComponent* Parent, FName Name)
-{
-	UStaticMeshComponent* Spark = Owner->CreateDefaultSubobject<UStaticMeshComponent>(Name);
-	Spark->SetupAttachment(Parent);
-	Spark->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Spark->CastShadow = false;
-	Spark->SetGenerateOverlapEvents(false);
-	return Spark;
-}
 
 AExoImpactEffect::AExoImpactEffect()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	InitialLifeSpan = 0.3f;
+	InitialLifeSpan = 0.4f;
 
 	CoreMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CoreMesh"));
 	RootComponent = CoreMesh;
 	CoreMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CoreMesh->CastShadow = false;
 	CoreMesh->SetGenerateOverlapEvents(false);
-	CoreMesh->SetWorldScale3D(FVector(0.08f));
+	CoreMesh->SetWorldScale3D(FVector(0.1f));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
@@ -32,63 +23,97 @@ AExoImpactEffect::AExoImpactEffect()
 		CoreMesh->SetStaticMesh(SphereFinder.Object);
 	}
 
-	// Three spark shards (stretched cubes flying outward)
-	SparkMesh1 = CreateSparkSubobject(this, CoreMesh, TEXT("Spark1"));
-	SparkMesh2 = CreateSparkSubobject(this, CoreMesh, TEXT("Spark2"));
-	SparkMesh3 = CreateSparkSubobject(this, CoreMesh, TEXT("Spark3"));
+	// Dust puff — expanding translucent sphere
+	DustPuff = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DustPuff"));
+	DustPuff->SetupAttachment(CoreMesh);
+	DustPuff->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DustPuff->CastShadow = false;
+	DustPuff->SetGenerateOverlapEvents(false);
+	if (SphereFinder.Succeeded())
+	{
+		DustPuff->SetStaticMesh(SphereFinder.Object);
+	}
+	DustPuff->SetWorldScale3D(FVector(0.05f));
 
+	// Spark shards
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
 		TEXT("/Engine/BasicShapes/Cube"));
-	if (CubeFinder.Succeeded())
+	for (int32 i = 0; i < NUM_SPARKS; i++)
 	{
-		SparkMesh1->SetStaticMesh(CubeFinder.Object);
-		SparkMesh2->SetStaticMesh(CubeFinder.Object);
-		SparkMesh3->SetStaticMesh(CubeFinder.Object);
+		FName Name = *FString::Printf(TEXT("Spark_%d"), i);
+		UStaticMeshComponent* Spark = CreateDefaultSubobject<UStaticMeshComponent>(Name);
+		Spark->SetupAttachment(CoreMesh);
+		Spark->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Spark->CastShadow = false;
+		Spark->SetGenerateOverlapEvents(false);
+		if (CubeFinder.Succeeded()) Spark->SetStaticMesh(CubeFinder.Object);
+		SparkMeshes.Add(Spark);
 	}
 
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(CoreMesh);
-	FlashLight->SetIntensity(8000.f);
-	FlashLight->SetAttenuationRadius(300.f);
+	FlashLight->SetIntensity(10000.f);
+	FlashLight->SetAttenuationRadius(350.f);
 	FlashLight->CastShadows = false;
 }
 
 void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 {
-	// Color: orange sparks for surfaces, red for characters
+	// Color scheme: red/orange for characters, bright cyan-white for surfaces
 	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(6.f, 0.5f, 0.3f, 1.f)
-		: FLinearColor(5.f, 3.f, 1.f, 1.f);
+		? FLinearColor(8.f, 1.f, 0.3f, 1.f)
+		: FLinearColor(4.f, 6.f, 8.f, 1.f);
 
 	FLinearColor LightColor = bHitCharacter
 		? FLinearColor(1.f, 0.2f, 0.1f)
-		: FLinearColor(1.f, 0.7f, 0.3f);
+		: FLinearColor(0.4f, 0.7f, 1.f);
+
+	FLinearColor DustColor = bHitCharacter
+		? FLinearColor(0.4f, 0.05f, 0.02f, 1.f)
+		: FLinearColor(0.15f, 0.15f, 0.18f, 1.f);
 
 	FlashLight->SetLightColor(LightColor);
 	BaseIntensity = FlashLight->Intensity;
 
-	// Build a tangent frame from the hit normal
+	// Apply core material
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFinder.Succeeded())
+	{
+		UMaterialInstanceDynamic* CoreMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		CoreMat->SetVectorParameterValue(TEXT("BaseColor"), SparkColor);
+		CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor);
+		CoreMesh->SetMaterial(0, CoreMat);
+
+		UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
+		DustPuff->SetMaterial(0, DustMat);
+
+		for (auto* Spark : SparkMeshes)
+		{
+			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+			SM->SetVectorParameterValue(TEXT("BaseColor"), SparkColor * 0.8f);
+			SM->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor * 0.6f);
+			Spark->SetMaterial(0, SM);
+		}
+	}
+
+	// Build tangent frame from hit normal
 	FVector Tangent, Bitangent;
 	HitNormal.FindBestAxisVectors(Tangent, Bitangent);
 
-	// Random spark velocities along the surface normal hemisphere
-	auto RandHemisphere = [&]() -> FVector
+	// Random spark velocities in hemisphere above surface
+	SparkVelocities.SetNum(SparkMeshes.Num());
+	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
-		FVector Base = HitNormal * FMath::RandRange(80.f, 200.f);
-		Base += Tangent * FMath::RandRange(-100.f, 100.f);
-		Base += Bitangent * FMath::RandRange(-100.f, 100.f);
-		return Base;
-	};
+		FVector Vel = HitNormal * FMath::RandRange(100.f, 250.f);
+		Vel += Tangent * FMath::RandRange(-120.f, 120.f);
+		Vel += Bitangent * FMath::RandRange(-120.f, 120.f);
+		SparkVelocities[i] = Vel;
 
-	SparkVel1 = RandHemisphere();
-	SparkVel2 = RandHemisphere();
-	SparkVel3 = RandHemisphere();
-
-	// Thin elongated spark shards
-	float SparkScale = 0.02f;
-	SparkMesh1->SetWorldScale3D(FVector(0.06f, SparkScale, SparkScale));
-	SparkMesh2->SetWorldScale3D(FVector(0.05f, SparkScale, SparkScale));
-	SparkMesh3->SetWorldScale3D(FVector(0.04f, SparkScale, SparkScale));
+		float S = FMath::RandRange(0.015f, 0.03f);
+		SparkMeshes[i]->SetWorldScale3D(FVector(S * 3.f, S, S));
+	}
 }
 
 void AExoImpactEffect::Tick(float DeltaTime)
@@ -96,46 +121,44 @@ void AExoImpactEffect::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	Age += DeltaTime;
-	float Alpha = 1.f - FMath::Clamp(Age / Lifetime, 0.f, 1.f);
+	float T = FMath::Clamp(Age / Lifetime, 0.f, 1.f);
+	float Alpha = 1.f - T;
 
-	// Fade flash light
+	// Flash light: very sharp falloff
 	if (FlashLight)
 	{
-		// Fast initial falloff
 		FlashLight->SetIntensity(BaseIntensity * Alpha * Alpha * Alpha);
 	}
 
-	// Shrink core
+	// Core: rapid shrink
 	if (CoreMesh)
 	{
-		float S = 0.08f * Alpha;
-		CoreMesh->SetWorldScale3D(FVector(S));
+		float S = 0.1f * FMath::Max(Alpha * 2.f - 1.f, 0.f);
+		CoreMesh->SetWorldScale3D(FVector(FMath::Max(S, 0.001f)));
 	}
 
-	// Move sparks outward and shrink
-	auto MoveSpark = [&](UStaticMeshComponent* Spark, const FVector& Vel)
+	// Dust puff: expand outward and fade
+	if (DustPuff)
 	{
-		if (!Spark) return;
-		FVector Offset = Vel * (Age);
-		// Add gravity
-		Offset.Z -= 200.f * Age * Age;
-		Spark->SetRelativeLocation(Offset);
-		float S = 0.04f * Alpha;
-		Spark->SetWorldScale3D(FVector(S * 1.5f, S * 0.5f, S * 0.5f));
-		// Orient spark along velocity
-		FVector Dir = Vel + FVector(0.f, 0.f, -400.f * Age);
-		if (!Dir.IsNearlyZero())
-		{
-			Spark->SetWorldRotation(Dir.Rotation());
-		}
-	};
-
-	MoveSpark(SparkMesh1, SparkVel1);
-	MoveSpark(SparkMesh2, SparkVel2);
-	MoveSpark(SparkMesh3, SparkVel3);
-
-	if (Age >= Lifetime)
-	{
-		Destroy();
+		float PuffScale = FMath::Lerp(0.05f, 0.4f, FMath::Sqrt(T));
+		DustPuff->SetWorldScale3D(FVector(PuffScale));
+		DustPuff->SetRelativeLocation(FVector(0.f, 0.f, Age * 30.f)); // Drift upward
 	}
+
+	// Sparks: fly outward with gravity
+	for (int32 i = 0; i < SparkMeshes.Num(); i++)
+	{
+		if (!SparkMeshes[i]) continue;
+		FVector Pos = SparkVelocities[i] * Age;
+		Pos.Z -= 300.f * Age * Age;
+		SparkMeshes[i]->SetRelativeLocation(Pos);
+
+		// Shrink and orient along velocity
+		float S = 0.025f * Alpha;
+		SparkMeshes[i]->SetWorldScale3D(FVector(S * 2.f, S * 0.5f, S * 0.5f));
+		FVector Dir = SparkVelocities[i] + FVector(0.f, 0.f, -600.f * Age);
+		if (!Dir.IsNearlyZero()) SparkMeshes[i]->SetWorldRotation(Dir.Rotation());
+	}
+
+	if (Age >= Lifetime) Destroy();
 }

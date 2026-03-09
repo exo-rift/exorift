@@ -8,7 +8,10 @@ class UStaticMeshComponent;
 class UPointLightComponent;
 class UMaterialInstanceDynamic;
 
-/** Fast-fading beam actor for hitscan weapon tracers. */
+/**
+ * Traveling beam tracer for hitscan weapons.
+ * Flies from muzzle to impact point with a bright head, core beam, and outer glow.
+ */
 UCLASS()
 class AExoTracer : public AActor
 {
@@ -24,16 +27,36 @@ public:
 
 private:
 	UPROPERTY()
-	UStaticMeshComponent* BeamMesh;
+	UStaticMeshComponent* BeamCore;
 
 	UPROPERTY()
-	UPointLightComponent* GlowLight;
+	UStaticMeshComponent* BeamGlow;
 
 	UPROPERTY()
-	UMaterialInstanceDynamic* DynMat;
+	UStaticMeshComponent* HeadMesh;
 
-	float Age = 0.f;
-	float Lifetime = 0.12f;
-	FLinearColor BaseColor;
-	float BaseIntensity = 0.f;
+	UPROPERTY()
+	UPointLightComponent* HeadLight;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* CoreMat;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* GlowMat;
+
+	FVector StartPos;
+	FVector EndPos;
+	FVector Direction;
+	float TotalDistance = 0.f;
+	float TraveledDist = 0.f;
+
+	float TravelSpeed = 100000.f;
+	float BeamLength = 800.f;
+
+	float FadeAge = 0.f;
+	float FadeTime = 0.08f;
+	bool bReachedEnd = false;
+
+	FLinearColor CoreColor;
+	FLinearColor GlowColor;
 };

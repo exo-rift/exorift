@@ -7,6 +7,7 @@
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 class AExoCharacter;
 
 UCLASS()
@@ -35,12 +36,22 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	void SetPickupActive(bool bActive);
+	void BuildCellModel();
 
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* CollisionSphere;
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* DisplayMesh;
+
+	UPROPERTY()
+	UPointLightComponent* GlowLight;
+
+	UPROPERTY()
+	UStaticMesh* CachedCylinder;
+
+	UPROPERTY()
+	UStaticMesh* CachedSphere;
 
 	bool bIsActive = true;
 	float RespawnTimer = 0.f;

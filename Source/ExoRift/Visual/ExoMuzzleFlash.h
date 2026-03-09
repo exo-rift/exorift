@@ -7,7 +7,7 @@
 class UPointLightComponent;
 class UStaticMeshComponent;
 
-/** Brief bright flash at weapon muzzle. Attaches to owner weapon. */
+/** Brief bright cross-shaped flash at weapon muzzle with dynamic light. */
 UCLASS()
 class AExoMuzzleFlash : public AActor
 {
@@ -22,12 +22,18 @@ public:
 
 private:
 	UPROPERTY()
-	UStaticMeshComponent* FlashMesh;
+	UStaticMeshComponent* FlashCore;
+
+	UPROPERTY()
+	UStaticMeshComponent* FlashCross;
+
+	UPROPERTY()
+	UStaticMeshComponent* FlashFlare;
 
 	UPROPERTY()
 	UPointLightComponent* FlashLight;
 
 	float Age = 0.f;
-	float Lifetime = 0.06f;
+	float Lifetime = 0.07f;
 	float BaseIntensity = 0.f;
 };

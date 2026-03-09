@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "ExoRift.h"
 
 // --- Sliding ---
 
@@ -129,6 +130,49 @@ void AExoCharacter::TickMantle(float DeltaTime)
 		MantleTimer = 0.f;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 	}
+}
+
+void AExoCharacter::TickCameraBob(float DeltaTime)
+{
+	if (!FirstPersonCamera) return;
+	if (!GetCharacterMovement()->IsMovingOnGround() || bIsSliding || bIsMantling)
+	{
+		// Smoothly return to default when not walking
+		FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
+		CamLoc.Z = FMath::FInterpTo(CamLoc.Z, DefaultCameraZ, DeltaTime, 8.f);
+		FirstPersonCamera->SetRelativeLocation(CamLoc);
+		return;
+	}
+
+	float Speed = GetVelocity().Size2D();
+	if (Speed < 50.f)
+	{
+		// Idle — gently return camera
+		FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
+		CamLoc.Z = FMath::FInterpTo(CamLoc.Z, DefaultCameraZ, DeltaTime, 8.f);
+		FirstPersonCamera->SetRelativeLocation(CamLoc);
+		CameraBobTimer = 0.f;
+		return;
+	}
+
+	// Bob frequency scales with speed: walk ~7 Hz, sprint ~10 Hz
+	float BobFreq = bIsSprinting ? 10.f : 7.f;
+	float BobAmpV = bIsSprinting ? 2.5f : 1.2f;    // Vertical amplitude
+	float BobAmpH = bIsSprinting ? 0.8f : 0.3f;    // Horizontal sway
+
+	CameraBobTimer += DeltaTime * BobFreq;
+
+	float VertBob = FMath::Sin(CameraBobTimer) * BobAmpV;
+	float HorzBob = FMath::Cos(CameraBobTimer * 0.5f) * BobAmpH;
+
+	FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
+	CamLoc.Z = DefaultCameraZ + VertBob;
+	FirstPersonCamera->SetRelativeLocation(CamLoc);
+
+	// Subtle roll sway
+	FRotator CamRot = FirstPersonCamera->GetRelativeRotation();
+	CamRot.Roll = HorzBob;
+	FirstPersonCamera->SetRelativeRotation(CamRot);
 }
 
 void AExoCharacter::TickFootsteps(float DeltaTime)

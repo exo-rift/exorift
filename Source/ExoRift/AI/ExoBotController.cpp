@@ -155,10 +155,11 @@ void AExoBotController::TickFullAI(float DeltaTime)
 		return;
 	}
 
-	// Cover check — low health bots flee
+	// Cover check — low health bots flee (sprinting)
 	if (ShouldSeekCover())
 	{
 		StopFiring();
+		Bot->StartSprint();
 		SeekCover();
 		return;
 	}
@@ -186,10 +187,13 @@ void AExoBotController::TickFullAI(float DeltaTime)
 		if (DistToTarget > EngageRange)
 		{
 			StopFiring();
+			// Sprint while closing distance
+			Bot->StartSprint();
 			MoveToTarget();
 		}
 		else
 		{
+			Bot->StopSprint();
 			StopMovement();
 			AimAtTarget(DeltaTime);
 
@@ -217,10 +221,18 @@ void AExoBotController::TickFullAI(float DeltaTime)
 			// Strafe during combat
 			UpdateStrafeDirection(DeltaTime);
 			ApplyStrafe(DeltaTime);
+
+			// Grenade at medium range
+			TryThrowGrenade();
 		}
 	}
 	else
 	{
+		Bot->StopSprint();
+
+		// Try to execute nearby DBNO enemies
+		TryExecuteDBNO();
+
 		// No target — look for loot or wander
 		LookForLoot();
 		if (LootTarget)

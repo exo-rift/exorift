@@ -7,7 +7,9 @@
 class UPointLightComponent;
 class UStaticMeshComponent;
 
-/** Short-lived impact burst at bullet hit locations. */
+static constexpr int32 NUM_SPARKS = 5;
+
+/** Short-lived impact burst at bullet hit locations with sparks and dust. */
 UCLASS()
 class AExoImpactEffect : public AActor
 {
@@ -26,21 +28,17 @@ private:
 	UStaticMeshComponent* CoreMesh;
 
 	UPROPERTY()
-	UStaticMeshComponent* SparkMesh1;
-
-	UPROPERTY()
-	UStaticMeshComponent* SparkMesh2;
-
-	UPROPERTY()
-	UStaticMeshComponent* SparkMesh3;
+	UStaticMeshComponent* DustPuff;
 
 	UPROPERTY()
 	UPointLightComponent* FlashLight;
 
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> SparkMeshes;
+
+	TArray<FVector> SparkVelocities;
+
 	float Age = 0.f;
-	float Lifetime = 0.15f;
+	float Lifetime = 0.2f;
 	float BaseIntensity = 0.f;
-	FVector SparkVel1;
-	FVector SparkVel2;
-	FVector SparkVel3;
 };

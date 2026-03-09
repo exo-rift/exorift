@@ -4,10 +4,12 @@
 #include "Player/ExoCharacter.h"
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
+#include "Weapons/ExoGrenadeComponent.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "NavigationSystem.h"
 #include "EngineUtils.h"
+#include "ExoRift.h"
 
 // ---------------------------------------------------------------------------
 // Combat — target selection, aiming, firing
@@ -219,7 +221,7 @@ void AExoBotController::LookForLoot()
 	APawn* BotPawn = GetPawn();
 	if (!BotPawn) return;
 
-	float BestDist = 3000.f; // Only grab nearby loot
+	float BestDist = 3000.f;
 	for (TActorIterator<AExoWeaponPickup> It(GetWorld()); It; ++It)
 	{
 		float Dist = FVector::Dist(BotPawn->GetActorLocation(), It->GetActorLocation());
@@ -228,5 +230,65 @@ void AExoBotController::LookForLoot()
 			BestDist = Dist;
 			LootTarget = *It;
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Grenade usage — throw at clusters or stationary targets
+// ---------------------------------------------------------------------------
+
+void AExoBotController::TryThrowGrenade()
+{
+	GrenadeTimer -= GetWorld()->GetDeltaSeconds();
+	if (GrenadeTimer > 0.f) return;
+
+	AExoCharacter* Bot = Cast<AExoCharacter>(GetPawn());
+	if (!Bot || !CurrentTarget) return;
+
+	float Dist = FVector::Dist(Bot->GetActorLocation(), CurrentTarget->GetActorLocation());
+	if (Dist < 1500.f || Dist > 4000.f) return; // Only at medium range
+
+	// Higher difficulty = more likely to grenade
+	float Chance = FMath::Lerp(0.1f, 0.6f, AimAccuracy);
+	if (FMath::FRand() > Chance) return;
+
+	Bot->ThrowGrenade();
+	GrenadeTimer = GrenadeCooldown;
+	UE_LOG(LogExoRift, Verbose, TEXT("Bot threw grenade at target %.0f units away"), Dist);
+}
+
+// ---------------------------------------------------------------------------
+// DBNO execution — finish off downed enemies nearby
+// ---------------------------------------------------------------------------
+
+void AExoBotController::TryExecuteDBNO()
+{
+	ExecutionSearchTimer -= GetWorld()->GetDeltaSeconds();
+	if (ExecutionSearchTimer > 0.f) return;
+	ExecutionSearchTimer = 2.f;
+
+	AExoCharacter* Bot = Cast<AExoCharacter>(GetPawn());
+	if (!Bot || Bot->IsExecuting()) return;
+
+	// Find nearest DBNO enemy
+	AExoCharacter* BestTarget = nullptr;
+	float BestDist = 300.f; // Must be very close to execute
+
+	for (TActorIterator<AExoCharacter> It(GetWorld()); It; ++It)
+	{
+		AExoCharacter* Char = *It;
+		if (!Char || Char == Bot || !Char->IsDBNO()) continue;
+
+		float Dist = FVector::Dist(Bot->GetActorLocation(), Char->GetActorLocation());
+		if (Dist < BestDist)
+		{
+			BestDist = Dist;
+			BestTarget = Char;
+		}
+	}
+
+	if (BestTarget)
+	{
+		Bot->StartExecution(BestTarget);
 	}
 }

@@ -97,6 +97,15 @@ protected:
 	FVector CoverLocation = FVector::ZeroVector;
 	bool bSeekingCover = false;
 
+	// Grenade usage
+	float GrenadeTimer = 0.f;
+	float GrenadeCooldown = 15.f;
+	void TryThrowGrenade();
+
+	// DBNO execution
+	void TryExecuteDBNO();
+	float ExecutionSearchTimer = 0.f;
+
 	// Difficulty-derived stats (set by SetDifficulty)
 	float AimAccuracy = 0.7f;
 	float ReactionTime = 0.3f;

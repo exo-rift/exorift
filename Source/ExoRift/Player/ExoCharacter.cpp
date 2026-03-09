@@ -19,6 +19,8 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoCharacterModel.h"
 #include "Visual/ExoScreenShake.h"
+#include "Map/ExoZoneSystem.h"
+#include "EngineUtils.h"
 #include "UI/ExoHitMarker.h"
 #include "UI/ExoHitDirectionIndicator.h"
 #include "UI/ExoPingSystem.h"
@@ -112,13 +114,40 @@ void AExoCharacter::Tick(float DeltaTime)
 	TickFootsteps(DeltaTime);
 	if (EmoteComp) EmoteComp->TickEmote(DeltaTime);
 
-	// Update post-process low health effect
+	// Update post-process effects and HUD subsystems (local player only)
 	if (IsLocallyControlled())
 	{
 		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
 		if (PP)
 		{
-			PP->SetLowHealthEffect(Health / MaxHealth);
+			float HealthPct = Health / MaxHealth;
+			PP->SetLowHealthEffect(HealthPct);
+			PP->ApplyLowHealthPulse(HealthPct);
+			PP->ApplySpeedBoostEffect((bIsSprinting || bIsSliding) ? 1.f : 0.f);
+
+			// Zone damage visual/audio feedback
+			bool bOutsideZone = false;
+			for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
+			{
+				bOutsideZone = !(*It)->IsInsideZone(GetActorLocation());
+				break;
+			}
+			if (bOutsideZone)
+			{
+				PP->ApplyZoneDamageEffect(0.7f);
+				ZoneDamageAudioTimer -= DeltaTime;
+				if (ZoneDamageAudioTimer <= 0.f)
+				{
+					ZoneDamageAudioTimer = 3.f;
+					if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+						Audio->PlayZoneWarningSound();
+				}
+			}
+			else
+			{
+				PP->ApplyZoneDamageEffect(0.f);
+				ZoneDamageAudioTimer = 0.f;
+			}
 		}
 
 		FExoHitMarker::Tick(DeltaTime);
@@ -132,6 +161,8 @@ void AExoCharacter::Tick(float DeltaTime)
 			AddControllerPitchInput(FExoScreenShake::GetShakeOffset().Pitch * DeltaTime * 10.f);
 			AddControllerYawInput(FExoScreenShake::GetShakeOffset().Yaw * DeltaTime * 10.f);
 		}
+
+		TickCameraBob(DeltaTime);
 	}
 }
 

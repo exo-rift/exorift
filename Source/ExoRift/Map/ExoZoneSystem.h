@@ -58,6 +58,7 @@ protected:
 	void AdvanceStage();
 	void TickShrink(float DeltaTime);
 	void TickHold(float DeltaTime);
+	void ApplyZoneDamage(float DeltaTime);
 
 	UPROPERTY(EditAnywhere, Category = "Zone")
 	TArray<FZoneStage> Stages;
