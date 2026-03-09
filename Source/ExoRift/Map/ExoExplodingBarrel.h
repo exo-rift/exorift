@@ -5,6 +5,8 @@
 #include "ExoExplodingBarrel.generated.h"
 
 class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class EXORIFT_API AExoExplodingBarrel : public AActor
@@ -14,10 +16,15 @@ class EXORIFT_API AExoExplodingBarrel : public AActor
 public:
 	AExoExplodingBarrel();
 
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 		AController* EventInstigator, AActor* DamageCauser) override;
 
 protected:
+	void BuildBarrelVisuals();
+
 	UPROPERTY(EditAnywhere, Category = "Barrel")
 	float ExplosionDamage = 80.f;
 
@@ -29,6 +36,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BarrelMesh;
+
+	UPROPERTY()
+	UPointLightComponent* WarnLight = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* HazardStripeMat = nullptr;
 
 private:
 	void Explode(AController* InstigatorController);

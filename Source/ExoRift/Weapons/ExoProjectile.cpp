@@ -11,7 +11,7 @@
 
 AExoProjectile::AExoProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	InitialLifeSpan = 5.f;
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
@@ -31,6 +31,19 @@ AExoProjectile::AExoProjectile()
 		ProjectileMesh->SetStaticMesh(SphereFinder.Object);
 	}
 
+	// Emissive projectile material
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFinder.Succeeded())
+	{
+		ProjectileMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		ProjectileMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(1.f, 0.4f, 0.1f));
+		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(3.f, 1.2f, 0.3f));
+		ProjectileMesh->SetMaterial(0, ProjectileMat);
+	}
+
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
 	GlowLight->SetupAttachment(CollisionSphere);
 	GlowLight->SetIntensity(8000.f);
@@ -38,7 +51,8 @@ AExoProjectile::AExoProjectile()
 	GlowLight->SetLightColor(FLinearColor(1.f, 0.4f, 0.1f));
 	GlowLight->CastShadows = false;
 
-	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(
+		TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = CollisionSphere;
 	ProjectileMovement->InitialSpeed = 3000.f;
 	ProjectileMovement->MaxSpeed = 3000.f;
@@ -49,7 +63,46 @@ AExoProjectile::AExoProjectile()
 	CollisionSphere->OnComponentHit.AddDynamic(this, &AExoProjectile::OnHit);
 }
 
-void AExoProjectile::InitProjectile(const FVector& LaunchVelocity, float InDamage, AController* InInstigator)
+void AExoProjectile::SetProjectileColor(const FLinearColor& Color)
+{
+	GlowColor = Color;
+	if (ProjectileMat)
+	{
+		ProjectileMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+	}
+	if (GlowLight)
+	{
+		GlowLight->SetLightColor(Color);
+	}
+}
+
+void AExoProjectile::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	float Time = GetWorld()->GetTimeSeconds();
+
+	// Flickering glow — energy weapon feel
+	float Flicker = 1.f + 0.1f * FMath::Sin(Time * 30.f) + 0.08f * FMath::Sin(Time * 47.f);
+	if (GlowLight)
+	{
+		GlowLight->SetIntensity(8000.f * Flicker);
+	}
+
+	// Pulsing emissive
+	if (ProjectileMat)
+	{
+		float EmissivePulse = 2.5f + 0.5f * FMath::Sin(Time * 20.f);
+		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(GlowColor.R * EmissivePulse, GlowColor.G * EmissivePulse,
+				GlowColor.B * EmissivePulse));
+	}
+}
+
+void AExoProjectile::InitProjectile(const FVector& LaunchVelocity, float InDamage,
+	AController* InInstigator)
 {
 	ProjectileDamage = InDamage;
 	InstigatorController = InInstigator;
@@ -72,18 +125,18 @@ void AExoProjectile::Explode()
 		ProjectileDamage,
 		ProjectileDamage * MinDamageFalloff,
 		GetActorLocation(),
-		ExplosionRadius * 0.3f, // Inner radius (full damage)
-		ExplosionRadius,         // Outer radius
-		1.f,                     // Falloff exponent
-		nullptr,                 // Damage type
+		ExplosionRadius * 0.3f,
+		ExplosionRadius,
+		1.f,
+		nullptr,
 		IgnoredActors,
-		this,                    // Damage causer
+		this,
 		InstigatorController
 	);
 
-	// Explosion VFX
 	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
-	UE_LOG(LogExoRift, Verbose, TEXT("Projectile exploded at %s"), *GetActorLocation().ToString());
+	UE_LOG(LogExoRift, Verbose, TEXT("Projectile exploded at %s"),
+		*GetActorLocation().ToString());
 	Destroy();
 }

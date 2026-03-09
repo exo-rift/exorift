@@ -57,4 +57,10 @@ protected:
 	// Floating bob animation
 	float BobPhase = 0.f;
 	FVector BaseLocation;
+
+	UPROPERTY()
+	class UPointLightComponent* RarityGlow = nullptr;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* AccentMat = nullptr;
 };

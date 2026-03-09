@@ -8,6 +8,7 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
 class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class EXORIFT_API AExoProjectile : public AActor
@@ -17,7 +18,12 @@ class EXORIFT_API AExoProjectile : public AActor
 public:
 	AExoProjectile();
 
+	virtual void Tick(float DeltaTime) override;
+
 	void InitProjectile(const FVector& LaunchVelocity, float InDamage, AController* InInstigator);
+
+	/** Set the projectile's glow color (weapon-dependent). */
+	void SetProjectileColor(const FLinearColor& Color);
 
 protected:
 	UFUNCTION()
@@ -38,6 +44,9 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UPointLightComponent* GlowLight;
 
+	UPROPERTY()
+	UMaterialInstanceDynamic* ProjectileMat = nullptr;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
 	float ExplosionRadius = 500.f;
 
@@ -45,6 +54,7 @@ protected:
 	float MinDamageFalloff = 0.2f;
 
 	float ProjectileDamage = 80.f;
+	FLinearColor GlowColor = FLinearColor(1.f, 0.4f, 0.1f);
 
 	UPROPERTY()
 	AController* InstigatorController = nullptr;

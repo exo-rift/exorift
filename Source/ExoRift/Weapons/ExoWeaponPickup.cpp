@@ -57,7 +57,8 @@ void AExoWeaponPickup::BuildPickupModel()
 	FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Rarity);
 
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
-		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator)
+		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator,
+		bool bIsAccent = false) -> UMaterialInstanceDynamic*
 	{
 		UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(this);
 		C->SetupAttachment(RootComponent);
@@ -68,12 +69,20 @@ void AExoWeaponPickup::BuildPickupModel()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = false;
 		C->RegisterComponent();
+		UMaterialInstanceDynamic* Mat = nullptr;
 		if (BaseMat)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			if (bIsAccent && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
+			{
+				float EmMul = (Rarity == EWeaponRarity::Legendary) ? 3.f : 1.5f;
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
+			}
 			C->SetMaterial(0, Mat);
 		}
+		return Mat;
 	};
 
 	FLinearColor BodyColor(0.1f, 0.1f, 0.12f);
@@ -84,65 +93,65 @@ void AExoWeaponPickup::BuildPickupModel()
 	case EWeaponType::Rifle:
 	case EWeaponType::SMG:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.6f, 0.12f, 0.1f), BodyColor);
-		MakePart(CubeMesh, FVector(25.f, 0.f, 0.f), FVector(0.35f, 0.06f, 0.06f), BodyColor); // Barrel
-		MakePart(CubeMesh, FVector(-10.f, 0.f, -8.f), FVector(0.08f, 0.06f, 0.12f), BodyColor); // Mag
-		MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.4f, 0.02f, 0.02f), RarityColor); // Accent
+		MakePart(CubeMesh, FVector(25.f, 0.f, 0.f), FVector(0.35f, 0.06f, 0.06f), BodyColor);
+		MakePart(CubeMesh, FVector(-10.f, 0.f, -8.f), FVector(0.08f, 0.06f, 0.12f), BodyColor);
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.4f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 
 	case EWeaponType::Pistol:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.3f, 0.1f, 0.1f), BodyColor);
 		MakePart(CubeMesh, FVector(15.f, 0.f, 0.f), FVector(0.2f, 0.05f, 0.05f), BodyColor);
-		MakePart(CubeMesh, FVector(-5.f, 0.f, -8.f), FVector(0.06f, 0.06f, 0.1f), BodyColor); // Grip
-		MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.25f, 0.02f, 0.02f), RarityColor);
+		MakePart(CubeMesh, FVector(-5.f, 0.f, -8.f), FVector(0.06f, 0.06f, 0.1f), BodyColor);
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.25f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 
 	case EWeaponType::Shotgun:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.5f, 0.14f, 0.12f), BodyColor);
 		MakePart(CubeMesh, FVector(20.f, 0.f, 0.f), FVector(0.25f, 0.08f, 0.08f), BodyColor);
-		MakePart(CubeMesh, FVector(20.f, 0.f, 3.f), FVector(0.25f, 0.08f, 0.08f), BodyColor); // Double barrel
-		MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.35f, 0.02f, 0.02f), RarityColor);
+		MakePart(CubeMesh, FVector(20.f, 0.f, 3.f), FVector(0.25f, 0.08f, 0.08f), BodyColor);
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.35f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 
 	case EWeaponType::Sniper:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.7f, 0.1f, 0.08f), BodyColor);
-		MakePart(CubeMesh, FVector(30.f, 0.f, 0.f), FVector(0.4f, 0.04f, 0.04f), BodyColor); // Long barrel
-		MakePart(CubeMesh, FVector(10.f, 0.f, 6.f), FVector(0.1f, 0.05f, 0.05f), BodyColor); // Scope
-		MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.5f, 0.02f, 0.02f), RarityColor);
+		MakePart(CubeMesh, FVector(30.f, 0.f, 0.f), FVector(0.4f, 0.04f, 0.04f), BodyColor);
+		MakePart(CubeMesh, FVector(10.f, 0.f, 6.f), FVector(0.1f, 0.05f, 0.05f), BodyColor);
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.5f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 
 	case EWeaponType::GrenadeLauncher:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.45f, 0.14f, 0.14f), BodyColor);
 		if (CylMesh) MakePart(CylMesh, FVector(18.f, 0.f, 0.f), FVector(0.12f, 0.12f, 0.15f), BodyColor,
-			FRotator(0.f, 0.f, 90.f)); // Drum
-		MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.3f, 0.02f, 0.02f), RarityColor);
+			FRotator(0.f, 0.f, 90.f));
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 3.f), FVector(0.3f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 
 	default:
 		MakePart(CubeMesh, FVector(0.f, 0.f, 0.f), FVector(0.4f, 0.1f, 0.1f), BodyColor);
-		MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.3f, 0.02f, 0.02f), RarityColor);
+		AccentMat = MakePart(CubeMesh, FVector(0.f, 0.f, 2.f), FVector(0.3f, 0.02f, 0.02f), RarityColor, FRotator::ZeroRotator, true);
 		break;
 	}
 
 	// Rarity glow light
-	UPointLightComponent* Glow = NewObject<UPointLightComponent>(this);
-	Glow->SetupAttachment(RootComponent);
-	Glow->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	Glow->SetLightColor(RarityColor);
-	Glow->CastShadows = false;
-	Glow->RegisterComponent();
+	RarityGlow = NewObject<UPointLightComponent>(this);
+	RarityGlow->SetupAttachment(RootComponent);
+	RarityGlow->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	RarityGlow->SetLightColor(RarityColor);
+	RarityGlow->CastShadows = false;
+	RarityGlow->RegisterComponent();
 
-	// Intensity based on rarity
 	float GlowIntensity;
+	float GlowRadius;
 	switch (Rarity)
 	{
-	case EWeaponRarity::Common:    GlowIntensity = 1000.f; break;
-	case EWeaponRarity::Rare:      GlowIntensity = 2000.f; break;
-	case EWeaponRarity::Epic:      GlowIntensity = 4000.f; break;
-	case EWeaponRarity::Legendary: GlowIntensity = 6000.f; break;
-	default:                       GlowIntensity = 1000.f; break;
+	case EWeaponRarity::Common:    GlowIntensity = 1000.f; GlowRadius = 250.f; break;
+	case EWeaponRarity::Rare:      GlowIntensity = 2500.f; GlowRadius = 350.f; break;
+	case EWeaponRarity::Epic:      GlowIntensity = 5000.f; GlowRadius = 450.f; break;
+	case EWeaponRarity::Legendary: GlowIntensity = 8000.f; GlowRadius = 550.f; break;
+	default:                       GlowIntensity = 1000.f; GlowRadius = 250.f; break;
 	}
-	Glow->SetIntensity(GlowIntensity);
-	Glow->SetAttenuationRadius(300.f);
+	RarityGlow->SetIntensity(GlowIntensity);
+	RarityGlow->SetAttenuationRadius(GlowRadius);
 }
 
 void AExoWeaponPickup::Tick(float DeltaTime)
@@ -151,7 +160,6 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 
 	if (bIsActive)
 	{
-		// Floating bob + rotation
 		BobPhase += DeltaTime * 2.f;
 		float Bob = FMath::Sin(BobPhase) * 20.f;
 		SetActorLocation(BaseLocation + FVector(0.f, 0.f, Bob));
@@ -159,6 +167,24 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 		FRotator Rot = GetActorRotation();
 		Rot.Yaw += DeltaTime * 45.f;
 		SetActorRotation(Rot);
+
+		// Pulse glow for epic/legendary
+		if (RarityGlow && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
+		{
+			float Pulse = 0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f);
+			float Base = (Rarity == EWeaponRarity::Legendary) ? 8000.f : 5000.f;
+			RarityGlow->SetIntensity(Base * Pulse);
+		}
+
+		// Pulse emissive accent strip
+		if (AccentMat && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
+		{
+			FLinearColor RC = AExoWeaponBase::GetRarityColor(Rarity);
+			float EmPulse = 1.5f + 1.5f * FMath::Sin(BobPhase * 1.5f);
+			if (Rarity == EWeaponRarity::Legendary) EmPulse *= 1.5f;
+			AccentMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(RC.R * EmPulse, RC.G * EmPulse, RC.B * EmPulse));
+		}
 	}
 	else if (bRespawns)
 	{

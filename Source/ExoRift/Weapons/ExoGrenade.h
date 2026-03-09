@@ -9,6 +9,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class EXORIFT_API AExoGrenade : public AActor
@@ -17,6 +18,8 @@ class EXORIFT_API AExoGrenade : public AActor
 
 public:
 	AExoGrenade();
+
+	virtual void Tick(float DeltaTime) override;
 
 	/** Launch the grenade in the given direction. */
 	void Ignite(FVector Direction);
@@ -37,6 +40,8 @@ public:
 	float InitialSpeed = 2000.f;
 
 protected:
+	void BuildGrenadeVisuals();
+
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* CollisionComp;
 
@@ -48,6 +53,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UPointLightComponent* FuseLight;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* BodyMat = nullptr;
+
+	float FuseElapsed = 0.f;
+	bool bIgnited = false;
 
 private:
 	void Explode();
