@@ -1,0 +1,153 @@
+#include "Map/ExoZoneSystem.h"
+#include "Net/UnrealNetwork.h"
+#include "ExoRift.h"
+
+AExoZoneSystem::AExoZoneSystem()
+{
+	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+
+	// Default zone stages (4km² map = 2000m radius)
+	FZoneStage Stage1;
+	Stage1.Center = FVector2D(0.f, 0.f);
+	Stage1.Radius = 180000.f;
+	Stage1.ShrinkDuration = 60.f;
+	Stage1.HoldDuration = 120.f;
+	Stage1.DamagePerSecond = 2.f;
+	Stages.Add(Stage1);
+
+	FZoneStage Stage2;
+	Stage2.Center = FVector2D(FMath::RandRange(-50000.f, 50000.f), FMath::RandRange(-50000.f, 50000.f));
+	Stage2.Radius = 120000.f;
+	Stage2.ShrinkDuration = 45.f;
+	Stage2.HoldDuration = 90.f;
+	Stage2.DamagePerSecond = 5.f;
+	Stages.Add(Stage2);
+
+	FZoneStage Stage3;
+	Stage3.Center = FVector2D(FMath::RandRange(-30000.f, 30000.f), FMath::RandRange(-30000.f, 30000.f));
+	Stage3.Radius = 60000.f;
+	Stage3.ShrinkDuration = 30.f;
+	Stage3.HoldDuration = 60.f;
+	Stage3.DamagePerSecond = 10.f;
+	Stages.Add(Stage3);
+
+	FZoneStage Stage4;
+	Stage4.Center = FVector2D(FMath::RandRange(-10000.f, 10000.f), FMath::RandRange(-10000.f, 10000.f));
+	Stage4.Radius = 20000.f;
+	Stage4.ShrinkDuration = 20.f;
+	Stage4.HoldDuration = 30.f;
+	Stage4.DamagePerSecond = 20.f;
+	Stages.Add(Stage4);
+
+	FZoneStage StageFinal;
+	StageFinal.Center = FVector2D::ZeroVector;
+	StageFinal.Radius = 500.f;
+	StageFinal.ShrinkDuration = 15.f;
+	StageFinal.HoldDuration = 0.f;
+	StageFinal.DamagePerSecond = 50.f;
+	Stages.Add(StageFinal);
+}
+
+void AExoZoneSystem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!bIsActive || !HasAuthority()) return;
+
+	if (bIsShrinking)
+	{
+		TickShrink(DeltaTime);
+	}
+	else
+	{
+		TickHold(DeltaTime);
+	}
+}
+
+void AExoZoneSystem::StartZoneSequence()
+{
+	bIsActive = true;
+	CurrentRadius = 200000.f;
+	CurrentCenter = FVector2D::ZeroVector;
+	CurrentStage = -1;
+	AdvanceStage();
+}
+
+void AExoZoneSystem::AdvanceStage()
+{
+	CurrentStage++;
+	if (CurrentStage >= Stages.Num())
+	{
+		bIsActive = false;
+		UE_LOG(LogExoRift, Log, TEXT("All zone stages complete"));
+		return;
+	}
+
+	const FZoneStage& Stage = Stages[CurrentStage];
+	TargetRadius = Stage.Radius;
+	TargetCenter = Stage.Center;
+	bIsShrinking = true;
+	StageTimer = 0.f;
+
+	UE_LOG(LogExoRift, Log, TEXT("Zone stage %d: shrinking to %.0f radius over %.0fs"),
+		CurrentStage, TargetRadius, Stage.ShrinkDuration);
+}
+
+void AExoZoneSystem::TickShrink(float DeltaTime)
+{
+	if (CurrentStage < 0 || CurrentStage >= Stages.Num()) return;
+
+	const FZoneStage& Stage = Stages[CurrentStage];
+	StageTimer += DeltaTime;
+	float Alpha = FMath::Clamp(StageTimer / Stage.ShrinkDuration, 0.f, 1.f);
+
+	// Smoothly interpolate radius and center
+	float StartRadius = (CurrentStage == 0) ? 200000.f : Stages[CurrentStage - 1].Radius;
+	FVector2D StartCenter = (CurrentStage == 0) ? FVector2D::ZeroVector : Stages[CurrentStage - 1].Center;
+
+	CurrentRadius = FMath::Lerp(StartRadius, TargetRadius, Alpha);
+	CurrentCenter = FMath::Lerp(StartCenter, TargetCenter, Alpha);
+
+	if (Alpha >= 1.f)
+	{
+		bIsShrinking = false;
+		StageTimer = 0.f;
+	}
+}
+
+void AExoZoneSystem::TickHold(float DeltaTime)
+{
+	if (CurrentStage < 0 || CurrentStage >= Stages.Num()) return;
+
+	const FZoneStage& Stage = Stages[CurrentStage];
+	StageTimer += DeltaTime;
+
+	if (StageTimer >= Stage.HoldDuration)
+	{
+		AdvanceStage();
+	}
+}
+
+bool AExoZoneSystem::IsInsideZone(const FVector& Location) const
+{
+	FVector2D Loc2D(Location.X, Location.Y);
+	float DistSq = FVector2D::DistSquared(Loc2D, CurrentCenter);
+	return DistSq <= (CurrentRadius * CurrentRadius);
+}
+
+float AExoZoneSystem::GetDamagePerSecond() const
+{
+	if (CurrentStage < 0 || CurrentStage >= Stages.Num()) return 0.f;
+	return Stages[CurrentStage].DamagePerSecond;
+}
+
+void AExoZoneSystem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AExoZoneSystem, CurrentStage);
+	DOREPLIFETIME(AExoZoneSystem, CurrentRadius);
+	DOREPLIFETIME(AExoZoneSystem, CurrentCenter);
+	DOREPLIFETIME(AExoZoneSystem, TargetRadius);
+	DOREPLIFETIME(AExoZoneSystem, TargetCenter);
+}
