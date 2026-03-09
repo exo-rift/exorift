@@ -65,6 +65,12 @@ private:
 	void SpawnConsole(const FVector& Pos, float Yaw);
 	void SpawnCrater(const FVector& Center, float Radius);
 
+	// --- Signage & markings (in ExoLevelBuilderSignage.cpp) ---
+	void BuildSignage();
+	void SpawnCompoundSign(const FVector& Pos, float Yaw, const FLinearColor& Color);
+	void SpawnLandingPad(const FVector& Center, float Radius);
+	void SpawnDirectionMarker(const FVector& Pos, float Yaw, const FLinearColor& Color);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

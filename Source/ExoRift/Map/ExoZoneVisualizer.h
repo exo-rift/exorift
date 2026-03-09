@@ -5,6 +5,7 @@
 #include "ExoZoneVisualizer.generated.h"
 
 class AExoZoneSystem;
+class UPointLightComponent;
 
 UCLASS()
 class EXORIFT_API AExoZoneVisualizer : public AActor
@@ -54,10 +55,25 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	FLinearColor TargetColor = FLinearColor(1.f, 1.f, 1.f, 0.15f);
 
+	/** Lightning arcs along zone edge — pulsing energy segments. */
+	void UpdateEdgeLightning();
+
+	static constexpr int32 NumLightningArcs = 12;
+
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> LightningArcs;
+
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*> LightningMats;
+
+	UPROPERTY()
+	TArray<UPointLightComponent*> EdgeLights;
+
 	float CachedRadius = -1.f;
 	float CachedTargetRadius = -1.f;
 
 	// Cached engine meshes
 	UStaticMesh* CylinderMesh = nullptr;
+	UStaticMesh* CubeMesh = nullptr;
 	UMaterialInterface* BaseMaterial = nullptr;
 };

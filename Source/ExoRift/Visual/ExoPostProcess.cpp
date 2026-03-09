@@ -60,13 +60,36 @@ void AExoPostProcess::Tick(float DeltaTime)
 	// Smooth speed boost
 	SpeedBoostAlpha = FMath::FInterpTo(SpeedBoostAlpha, TargetSpeedBoostAlpha, DeltaTime, 6.f);
 
+	// Decay dash effect (fast burst)
+	if (DashEffectIntensity > 0.f)
+	{
+		DashEffectIntensity = FMath::Max(0.f, DashEffectIntensity - DeltaTime * 5.f);
+	}
+
+	// Smooth grapple effect
+	GrappleEffectAlpha = FMath::FInterpTo(GrappleEffectAlpha, TargetGrappleAlpha, DeltaTime, 8.f);
+
+	// Decay scan pulse (medium burst)
+	if (ScanPulseIntensity > 0.f)
+	{
+		ScanPulseIntensity = FMath::Max(0.f, ScanPulseIntensity - DeltaTime * 3.f);
+	}
+
+	// Decay shield flash (fast burst)
+	if (ShieldFlashIntensity > 0.f)
+	{
+		ShieldFlashIntensity = FMath::Max(0.f, ShieldFlashIntensity - DeltaTime * 6.f);
+	}
+
 	// --- Combine all effects ---
 
-	// Vignette: base + damage flash + low health + zone damage + heartbeat
+	// Vignette: base + damage flash + low health + zone damage + heartbeat + abilities
 	float TotalVignette = 0.3f;
 	TotalVignette += DamageFlashIntensity * 0.5f;
 	TotalVignette += LowHealthBlend * 0.3f;
 	TotalVignette += ZoneDamageIntensity * 0.4f;
+	TotalVignette += GrappleEffectAlpha * 0.6f;  // Tunnel vision during grapple
+	TotalVignette += DashEffectIntensity * 0.4f;  // Brief vignette burst on dash
 
 	// Heartbeat pulse at critical health (<25%)
 	if (LowHealthPulseBlend > 0.01f)
@@ -85,26 +108,33 @@ void AExoPostProcess::Tick(float DeltaTime)
 
 	PostProcessComp->Settings.VignetteIntensity = TotalVignette;
 
-	// Scene color tint: damage flash (warm) + zone damage (red)
+	// Scene color tint: damage + zone + abilities
 	float DamageTint = DamageFlashIntensity * 0.3f;
 	float ZoneTint = ZoneDamageIntensity * 0.4f;
 	float CombinedTint = DamageTint + ZoneTint;
 
-	PostProcessComp->Settings.bOverride_SceneColorTint = (CombinedTint > 0.01f);
-	if (CombinedTint > 0.01f)
+	// Ability tint contributions
+	float GrappleTintG = GrappleEffectAlpha * 0.15f;  // Green shift
+	float ScanTintB = ScanPulseIntensity * 0.2f;       // Blue shift
+	float ShieldTintC = ShieldFlashIntensity * 0.25f;   // Cyan shift
+
+	bool bHasTint = (CombinedTint > 0.01f || GrappleTintG > 0.01f ||
+		ScanTintB > 0.01f || ShieldTintC > 0.01f);
+
+	PostProcessComp->Settings.bOverride_SceneColorTint = bHasTint;
+	if (bHasTint)
 	{
 		PostProcessComp->Settings.SceneColorTint = FLinearColor(
-			1.f + CombinedTint,
-			1.f - CombinedTint * 0.5f,
-			1.f - CombinedTint * 0.5f, 1.f);
+			1.f + CombinedTint - ScanTintB * 0.3f,
+			1.f - CombinedTint * 0.5f + GrappleTintG + ShieldTintC * 0.5f,
+			1.f - CombinedTint * 0.5f + ScanTintB + ShieldTintC, 1.f);
 	}
 
 	// Low health: desaturation + pulsing vignette
+	float TotalDesat = 0.f;
 	if (LowHealthBlend > 0.01f)
 	{
-		PostProcessComp->Settings.bOverride_ColorSaturation = true;
-		float Desat = 1.f - LowHealthBlend * 0.4f;
-		PostProcessComp->Settings.ColorSaturation = FVector4(Desat, Desat, Desat, 1.f);
+		TotalDesat += LowHealthBlend * 0.4f;
 
 		if (LowHealthBlend > 0.5f)
 		{
@@ -112,22 +142,30 @@ void AExoPostProcess::Tick(float DeltaTime)
 			PostProcessComp->Settings.VignetteIntensity += Pulse * LowHealthBlend * 0.2f;
 		}
 	}
-	else
+	// Dash brief desaturation for "speed blur" feel
+	TotalDesat += DashEffectIntensity * 0.25f;
+
+	PostProcessComp->Settings.bOverride_ColorSaturation = (TotalDesat > 0.01f);
+	if (TotalDesat > 0.01f)
 	{
-		PostProcessComp->Settings.bOverride_ColorSaturation = false;
+		float Desat = 1.f - TotalDesat;
+		PostProcessComp->Settings.ColorSaturation = FVector4(Desat, Desat, Desat, 1.f);
 	}
 
-	// Chromatic aberration: kill effect + zone damage
-	float TotalFringe = KillEffectIntensity * 3.f + ZoneDamageIntensity * 2.f;
+	// Chromatic aberration: kill + zone + scan + dash
+	float TotalFringe = KillEffectIntensity * 3.f + ZoneDamageIntensity * 2.f
+		+ ScanPulseIntensity * 2.5f + DashEffectIntensity * 1.5f;
 	PostProcessComp->Settings.SceneFringeIntensity = TotalFringe;
 
-	// Speed boost: motion blur + bloom increase
-	PostProcessComp->Settings.bOverride_MotionBlurAmount = (SpeedBoostAlpha > 0.01f);
-	if (SpeedBoostAlpha > 0.01f)
+	// Speed boost + dash: motion blur + bloom increase
+	float TotalMotionBlur = SpeedBoostAlpha + DashEffectIntensity * 0.8f;
+	PostProcessComp->Settings.bOverride_MotionBlurAmount = (TotalMotionBlur > 0.01f);
+	if (TotalMotionBlur > 0.01f)
 	{
-		PostProcessComp->Settings.MotionBlurAmount = SpeedBoostAlpha * 0.6f;
+		PostProcessComp->Settings.MotionBlurAmount = TotalMotionBlur * 0.6f;
 	}
-	PostProcessComp->Settings.BloomIntensity = 0.7f + SpeedBoostAlpha * 0.4f;
+	PostProcessComp->Settings.BloomIntensity = 0.7f + SpeedBoostAlpha * 0.4f
+		+ ShieldFlashIntensity * 0.6f + ScanPulseIntensity * 0.3f;
 }
 
 void AExoPostProcess::TriggerDamageFlash(float Intensity)
@@ -174,6 +212,26 @@ void AExoPostProcess::ApplyLowHealthPulse(float HealthPercent)
 void AExoPostProcess::ApplySpeedBoostEffect(float Alpha)
 {
 	TargetSpeedBoostAlpha = FMath::Clamp(Alpha, 0.f, 1.f);
+}
+
+void AExoPostProcess::TriggerDashEffect()
+{
+	DashEffectIntensity = 1.f;
+}
+
+void AExoPostProcess::ApplyGrappleEffect(float Alpha)
+{
+	TargetGrappleAlpha = FMath::Clamp(Alpha, 0.f, 1.f);
+}
+
+void AExoPostProcess::TriggerScanPulse()
+{
+	ScanPulseIntensity = 1.f;
+}
+
+void AExoPostProcess::TriggerShieldFlash()
+{
+	ShieldFlashIntensity = 1.f;
 }
 
 AExoPostProcess* AExoPostProcess::Get(UWorld* World)

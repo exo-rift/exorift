@@ -1,6 +1,7 @@
 #include "Map/ExoZoneVisualizer.h"
 #include "Map/ExoZoneSystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
@@ -14,6 +15,10 @@ AExoZoneVisualizer::AExoZoneVisualizer()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFind(
 		TEXT("/Engine/BasicShapes/Cylinder"));
 	if (CylFind.Succeeded()) CylinderMesh = CylFind.Object;
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(
+		TEXT("/Engine/BasicShapes/Cube"));
+	if (CubeFind.Succeeded()) CubeMesh = CubeFind.Object;
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
@@ -72,6 +77,38 @@ void AExoZoneVisualizer::BeginPlay()
 			FLinearColor(ZoneColor.R * 0.5f, ZoneColor.G * 0.5f, ZoneColor.B, 0.4f));
 		GroundGlowMesh->SetMaterial(0, GlowMaterial);
 	}
+
+	// Create lightning arc segments along the zone edge
+	if (CubeMesh && BaseMaterial)
+	{
+		for (int32 i = 0; i < NumLightningArcs; i++)
+		{
+			UStaticMeshComponent* Arc = NewObject<UStaticMeshComponent>(this);
+			Arc->SetStaticMesh(CubeMesh);
+			Arc->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Arc->CastShadow = false;
+			Arc->RegisterComponent();
+
+			UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			ArcMat->SetVectorParameterValue(TEXT("BaseColor"),
+				FLinearColor(0.5f, 0.7f, 1.f));
+			ArcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(1.f, 2.f, 4.f));
+			Arc->SetMaterial(0, ArcMat);
+
+			LightningArcs.Add(Arc);
+			LightningMats.Add(ArcMat);
+
+			// Point light at each arc
+			UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
+			Light->SetIntensity(0.f);
+			Light->SetAttenuationRadius(2000.f);
+			Light->SetLightColor(FLinearColor(0.3f, 0.5f, 1.f));
+			Light->CastShadows = false;
+			Light->RegisterComponent();
+			EdgeLights.Add(Light);
+		}
+	}
 }
 
 void AExoZoneVisualizer::Tick(float DeltaTime)
@@ -91,6 +128,7 @@ void AExoZoneVisualizer::Tick(float DeltaTime)
 	UpdateZoneWall();
 	UpdateTargetRing();
 	UpdateGroundGlow();
+	UpdateEdgeLightning();
 }
 
 void AExoZoneVisualizer::UpdateZoneWall()
@@ -188,5 +226,65 @@ void AExoZoneVisualizer::UpdateGroundGlow()
 			GlowCol = FLinearColor(0.2f * Pulse, 0.4f * Pulse, 1.f * Pulse);
 		}
 		GlowMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
+	}
+}
+
+void AExoZoneVisualizer::UpdateEdgeLightning()
+{
+	if (!ZoneSystem || LightningArcs.Num() == 0) return;
+
+	float Radius = ZoneSystem->GetCurrentRadius();
+	FVector2D Center = ZoneSystem->GetCurrentCenter();
+	float Time = GetWorld()->GetTimeSeconds();
+	bool bShrinking = ZoneSystem->IsShrinking();
+
+	for (int32 i = 0; i < NumLightningArcs; i++)
+	{
+		if (!LightningArcs.IsValidIndex(i) || !LightningArcs[i]) continue;
+
+		// Each arc orbits the zone edge at different speed with jitter
+		float BaseAngle = (2.f * PI * i) / NumLightningArcs;
+		float Drift = FMath::Sin(Time * (1.3f + i * 0.2f)) * 0.3f;
+		float Angle = BaseAngle + Time * 0.15f + Drift;
+
+		float ArcX = Center.X + FMath::Cos(Angle) * Radius;
+		float ArcY = Center.Y + FMath::Sin(Angle) * Radius;
+
+		// Height jitter — arcs dance up and down the wall
+		float HeightJitter = 500.f + 3000.f * FMath::Abs(
+			FMath::Sin(Time * (3.f + i * 0.7f)));
+
+		LightningArcs[i]->SetWorldLocation(FVector(ArcX, ArcY, HeightJitter));
+
+		// Orient tangent to the circle
+		FRotator ArcRot(0.f, FMath::RadiansToDegrees(Angle) + 90.f, 0.f);
+		// Tilt for visual variety
+		ArcRot.Roll = FMath::Sin(Time * (5.f + i)) * 25.f;
+		LightningArcs[i]->SetWorldRotation(ArcRot);
+
+		// Flickering scale — arcs randomly stretch and shrink
+		float Flicker = FMath::Abs(FMath::Sin(Time * (15.f + i * 7.3f)));
+		float LenScale = (bShrinking ? 12.f : 6.f) * (0.5f + Flicker);
+		float ThickScale = 0.08f + 0.05f * Flicker;
+		LightningArcs[i]->SetWorldScale3D(FVector(LenScale, ThickScale, ThickScale));
+
+		// Emissive pulse — brighter during shrink, flickers rapidly
+		if (LightningMats.IsValidIndex(i) && LightningMats[i])
+		{
+			float EmIntensity = bShrinking ? (3.f + 5.f * Flicker) : (1.f + 2.f * Flicker);
+			FLinearColor EmCol(
+				ZoneColor.R * EmIntensity,
+				ZoneColor.G * EmIntensity,
+				ZoneColor.B * EmIntensity * 1.5f);
+			LightningMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"), EmCol);
+		}
+
+		// Light follows the arc
+		if (EdgeLights.IsValidIndex(i) && EdgeLights[i])
+		{
+			EdgeLights[i]->SetWorldLocation(FVector(ArcX, ArcY, HeightJitter));
+			float LightPower = (bShrinking ? 6000.f : 2000.f) * Flicker;
+			EdgeLights[i]->SetIntensity(LightPower);
+		}
 	}
 }

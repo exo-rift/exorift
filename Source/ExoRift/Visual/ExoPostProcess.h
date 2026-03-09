@@ -30,6 +30,18 @@ public:
 	/** Motion blur + FOV increase during sprint or dash. Alpha 0=off, 1=full. */
 	void ApplySpeedBoostEffect(float Alpha);
 
+	/** Dash ability — brief FOV punch + radial blur + desaturation. */
+	void TriggerDashEffect();
+
+	/** Grapple ability — tunnel vision + green tint while active. 0=off, 1=full. */
+	void ApplyGrappleEffect(float Alpha);
+
+	/** Area scan pulse — blue tint outward wave + slight aberration. */
+	void TriggerScanPulse();
+
+	/** Shield bubble — brief cyan flash overlay. */
+	void TriggerShieldFlash();
+
 	static AExoPostProcess* Get(UWorld* World);
 
 	/** Post-process component — public for weather system integration. */
@@ -61,6 +73,19 @@ protected:
 	// Speed boost effect state
 	float SpeedBoostAlpha = 0.f;
 	float TargetSpeedBoostAlpha = 0.f;
+
+	// Dash effect state (quick burst)
+	float DashEffectIntensity = 0.f;
+
+	// Grapple effect state (sustained while grappling)
+	float GrappleEffectAlpha = 0.f;
+	float TargetGrappleAlpha = 0.f;
+
+	// Scan pulse state
+	float ScanPulseIntensity = 0.f;
+
+	// Shield flash state
+	float ShieldFlashIntensity = 0.f;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* VignetteMID;

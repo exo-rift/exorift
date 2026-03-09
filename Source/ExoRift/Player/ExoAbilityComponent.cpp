@@ -2,6 +2,7 @@
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
 #include "Player/ExoDecoyActor.h"
+#include "Visual/ExoPostProcess.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -119,6 +120,11 @@ void UExoAbilityComponent::ExecuteDash()
 	LookDir.Normalize();
 
 	Char->LaunchCharacter(LookDir * DashImpulse, true, false);
+
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		PP->TriggerDashEffect();
+	}
 }
 
 void UExoAbilityComponent::ExecuteAreaScan()
@@ -145,6 +151,11 @@ void UExoAbilityComponent::ExecuteAreaScan()
 		}
 	}
 
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		PP->TriggerScanPulse();
+	}
+
 	UE_LOG(LogExoRift, Log, TEXT("AreaScan revealed %d enemies"), ScannedEnemies.Num());
 }
 
@@ -157,6 +168,11 @@ void UExoAbilityComponent::ExecuteShieldBubble()
 	if (Shield)
 	{
 		Shield->AddShield(ShieldRestoreAmount);
+	}
+
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		PP->TriggerShieldFlash();
 	}
 }
 
@@ -191,6 +207,11 @@ void UExoAbilityComponent::ExecuteGrapple()
 		}
 
 		CreateGrappleBeam();
+
+		if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+		{
+			PP->ApplyGrappleEffect(1.f);
+		}
 
 		UE_LOG(LogExoRift, Log, TEXT("Grapple attached at distance %.0f"),
 			FVector::Dist(Start, GrappleTarget));
@@ -269,6 +290,11 @@ void UExoAbilityComponent::TickGrapple(float DeltaTime)
 
 		FVector ArrivalDir = (GrappleTarget - GrappleStartLocation).GetSafeNormal();
 		Char->LaunchCharacter(ArrivalDir * 400.f, false, false);
+
+		if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+		{
+			PP->ApplyGrappleEffect(0.f);
+		}
 	}
 }
 
