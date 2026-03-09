@@ -3,6 +3,7 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
+#include "Weapons/ExoWeaponShotgun.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
@@ -29,7 +30,7 @@ EWeaponType UExoInventoryComponent::SlotTypeForIndex(int32 Index)
 	{
 	case 0: return EWeaponType::Rifle;
 	case 1: return EWeaponType::Pistol;
-	case 2: return EWeaponType::GrenadeLauncher;
+	case 2: return EWeaponType::Shotgun;
 	default: return EWeaponType::Rifle;
 	}
 }
@@ -242,4 +243,9 @@ void UExoInventoryComponent::SpawnDefaultWeapons()
 	AExoWeaponPistol* Pistol = GetWorld()->SpawnActor<AExoWeaponPistol>(
 		AExoWeaponPistol::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
 	if (Pistol) AddWeapon(Pistol);
+
+	// Spawn shotgun into slot 2 (Utility)
+	AExoWeaponShotgun* Shotgun = GetWorld()->SpawnActor<AExoWeaponShotgun>(
+		AExoWeaponShotgun::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
+	if (Shotgun) AddWeapon(Shotgun);
 }

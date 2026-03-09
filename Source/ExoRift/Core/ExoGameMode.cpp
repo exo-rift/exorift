@@ -10,6 +10,7 @@
 #include "Map/ExoDropPodManager.h"
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSpawnPoint.h"
+#include "Map/ExoMapConfig.h"
 #include "Core/ExoAudioManager.h"
 #include "UI/ExoHUD.h"
 #include "Kismet/GameplayStatics.h"
@@ -348,7 +349,7 @@ void AExoGameMode::RestartMatch()
 void AExoGameMode::ReturnToMainMenu()
 {
 	UE_LOG(LogExoRift, Log, TEXT("Returning to main menu"));
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("/Game/Maps/MainMenu"));
+	UGameplayStatics::OpenLevel(GetWorld(), *UExoMapConfig::GetMenuMapPath());
 }
 
 void AExoGameMode::RemoveAllBots()

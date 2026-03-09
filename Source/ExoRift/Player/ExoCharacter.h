@@ -46,6 +46,20 @@ public:
 	// DBNO (Down But Not Out)
 	bool IsDBNO() const { return bIsDBNO; }
 	float GetDBNOHealth() const { return DBNOHealthRemaining; }
+	bool IsBeingRevived() const { return bIsBeingRevived; }
+	float GetReviveProgress() const { return ReviveProgress; }
+
+	// Revive interface — called by a teammate
+	void StartRevive(AExoCharacter* Reviver);
+	void StopRevive();
+	void CompleteRevive();
+
+	// Execution (finisher) interface — called by an enemy on a DBNO target
+	void StartExecution(AExoCharacter* Target);
+	void CancelExecution();
+	bool IsExecuting() const { return bIsExecuting; }
+	float GetExecutionProgress() const { return ExecutionProgress; }
+	AExoCharacter* GetExecutionTarget() const { return ExecutionTarget; }
 
 	// Camera
 	UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
@@ -74,10 +88,12 @@ public:
 
 	// State queries for input gating
 	bool IsSprinting() const { return bIsSprinting; }
+	bool CanPerformActions() const { return !bIsDead && !bIsDBNO && !bIsExecuting; }
 
 protected:
 	void EnterDBNO();
 	void TickDBNO(float DeltaTime);
+	void TickExecution(float DeltaTime);
 	void Die(AController* Killer, const FString& WeaponName);
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
@@ -118,6 +134,12 @@ protected:
 
 	// DBNO state
 	bool bIsDBNO = false;
+	bool bIsBeingRevived = false;
+	float ReviveProgress = 0.f;
+	float DBNOTimer = 0.f;
+
+	UPROPERTY()
+	AExoCharacter* CurrentReviver = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
 	float DBNOHealth = 100.f;
@@ -128,13 +150,31 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
 	float ReviveTime = 5.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float DBNODuration = 30.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float DBNOCrawlSpeed = 50.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float ReviveHealthRestore = 30.f;
+
 	float DBNOHealthRemaining = 0.f;
-	float DBNOWalkSpeed = 100.f;
 
 	// Tracks last damage dealer for DBNO bleed-out attribution
 	UPROPERTY()
 	AController* LastDamageInstigator = nullptr;
 	FString LastDamageWeaponName;
+
+	// Execution (finisher) state — set on the executor
+	bool bIsExecuting = false;
+	float ExecutionProgress = 0.f;
+
+	UPROPERTY()
+	AExoCharacter* ExecutionTarget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Execution")
+	float ExecutionDuration = 2.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	float SprintSpeedMultiplier = 1.5f;

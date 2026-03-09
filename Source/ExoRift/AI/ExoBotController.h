@@ -10,7 +10,13 @@ class UAISenseConfig_Sight;
 class UAISenseConfig_Hearing;
 class AExoBotCharacter;
 class AExoZoneSystem;
+class AExoCharacter;
+class AExoWeaponPickup;
 
+/**
+ * Enhanced AI controller with difficulty scaling, strafing, cover-seeking,
+ * and smart target prioritization.
+ */
 UCLASS()
 class EXORIFT_API AExoBotController : public AAIController
 {
@@ -22,7 +28,10 @@ public:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaTime) override;
 
+	void SetDifficulty(EBotDifficulty NewDifficulty);
+
 protected:
+	// LOD tiers
 	void UpdateLODLevel();
 	void TickFullAI(float DeltaTime);
 	void TickSimplifiedAI(float DeltaTime);
@@ -33,15 +42,22 @@ protected:
 	void AimAtTarget(float DeltaTime);
 	void TryFire();
 	void StopFiring();
+	void UpdateStrafeDirection(float DeltaTime);
+	void ApplyStrafe(float DeltaTime);
+	bool HasLineOfSight(AActor* Target) const;
+	bool ShouldSeekCover() const;
+	void SeekCover();
 
 	// Navigation
 	void MoveTowardZone();
 	void WanderRandomly();
 	void MoveToTarget();
+	void LookForLoot();
 
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
+	// Components
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	UAIPerceptionComponent* AIPerception;
 
@@ -51,36 +67,58 @@ protected:
 	UPROPERTY()
 	UAISenseConfig_Hearing* HearingConfig;
 
+	// State
 	UPROPERTY()
 	AActor* CurrentTarget = nullptr;
 
 	UPROPERTY()
 	AExoZoneSystem* ZoneSystem = nullptr;
 
+	UPROPERTY()
+	AExoWeaponPickup* LootTarget = nullptr;
+
 	EAILODLevel CurrentLOD = EAILODLevel::Full;
+	EBotDifficulty Difficulty = EBotDifficulty::Medium;
 
-	// LOD update timer
-	float LODUpdateInterval = 0.5f;
+	// Timers
 	float LODUpdateTimer = 0.f;
-
-	// Combat timers
-	float TargetSearchInterval = 1.f;
 	float TargetSearchTimer = 0.f;
-
-	// Wander
-	FVector WanderTarget = FVector::ZeroVector;
 	float WanderTimer = 0.f;
+	float StrafeTimer = 0.f;
+	float LootSearchTimer = 0.f;
+	float ReactionTimer = 0.f; // Delay before first shot on new target
+	bool bReactionPending = false;
 
-	// AI tuning
-	UPROPERTY(EditDefaultsOnly, Category = "AI")
-	float AimAccuracy = 0.7f; // 0-1, affects aim jitter
+	// Strafe state
+	float StrafeDirection = 1.f; // +1 right, -1 left
+	float StrafeChangeInterval = 1.5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	// Cover seeking
+	FVector CoverLocation = FVector::ZeroVector;
+	bool bSeekingCover = false;
+
+	// Difficulty-derived stats (set by SetDifficulty)
+	float AimAccuracy = 0.7f;
 	float ReactionTime = 0.3f;
+	float StrafeChance = 0.5f;
+	float CoverHealthThreshold = 40.f;
+	float BurstDuration = 0.f;   // How long to fire before pausing
+	float BurstPause = 0.f;      // Pause between bursts
+	float BurstTimer = 0.f;
+	bool bInBurst = true;
 
+	// Configuration
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float EngageRange = 5000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float SightRadius = 8000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	float LODUpdateInterval = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	float TargetSearchInterval = 1.f;
+
+	FVector WanderTarget = FVector::ZeroVector;
 };

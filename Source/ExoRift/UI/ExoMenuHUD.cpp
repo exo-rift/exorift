@@ -1,6 +1,7 @@
 #include "UI/ExoMenuHUD.h"
 #include "UI/ExoMenuBackground.h"
 #include "UI/ExoSettingsMenu.h"
+#include "Map/ExoMapConfig.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
@@ -336,7 +337,7 @@ void AExoMenuHUD::HandleMainSelect()
 		if (World)
 		{
 			UGameplayStatics::OpenLevel(World,
-				TEXT("/Game/FirstPerson/Lvl_FirstPerson"));
+				*UExoMapConfig::GetBRMapPath());
 		}
 		break;
 	}
