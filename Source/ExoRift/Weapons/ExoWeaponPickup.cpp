@@ -8,6 +8,7 @@
 #include "Weapons/ExoWeaponSMG.h"
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoPickupFlash.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -203,6 +204,10 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 void AExoWeaponPickup::Interact(AExoCharacter* Interactor)
 {
 	if (!bIsActive || !Interactor || !Interactor->IsAlive()) return;
+
+	// Collection flash VFX
+	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation(),
+		AExoWeaponBase::GetRarityColor(Rarity));
 
 	SpawnWeaponForPlayer(Interactor);
 	SetPickupActive(false);

@@ -1,6 +1,7 @@
 // ExoLevelBuilder.cpp — Terrain, lighting, skybox, and mesh helper
 #include "Map/ExoLevelBuilder.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
@@ -158,8 +159,80 @@ void AExoLevelBuilder::BuildSkybox()
 	if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* SkyMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		SkyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.02f, 0.03f, 0.06f));
+		// Deep space blue-purple gradient
+		SkyMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.015f, 0.02f, 0.05f));
+		SkyMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.01f, 0.015f, 0.04f));
 		SkySphere->SetMaterial(0, SkyMat);
+	}
+
+	// Nebula glow — colored spheres at far distance to tint the sky
+	float NebulaDist = 400000.f;
+
+	// Purple-blue nebula (upper left)
+	UPointLightComponent* Nebula1 = NewObject<UPointLightComponent>(this);
+	Nebula1->SetupAttachment(RootComponent);
+	Nebula1->SetWorldLocation(FVector(-NebulaDist * 0.6f, NebulaDist * 0.3f, NebulaDist * 0.7f));
+	Nebula1->SetIntensity(80000.f);
+	Nebula1->SetAttenuationRadius(NebulaDist);
+	Nebula1->SetLightColor(FLinearColor(0.15f, 0.05f, 0.3f)); // Purple
+	Nebula1->CastShadows = false;
+	Nebula1->RegisterComponent();
+
+	// Teal-green nebula (lower right)
+	UPointLightComponent* Nebula2 = NewObject<UPointLightComponent>(this);
+	Nebula2->SetupAttachment(RootComponent);
+	Nebula2->SetWorldLocation(FVector(NebulaDist * 0.5f, -NebulaDist * 0.4f, NebulaDist * 0.3f));
+	Nebula2->SetIntensity(50000.f);
+	Nebula2->SetAttenuationRadius(NebulaDist * 0.8f);
+	Nebula2->SetLightColor(FLinearColor(0.02f, 0.15f, 0.12f)); // Teal
+	Nebula2->CastShadows = false;
+	Nebula2->RegisterComponent();
+
+	// Star field — small bright spheres scattered across the sky
+	if (SphereMesh && BaseMaterial)
+	{
+		int32 NumStars = 60;
+		for (int32 i = 0; i < NumStars; i++)
+		{
+			float Seed = i * 137.508f; // Golden angle for uniform distribution
+			float Phi = FMath::Acos(1.f - 2.f * FMath::Fmod(Seed * 0.381966f, 1.f));
+			float Theta = 2.f * PI * FMath::Fmod(Seed * 0.618034f, 1.f);
+
+			// Only upper hemisphere (stars above horizon)
+			if (Phi > PI * 0.6f) continue;
+
+			float R = 350000.f + (i % 7) * 20000.f;
+			FVector StarPos(
+				R * FMath::Sin(Phi) * FMath::Cos(Theta),
+				R * FMath::Sin(Phi) * FMath::Sin(Theta),
+				R * FMath::Cos(Phi));
+
+			float StarScale = 8.f + (i % 5) * 4.f;
+
+			UStaticMeshComponent* Star = NewObject<UStaticMeshComponent>(this);
+			Star->SetupAttachment(RootComponent);
+			Star->SetStaticMesh(SphereMesh);
+			Star->SetWorldLocation(StarPos);
+			Star->SetWorldScale3D(FVector(StarScale));
+			Star->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Star->CastShadow = false;
+			Star->RegisterComponent();
+
+			// Star color — mostly white, some blue/orange/yellow
+			FLinearColor StarCol;
+			int32 ColorType = i % 10;
+			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f); // White
+			else if (ColorType < 8) StarCol = FLinearColor(6.f, 8.f, 15.f); // Blue
+			else if (ColorType < 9) StarCol = FLinearColor(15.f, 10.f, 4.f); // Orange
+			else StarCol = FLinearColor(12.f, 12.f, 6.f); // Yellow
+
+			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			StarMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.9f, 1.f));
+			StarMat->SetVectorParameterValue(TEXT("EmissiveColor"), StarCol);
+			Star->SetMaterial(0, StarMat);
+		}
 	}
 }
 

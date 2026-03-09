@@ -8,6 +8,7 @@
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 class AExoCharacter;
 
 UCLASS()
@@ -47,6 +48,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* DisplayMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* GlowLight;
 
 	bool bIsActive = true;
 	float RespawnTimer = 0.f;

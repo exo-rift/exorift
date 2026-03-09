@@ -2,6 +2,7 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoPickupFlash.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -149,6 +150,10 @@ void AExoEnergyCellPickup::Tick(float DeltaTime)
 void AExoEnergyCellPickup::Interact(AExoCharacter* Interactor)
 {
 	if (!bIsActive || !Interactor || !Interactor->IsAlive()) return;
+
+	// Collection flash VFX (teal energy color)
+	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation(),
+		FLinearColor(0.1f, 0.9f, 0.5f));
 
 	AExoWeaponBase* Weapon = Interactor->GetCurrentWeapon();
 	if (!Weapon) return;

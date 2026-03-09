@@ -3,7 +3,9 @@
 #include "Player/ExoArmorComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoPickupFlash.h"
 #include "ExoRift.h"
 
 AExoArmorPickup::AExoArmorPickup()
@@ -22,6 +24,14 @@ AExoArmorPickup::AExoArmorPickup()
 	DisplayMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DisplayMesh->SetRelativeScale3D(FVector(0.4f));
 
+	// Glow light for visibility at distance
+	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
+	GlowLight->SetupAttachment(CollisionSphere);
+	GlowLight->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
+	GlowLight->SetIntensity(3000.f);
+	GlowLight->SetAttenuationRadius(400.f);
+	GlowLight->CastShadows = false;
+
 	BobPhase = FMath::RandRange(0.f, 2.f * PI);
 }
 
@@ -29,6 +39,18 @@ void AExoArmorPickup::BeginPlay()
 {
 	Super::BeginPlay();
 	BaseLocation = GetActorLocation();
+
+	// Set glow light color and intensity based on tier
+	if (GlowLight)
+	{
+		FLinearColor Col = GetTierColor();
+		GlowLight->SetLightColor(Col);
+		float TierIntensity = (Tier == EArmorTier::Heavy) ? 6000.f :
+			(Tier == EArmorTier::Medium) ? 4000.f : 2000.f;
+		GlowLight->SetIntensity(TierIntensity);
+		GlowLight->SetAttenuationRadius(
+			(Tier == EArmorTier::Heavy) ? 500.f : 350.f);
+	}
 }
 
 void AExoArmorPickup::Tick(float DeltaTime)
@@ -46,7 +68,9 @@ void AExoArmorPickup::Tick(float DeltaTime)
 		Rot.Yaw += DeltaTime * 50.f;
 		SetActorRotation(Rot);
 
-		// Tint display mesh with tier color
+		// Tint display mesh with tier color + pulsing emissive
+		FLinearColor Col = GetTierColor();
+		float Pulse = 1.5f + 0.5f * FMath::Sin(BobPhase * 1.5f);
 		if (DisplayMesh && DisplayMesh->GetMaterial(0))
 		{
 			UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(
@@ -54,10 +78,17 @@ void AExoArmorPickup::Tick(float DeltaTime)
 			if (!DynMat) DynMat = DisplayMesh->CreateAndSetMaterialInstanceDynamic(0);
 			if (DynMat)
 			{
-				FLinearColor Col = GetTierColor();
 				DynMat->SetVectorParameterValue(TEXT("BaseColor"), Col);
-				DynMat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * 2.f);
+				DynMat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * Pulse);
 			}
+		}
+
+		// Pulse glow light
+		if (GlowLight)
+		{
+			float BaseInt = (Tier == EArmorTier::Heavy) ? 6000.f :
+				(Tier == EArmorTier::Medium) ? 4000.f : 2000.f;
+			GlowLight->SetIntensity(BaseInt * (0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f)));
 		}
 	}
 	else if (bRespawns)
@@ -74,6 +105,9 @@ void AExoArmorPickup::Tick(float DeltaTime)
 void AExoArmorPickup::Interact(AExoCharacter* Interactor)
 {
 	if (!bIsActive || !Interactor || !Interactor->IsAlive()) return;
+
+	// Collection flash VFX
+	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation(), GetTierColor());
 
 	UExoArmorComponent* Armor = Interactor->GetArmorComponent();
 	if (!Armor) return;
@@ -102,7 +136,7 @@ void AExoArmorPickup::Interact(AExoCharacter* Interactor)
 
 FString AExoArmorPickup::GetInteractionPrompt()
 {
-	return FString::Printf(TEXT("Press E to pick up %s"), *GetDisplayName());
+	return FString::Printf(TEXT("[E] %s"), *GetDisplayName());
 }
 
 // ---------------------------------------------------------------------------
