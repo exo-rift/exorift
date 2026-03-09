@@ -38,6 +38,12 @@ protected:
 	void HandleCrouch();
 	void HandleCrouchReleased();
 	void HandleInteract();
+	void HandlePing();
+
+	// Ability input handlers
+	void HandleAbility1();
+	void HandleAbility2();
+	void HandleAbility3();
 
 	// Spectator cycling
 	void HandleSpectateNext();
@@ -70,6 +76,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* CrouchAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* PingAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Ability1Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Ability2Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Ability3Action;
 
 private:
 	void SetupEnhancedInput();

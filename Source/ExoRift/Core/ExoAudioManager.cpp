@@ -59,6 +59,17 @@ void UExoAudioManager::PlayCountdownTick()
 	// Placeholder — tick sound
 }
 
+void UExoAudioManager::PlayFootstepSound(const FVector& Location, bool bIsSprinting)
+{
+	// Placeholder: uses weapon fire sound until real footstep assets are added
+	if (WeaponFireSound)
+	{
+		float Volume = bIsSprinting ? 0.5f : 0.3f;
+		float Pitch = bIsSprinting ? 0.85f : 1.0f;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, Volume, Pitch);
+	}
+}
+
 void UExoAudioManager::PlayWeaponFireSound(USoundBase* Sound, const FVector& Location, float Volume)
 {
 	USoundBase* SoundToPlay = Sound ? Sound : WeaponFireSound;

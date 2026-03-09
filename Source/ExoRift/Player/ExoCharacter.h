@@ -8,6 +8,8 @@ class UCameraComponent;
 class AExoWeaponBase;
 class UExoShieldComponent;
 class UExoInteractionComponent;
+class UExoAbilityComponent;
+class UExoKillStreakComponent;
 
 UCLASS()
 class EXORIFT_API AExoCharacter : public ACharacter
@@ -41,6 +43,12 @@ public:
 	// Interaction
 	UExoInteractionComponent* GetInteractionComponent() const { return InteractionComp; }
 
+	// Abilities
+	UExoAbilityComponent* GetAbilityComponent() const { return AbilityComp; }
+
+	// Kill Streak
+	UExoKillStreakComponent* GetKillStreakComponent() const { return KillStreakComp; }
+
 	// Sprint
 	void StartSprint();
 	void StopSprint();
@@ -72,6 +80,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Interaction")
 	UExoInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Abilities")
+	UExoAbilityComponent* AbilityComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "KillStreak")
+	UExoKillStreakComponent* KillStreakComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 	float MaxHealth = 100.f;
@@ -134,6 +148,11 @@ protected:
 	float MantleForwardTrace = 80.f;
 
 	void TickMantle(float DeltaTime);
+
+	// Footstep audio
+	float FootstepTimer = 0.f;
+	float FootstepInterval = 0.5f;
+	void TickFootsteps(float DeltaTime);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

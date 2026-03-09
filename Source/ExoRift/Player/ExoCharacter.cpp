@@ -1,7 +1,10 @@
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
 #include "Player/ExoInteractionComponent.h"
+#include "Player/ExoAbilityComponent.h"
+#include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoPlayerController.h"
+#include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,6 +14,7 @@
 #include "Core/ExoGameMode.h"
 #include "Visual/ExoPostProcess.h"
 #include "UI/ExoHitMarker.h"
+#include "UI/ExoPingSystem.h"
 #include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
 #include "ExoRift.h"
@@ -41,6 +45,12 @@ AExoCharacter::AExoCharacter()
 	// Interaction
 	InteractionComp = CreateDefaultSubobject<UExoInteractionComponent>(TEXT("InteractionComp"));
 
+	// Abilities
+	AbilityComp = CreateDefaultSubobject<UExoAbilityComponent>(TEXT("AbilityComp"));
+
+	// Kill Streak
+	KillStreakComp = CreateDefaultSubobject<UExoKillStreakComponent>(TEXT("KillStreakComp"));
+
 	// Third person mesh (hidden from owner)
 	GetMesh()->SetOwnerNoSee(true);
 
@@ -67,6 +77,7 @@ void AExoCharacter::Tick(float DeltaTime)
 
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
+	TickFootsteps(DeltaTime);
 
 	// Update post-process low health effect
 	if (IsLocallyControlled())
@@ -78,6 +89,7 @@ void AExoCharacter::Tick(float DeltaTime)
 		}
 
 		FExoHitMarker::Tick(DeltaTime);
+		FExoPingSystem::Tick(DeltaTime);
 	}
 }
 
@@ -96,37 +108,24 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 
 	Health = FMath::Clamp(Health - ActualDamage, 0.f, MaxHealth);
 
-	// Visual feedback for the damaged player
 	if (IsLocallyControlled())
 	{
 		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
-		if (PP)
-		{
-			PP->TriggerDamageFlash(FMath::Clamp(DamageAmount / 30.f, 0.2f, 1.f));
-		}
-
-		// Damage direction indicator
+		if (PP) PP->TriggerDamageFlash(FMath::Clamp(DamageAmount / 30.f, 0.2f, 1.f));
 		if (DamageCauser && DamageCauser != this)
 		{
-			FVector DmgDir = DamageCauser->GetActorLocation() - GetActorLocation();
-			FRotator DmgRot = DmgDir.Rotation();
-			float RelativeAngle = (DmgRot.Yaw - GetControlRotation().Yaw);
+			float RelativeAngle = (DamageCauser->GetActorLocation() - GetActorLocation()).Rotation().Yaw
+				- GetControlRotation().Yaw;
 			FExoHitMarker::AddDamageIndicator(RelativeAngle);
 		}
 	}
 
 	if (Health <= 0.f)
 	{
-		FString WeaponName = TEXT("Unknown");
-		if (AExoWeaponBase* Weapon = Cast<AExoWeaponBase>(DamageCauser))
-		{
-			WeaponName = Weapon->GetWeaponName();
-		}
-		else if (!Cast<AExoWeaponBase>(DamageCauser))
-		{
-			WeaponName = TEXT("Zone");
-		}
-		Die(EventInstigator, WeaponName);
+		FString WName = TEXT("Unknown");
+		if (AExoWeaponBase* W = Cast<AExoWeaponBase>(DamageCauser)) WName = W->GetWeaponName();
+		else WName = TEXT("Zone");
+		Die(EventInstigator, WName);
 	}
 
 	return ActualDamage;
@@ -134,18 +133,12 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 
 void AExoCharacter::StartFire()
 {
-	if (CurrentWeapon && !bIsDead && !bIsSliding && !bIsMantling)
-	{
-		CurrentWeapon->StartFire();
-	}
+	if (CurrentWeapon && !bIsDead && !bIsSliding && !bIsMantling) CurrentWeapon->StartFire();
 }
 
 void AExoCharacter::StopFire()
 {
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->StopFire();
-	}
+	if (CurrentWeapon) CurrentWeapon->StopFire();
 }
 
 void AExoCharacter::SwapWeapon()
@@ -372,16 +365,29 @@ void AExoCharacter::TickMantle(float DeltaTime)
 	}
 }
 
+void AExoCharacter::TickFootsteps(float DeltaTime)
+{
+	if (!GetCharacterMovement()->IsMovingOnGround()) return;
+	if (GetVelocity().Size2D() < 50.f) return;
+
+	FootstepInterval = bIsSprinting ? 0.35f : 0.5f;
+	FootstepTimer -= DeltaTime;
+	if (FootstepTimer <= 0.f)
+	{
+		FootstepTimer = FootstepInterval;
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayFootstepSound(GetActorLocation(), bIsSprinting);
+		}
+	}
+}
+
 void AExoCharacter::OnRep_Health()
 {
-	// Client-side: trigger post-process on health change
 	if (IsLocallyControlled())
 	{
 		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
-		if (PP)
-		{
-			PP->SetLowHealthEffect(Health / MaxHealth);
-		}
+		if (PP) PP->SetLowHealthEffect(Health / MaxHealth);
 	}
 }
 

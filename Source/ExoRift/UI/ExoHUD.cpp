@@ -8,7 +8,10 @@
 #include "Map/ExoZoneSystem.h"
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
+#include "UI/ExoPingSystem.h"
 #include "UI/ExoMatchSummary.h"
+#include "Player/ExoKillStreakComponent.h"
+#include "Player/ExoAbilityComponent.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
@@ -57,7 +60,16 @@ void AExoHUD::DrawHUD()
 	DrawMatchPhase();
 	DrawZoneWarning();
 	DrawKillCount();
+	DrawKillStreak();
+	DrawAbilities();
 	DrawInteractionPrompt();
+
+	// Ping indicators
+	{
+		AExoCharacter* PingChar = Cast<AExoCharacter>(GetOwningPawn());
+		FVector ViewLoc = PingChar ? PingChar->GetActorLocation() : FVector::ZeroVector;
+		FExoPingSystem::DrawPings(this, Canvas, HUDFont, ViewLoc);
+	}
 
 	// Hit markers & damage indicators
 	FExoHitMarker::Draw(this, Canvas);
@@ -379,6 +391,75 @@ void AExoHUD::DrawInteractionPrompt()
 
 	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.5f), X - 10.f, Y - 4.f, TextW + 20.f, TextH + 8.f);
 	DrawText(Prompt, ColorWhite, X, Y, HUDFont, 0.9f);
+}
+
+void AExoHUD::DrawKillStreak()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char) return;
+	UExoKillStreakComponent* SC = Char->GetKillStreakComponent();
+	if (!SC || SC->GetCurrentStreak() < 3) return;
+
+	int32 Streak = SC->GetCurrentStreak();
+	FString StreakText = FString::Printf(TEXT("x%d %s"), Streak, *SC->GetStreakName());
+	float TextW, TextH;
+	GetTextSize(StreakText, TextW, TextH, HUDFont, 1.f);
+
+	float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 3.f));
+	float A = 0.8f + Pulse * 0.2f;
+	FLinearColor C = (Streak >= 8) ? FLinearColor(1.f, 0.2f, 0.2f, A)
+		: (Streak >= 5) ? FLinearColor(1.f, 0.5f, 0.1f, A)
+		: FLinearColor(1.f, 0.8f, 0.2f, A);
+
+	float X = 30.f, Y = 262.f; // Below kill count
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.5f), X - 5.f, Y - 3.f, TextW + 10.f, TextH + 6.f);
+	DrawText(StreakText, C, X, Y, HUDFont, 1.f);
+}
+
+void AExoHUD::DrawAbilities()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char || !Char->GetAbilityComponent()) return;
+	const TArray<FExoAbility>& Abilities = Char->GetAbilityComponent()->GetAbilities();
+	if (Abilities.Num() == 0) return;
+
+	const float SlotW = 60.f, SlotH = 50.f, SlotGap = 8.f;
+	float TotalW = Abilities.Num() * SlotW + (Abilities.Num() - 1) * SlotGap;
+	float StartX = (Canvas->SizeX - TotalW) * 0.5f;
+	float Y = Canvas->SizeY - 95.f;
+
+	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B") };
+	const FLinearColor ReadyColors[] = {
+		FLinearColor(0.f, 0.9f, 1.f, 0.9f),  // Cyan - Dash
+		FLinearColor(1.f, 0.9f, 0.1f, 0.9f),  // Yellow - Scan
+		FLinearColor(0.2f, 0.5f, 1.f, 0.9f)   // Blue - Shield
+	};
+	const FLinearColor Grey(0.3f, 0.3f, 0.35f, 0.7f);
+
+	for (int32 i = 0; i < Abilities.Num(); ++i)
+	{
+		const FExoAbility& Ab = Abilities[i];
+		float X = StartX + i * (SlotW + SlotGap);
+		bool bReady = Ab.bIsReady();
+		FLinearColor SlotCol = bReady ? ReadyColors[i] : Grey;
+		DrawRect(ColorBgDark, X, Y, SlotW, SlotH);
+		DrawLine(X, Y, X + SlotW, Y, SlotCol); DrawLine(X, Y + SlotH, X + SlotW, Y + SlotH, SlotCol);
+		DrawLine(X, Y, X, Y + SlotH, SlotCol); DrawLine(X + SlotW, Y, X + SlotW, Y + SlotH, SlotCol);
+		DrawText(Icons[i], SlotCol, X + 22.f, Y + 4.f, HUDFont, 1.2f);
+		if (!bReady)
+		{
+			float Pct = Ab.CooldownRemaining / Ab.Cooldown;
+			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X + 1.f, Y + 1.f, (SlotW - 2.f) * Pct, SlotH - 2.f);
+			FString CdText = FString::Printf(TEXT("%.0f"), Ab.CooldownRemaining);
+			DrawText(CdText, ColorWhite, X + 18.f, Y + 30.f, HUDFont, 0.7f);
+		}
+		else
+		{
+			float Glow = 0.3f + 0.15f * FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 2.f));
+			FLinearColor GlowCol = SlotCol; GlowCol.A = Glow;
+			DrawRect(GlowCol, X + 1.f, Y + 1.f, SlotW - 2.f, SlotH - 2.f);
+		}
+	}
 }
 
 FVector2D AExoHUD::GetScreenCenter() const

@@ -3,6 +3,7 @@
 #include "Core/ExoPlayerState.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoPlayerController.h"
+#include "Player/ExoKillStreakComponent.h"
 #include "AI/ExoBotCharacter.h"
 #include "AI/ExoBotController.h"
 #include "Map/ExoZoneSystem.h"
@@ -114,6 +115,15 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 		if (AExoPlayerState* KillerPS = Killer->GetPlayerState<AExoPlayerState>())
 		{
 			KillerPS->Kills++;
+		}
+
+		// Register kill for streak tracking
+		if (AExoCharacter* KillerChar = Cast<AExoCharacter>(Killer->GetPawn()))
+		{
+			if (UExoKillStreakComponent* StreakComp = KillerChar->GetKillStreakComponent())
+			{
+				StreakComp->RegisterKill();
+			}
 		}
 	}
 

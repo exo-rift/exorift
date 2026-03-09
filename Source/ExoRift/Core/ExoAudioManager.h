@@ -24,6 +24,9 @@ public:
 	void PlayMatchPhaseSound();
 	void PlayCountdownTick();
 
+	// Footstep sounds
+	void PlayFootstepSound(const FVector& Location, bool bIsSprinting);
+
 	// 3D spatial sounds
 	void PlayWeaponFireSound(USoundBase* Sound, const FVector& Location, float Volume = 1.f);
 	void PlayImpactSound(const FVector& Location, bool bFlesh = false);

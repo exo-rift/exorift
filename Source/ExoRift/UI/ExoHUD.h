@@ -28,6 +28,8 @@ protected:
 	void DrawKillCount();
 	void DrawWeaponIndicator();
 	void DrawInteractionPrompt();
+	void DrawKillStreak();
+	void DrawAbilities();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

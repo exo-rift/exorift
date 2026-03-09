@@ -2,11 +2,14 @@
 #include "Player/ExoCharacter.h"
 #include "Player/ExoSpectatorPawn.h"
 #include "Player/ExoInteractionComponent.h"
+#include "Player/ExoAbilityComponent.h"
+#include "UI/ExoPingSystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Camera/CameraComponent.h"
 #include "ExoRift.h"
 
 AExoPlayerController::AExoPlayerController()
@@ -43,6 +46,22 @@ AExoPlayerController::AExoPlayerController()
 	static ConstructorHelpers::FObjectFinder<UInputAction> CrouchFinder(
 		TEXT("/Game/Input/Actions/IA_Crouch"));
 	if (CrouchFinder.Succeeded()) CrouchAction = CrouchFinder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> PingFinder(
+		TEXT("/Game/Input/Actions/IA_Ping"));
+	if (PingFinder.Succeeded()) PingAction = PingFinder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> Ability1Finder(
+		TEXT("/Game/Input/Actions/IA_Ability1"));
+	if (Ability1Finder.Succeeded()) Ability1Action = Ability1Finder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> Ability2Finder(
+		TEXT("/Game/Input/Actions/IA_Ability2"));
+	if (Ability2Finder.Succeeded()) Ability2Action = Ability2Finder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> Ability3Finder(
+		TEXT("/Game/Input/Actions/IA_Ability3"));
+	if (Ability3Finder.Succeeded()) Ability3Action = Ability3Finder.Object;
 }
 
 void AExoPlayerController::BeginPlay()
@@ -92,6 +111,14 @@ void AExoPlayerController::SetupInputComponent()
 		EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCrouch);
 		EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCrouchReleased);
 	}
+	if (PingAction)
+		EIC->BindAction(PingAction, ETriggerEvent::Started, this, &AExoPlayerController::HandlePing);
+	if (Ability1Action)
+		EIC->BindAction(Ability1Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility1);
+	if (Ability2Action)
+		EIC->BindAction(Ability2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
+	if (Ability3Action)
+		EIC->BindAction(Ability3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
 }
 
 void AExoPlayerController::SetupEnhancedInput()
@@ -308,4 +335,51 @@ void AExoPlayerController::HandleInteract()
 	{
 		InterComp->TryInteract();
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Ping
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::HandlePing()
+{
+	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
+	if (!ExoChar) return;
+
+	UCameraComponent* Cam = ExoChar->GetFirstPersonCamera();
+	if (!Cam) return;
+
+	FVector Start = Cam->GetComponentLocation();
+	FVector End = Start + Cam->GetForwardVector() * 50000.f;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(ExoChar);
+
+	FHitResult Hit;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+
+	FVector PingLocation = bHit ? Hit.ImpactPoint : End;
+	FExoPingSystem::AddPing(PingLocation, TEXT("Enemy Here"), FLinearColor(1.f, 0.4f, 0.1f, 1.f));
+}
+
+// ---------------------------------------------------------------------------
+// Abilities
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::HandleAbility1()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::Dash);
+}
+
+void AExoPlayerController::HandleAbility2()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::AreaScan);
+}
+
+void AExoPlayerController::HandleAbility3()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::ShieldBubble);
 }
