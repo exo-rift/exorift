@@ -97,7 +97,7 @@ void AExoGameMode::Tick(float DeltaTime)
 	case EBRMatchPhase::Playing:
 	case EBRMatchPhase::ZoneShrinking:
 		TickPlaying(DeltaTime);
-		TickZoneDamage(DeltaTime);
+		// Zone damage is applied by AExoZoneSystem::ApplyZoneDamage()
 		break;
 	case EBRMatchPhase::EndGame:
 		TickEndGame(DeltaTime);

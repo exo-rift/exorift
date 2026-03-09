@@ -149,4 +149,12 @@ protected:
 	bool bIsOverheated = false;
 	bool bWantsToFire = false;
 	float TimeSinceLastShot = 0.f;
+
+	// Weapon sway
+	void TickWeaponSway(float DeltaTime);
+	FRotator PrevControlRotation;
+	FVector SwayOffset = FVector::ZeroVector;
+	float SwayReturnSpeed = 8.f;
+	float SwayAmount = 0.4f;
+	float MaxSwayOffset = 3.f;
 };

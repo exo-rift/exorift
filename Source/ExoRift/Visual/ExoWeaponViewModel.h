@@ -28,9 +28,11 @@ public:
 
 private:
 	void BuildRifleModel(const FLinearColor& Accent);
+	void BuildPistolModel(const FLinearColor& Accent);
 	void BuildSMGModel(const FLinearColor& Accent);
 	void BuildShotgunModel(const FLinearColor& Accent);
 	void BuildSniperModel(const FLinearColor& Accent);
+	void BuildLauncherModel(const FLinearColor& Accent);
 	void BuildMeleeModel(const FLinearColor& Accent);
 
 	UStaticMeshComponent* AddPart(const FVector& Offset, const FVector& Scale,

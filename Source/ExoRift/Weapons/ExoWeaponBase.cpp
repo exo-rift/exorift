@@ -84,6 +84,8 @@ void AExoWeaponBase::Tick(float DeltaTime)
 		CurrentSpread = FMath::Max(BaseSpread, CurrentSpread - SpreadRecoveryRate * DeltaTime);
 	}
 
+	TickWeaponSway(DeltaTime);
+
 	// Auto-fire handling
 	if (bWantsToFire && !bIsOverheated && CurrentEnergy >= EnergyPerShot)
 	{
@@ -342,6 +344,39 @@ void AExoWeaponBase::AddEnergy(float Amount)
 	float OldEnergy = CurrentEnergy;
 	CurrentEnergy = FMath::Clamp(CurrentEnergy + Amount, 0.f, MaxEnergy);
 	if (CurrentEnergy != OldEnergy) OnEnergyChanged.Broadcast(CurrentEnergy);
+}
+
+void AExoWeaponBase::TickWeaponSway(float DeltaTime)
+{
+	if (!ViewModel) return;
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn) return;
+	AController* PC = OwnerPawn->GetController();
+	if (!PC) return;
+
+	FRotator CurrentRot = PC->GetControlRotation();
+	FRotator DeltaRot = CurrentRot - PrevControlRotation;
+	DeltaRot.Normalize();
+	PrevControlRotation = CurrentRot;
+
+	// Accumulate sway offset from mouse movement
+	SwayOffset.Y += DeltaRot.Yaw * SwayAmount;
+	SwayOffset.Z += DeltaRot.Pitch * SwayAmount;
+
+	// Clamp
+	SwayOffset.Y = FMath::Clamp(SwayOffset.Y, -MaxSwayOffset, MaxSwayOffset);
+	SwayOffset.Z = FMath::Clamp(SwayOffset.Z, -MaxSwayOffset, MaxSwayOffset);
+
+	// Return to center
+	SwayOffset = FMath::VInterpTo(SwayOffset, FVector::ZeroVector, DeltaTime, SwayReturnSpeed);
+
+	// Idle sway — subtle breathing motion
+	float Time = GetWorld()->GetTimeSeconds();
+	float IdleY = FMath::Sin(Time * 1.2f) * 0.15f;
+	float IdleZ = FMath::Sin(Time * 0.8f + 0.7f) * 0.1f;
+
+	FVector BasePos(20.f, 10.f, -8.f);
+	ViewModel->SetRelativeLocation(BasePos + SwayOffset + FVector(0.f, IdleY, IdleZ));
 }
 
 FHitResult AExoWeaponBase::DoLineTrace(float Range) const
