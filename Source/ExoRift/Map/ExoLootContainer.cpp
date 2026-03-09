@@ -4,6 +4,7 @@
 #include "Weapons/ExoEnergyCellPickup.h"
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoPickupFlash.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -74,6 +75,12 @@ void AExoLootContainer::BuildVisuals()
 		C->RegisterComponent();
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+		if (Lum > 0.15f)
+		{
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
+		}
 		C->SetMaterial(0, Mat);
 		return C;
 	};
@@ -185,6 +192,12 @@ void AExoLootContainer::StartOpening(AExoCharacter* Interactor)
 void AExoLootContainer::FinishOpening()
 {
 	State = ELootContainerState::Open;
+
+	// Opening flash VFX — blue energy burst
+	AExoPickupFlash::SpawnAt(GetWorld(),
+		GetActorLocation() + FVector(0.f, 0.f, 50.f),
+		FLinearColor(0.2f, 0.6f, 1.f));
+
 	SpawnLoot();
 	State = ELootContainerState::Empty;
 	PendingInteractor = nullptr;
