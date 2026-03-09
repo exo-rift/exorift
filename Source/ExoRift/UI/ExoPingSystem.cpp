@@ -35,83 +35,112 @@ void FExoPingSystem::DrawPings(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 
 	const float ScreenW = Canvas->SizeX;
 	const float ScreenH = Canvas->SizeY;
+	const float Time = HUD->GetWorld()->GetTimeSeconds();
 
 	for (const FPingEntry& Ping : ActivePings)
 	{
-		// Compute fade alpha for last 1.5s
 		float Alpha = 1.f;
 		if (Ping.Lifetime < FadeOutDuration)
 		{
 			Alpha = FMath::Clamp(Ping.Lifetime / FadeOutDuration, 0.f, 1.f);
 		}
 
+		// Spawn pulse effect (first 0.5s)
+		float SpawnAge = 5.f - Ping.Lifetime; // Time since spawn
+		float PulseScale = 1.f;
+		if (SpawnAge < 0.5f)
+		{
+			PulseScale = 1.f + (1.f - SpawnAge / 0.5f) * 0.5f;
+		}
+
 		FLinearColor PingColor = Ping.Color;
 		PingColor.A *= Alpha;
 
-		// Distance from viewer
 		float Distance = FVector::Dist(ViewerLocation, Ping.WorldLocation);
-		float DistMeters = Distance / 100.f; // UU to meters
+		float DistMeters = Distance / 100.f;
 
-		// Try to project world location to screen
 		FVector2D ScreenPos;
 		bool bOnScreen = ProjectToScreen(HUD, Ping.WorldLocation, ScreenPos);
 
-		// Check if within screen bounds (with margin)
 		bool bInBounds = bOnScreen
 			&& ScreenPos.X >= EdgeMargin && ScreenPos.X <= ScreenW - EdgeMargin
 			&& ScreenPos.Y >= EdgeMargin && ScreenPos.Y <= ScreenH - EdgeMargin;
 
 		if (bInBounds)
 		{
-			// On screen: draw diamond + label + distance
-			DrawDiamond(HUD, ScreenPos, 8.f, PingColor);
+			float Sz = 8.f * PulseScale;
 
-			// Label above diamond
+			// Outer glow ring (pulsing)
+			if (SpawnAge < 1.5f)
+			{
+				float RingR = Sz + SpawnAge * 15.f;
+				float RingAlpha = (1.f - SpawnAge / 1.5f) * 0.3f * Alpha;
+				FLinearColor RingCol(PingColor.R, PingColor.G, PingColor.B, RingAlpha);
+				int32 Segs = 16;
+				for (int32 s = 0; s < Segs; s++)
+				{
+					float A1 = (2.f * PI * s) / Segs;
+					float A2 = (2.f * PI * (s + 1)) / Segs;
+					HUD->DrawLine(
+						ScreenPos.X + FMath::Cos(A1) * RingR,
+						ScreenPos.Y + FMath::Sin(A1) * RingR,
+						ScreenPos.X + FMath::Cos(A2) * RingR,
+						ScreenPos.Y + FMath::Sin(A2) * RingR,
+						RingCol, 1.f);
+				}
+			}
+
+			// Diamond marker
+			DrawDiamond(HUD, ScreenPos, Sz, PingColor);
+
+			// Label + distance
 			FString PingText = FString::Printf(TEXT("%s [%dm]"), *Ping.Label, FMath::RoundToInt(DistMeters));
 			float TextW, TextH;
 			HUD->GetTextSize(PingText, TextW, TextH, Font, 0.7f);
 
 			float TextX = ScreenPos.X - TextW * 0.5f;
-			float TextY = ScreenPos.Y - 22.f;
+			float TextY = ScreenPos.Y - 24.f;
 
-			// Background
-			HUD->DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Alpha),
-				TextX - 4.f, TextY - 2.f, TextW + 8.f, TextH + 4.f);
+			// Background panel
+			float PanelW = TextW + 12.f;
+			float PanelH = TextH + 6.f;
+			HUD->DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.5f * Alpha),
+				TextX - 6.f, TextY - 3.f, PanelW, PanelH);
+			// Left accent stripe
+			HUD->DrawRect(FLinearColor(PingColor.R, PingColor.G, PingColor.B, 0.6f * Alpha),
+				TextX - 6.f, TextY - 3.f, 2.f, PanelH);
+
 			HUD->DrawText(PingText, PingColor, TextX, TextY, Font, 0.7f);
 		}
 		else
 		{
-			// Off screen: clamp to edge and draw arrow
+			// Off screen: clamp to edge
 			FVector2D Center(ScreenW * 0.5f, ScreenH * 0.5f);
 
-			// If behind camera, flip the direction
 			FVector2D Dir;
 			if (!bOnScreen)
-			{
 				Dir = Center - ScreenPos;
-			}
 			else
-			{
 				Dir = ScreenPos - Center;
-			}
 
 			if (Dir.IsNearlyZero())
-			{
 				Dir = FVector2D(0.f, -1.f);
-			}
 			Dir.Normalize();
 
 			FVector2D EdgePos = ClampToScreenEdge(Center + Dir * 1000.f, ScreenW, ScreenH, EdgeMargin);
 
-			DrawDiamond(HUD, EdgePos, 6.f, PingColor);
+			DrawDiamond(HUD, EdgePos, 6.f * PulseScale, PingColor);
 			DrawArrow(HUD, EdgePos, Dir, 12.f, PingColor);
 
-			// Distance label near edge indicator
+			// Distance label
 			FString DistText = FString::Printf(TEXT("%dm"), FMath::RoundToInt(DistMeters));
 			float TW, TH;
 			HUD->GetTextSize(DistText, TW, TH, Font, 0.6f);
+			// Small background
+			HUD->DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.35f * Alpha),
+				EdgePos.X - TW * 0.5f - 3.f, EdgePos.Y + 8.f, TW + 6.f, TH + 2.f);
 			HUD->DrawText(DistText, PingColor,
-				EdgePos.X - TW * 0.5f, EdgePos.Y + 10.f, Font, 0.6f);
+				EdgePos.X - TW * 0.5f, EdgePos.Y + 9.f, Font, 0.6f);
 		}
 	}
 }
@@ -120,7 +149,6 @@ bool FExoPingSystem::ProjectToScreen(AHUD* HUD, const FVector& WorldPos, FVector
 {
 	APlayerController* PC = HUD->GetOwningPlayerController();
 	if (!PC) return false;
-
 	return PC->ProjectWorldLocationToScreen(WorldPos, OutScreen, true);
 }
 
@@ -129,10 +157,8 @@ FVector2D FExoPingSystem::ClampToScreenEdge(const FVector2D& ScreenPos,
 {
 	FVector2D Center(ScreenW * 0.5f, ScreenH * 0.5f);
 	FVector2D Dir = ScreenPos - Center;
-
 	if (Dir.IsNearlyZero()) return Center;
 
-	// Scale direction to hit screen edge (with margin)
 	float HalfW = ScreenW * 0.5f - Margin;
 	float HalfH = ScreenH * 0.5f - Margin;
 
@@ -145,7 +171,13 @@ FVector2D FExoPingSystem::ClampToScreenEdge(const FVector2D& ScreenPos,
 
 void FExoPingSystem::DrawDiamond(AHUD* HUD, const FVector2D& Pos, float Size, const FLinearColor& Color)
 {
-	// Diamond: four lines forming a rhombus
+	// Shadow
+	FLinearColor Shadow(0.f, 0.f, 0.f, Color.A * 0.4f);
+	HUD->DrawLine(Pos.X + 1.f, Pos.Y - Size + 1.f, Pos.X + Size + 1.f, Pos.Y + 1.f, Shadow, 2.f);
+	HUD->DrawLine(Pos.X + Size + 1.f, Pos.Y + 1.f, Pos.X + 1.f, Pos.Y + Size + 1.f, Shadow, 2.f);
+	HUD->DrawLine(Pos.X + 1.f, Pos.Y + Size + 1.f, Pos.X - Size + 1.f, Pos.Y + 1.f, Shadow, 2.f);
+	HUD->DrawLine(Pos.X - Size + 1.f, Pos.Y + 1.f, Pos.X + 1.f, Pos.Y - Size + 1.f, Shadow, 2.f);
+	// Diamond
 	HUD->DrawLine(Pos.X, Pos.Y - Size, Pos.X + Size, Pos.Y, Color, 2.f);
 	HUD->DrawLine(Pos.X + Size, Pos.Y, Pos.X, Pos.Y + Size, Color, 2.f);
 	HUD->DrawLine(Pos.X, Pos.Y + Size, Pos.X - Size, Pos.Y, Color, 2.f);

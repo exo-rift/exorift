@@ -17,16 +17,20 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 	float PlayerYaw = PlayerPawn->GetControlRotation().Yaw;
 	float CenterX = Config.ScreenX + Config.Size * 0.5f;
 	float CenterY = Config.ScreenY + Config.Size * 0.5f;
-	float HalfSize = Config.Size * 0.5f;
 
 	// Dark background
 	HUD->DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.85f),
 		Config.ScreenX, Config.ScreenY, Config.Size, Config.Size);
 
+	// Subtle outer glow
+	HUD->DrawRect(FLinearColor(0.f, 0.15f, 0.3f, 0.08f),
+		Config.ScreenX - 2.f, Config.ScreenY - 2.f,
+		Config.Size + 4.f, Config.Size + 4.f);
+
 	// Grid lines
 	DrawGridLines(HUD, CenterX, CenterY, Config);
 
-	// Zone circle (rotated)
+	// Zone circle
 	AExoZoneSystem* Zone = nullptr;
 	for (TActorIterator<AExoZoneSystem> It(HUD->GetWorld()); It; ++It)
 	{
@@ -38,10 +42,10 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 		DrawZoneCircle(HUD, Canvas, Config, PlayerPos, PlayerYaw, Zone);
 	}
 
-	// FOV cone (player's viewing direction)
+	// FOV cone
 	DrawFOVCone(HUD, CenterX, CenterY, Config);
 
-	// Enemy dots (rotated to match player heading)
+	// Enemy dots
 	for (TActorIterator<AExoCharacter> It(HUD->GetWorld()); It; ++It)
 	{
 		AExoCharacter* Char = *It;
@@ -52,24 +56,32 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 
 		FVector2D MinimapPos = WorldToMinimap(Char->GetActorLocation(), PlayerPos, PlayerYaw, Config);
 
-		// Clamp to minimap bounds
 		MinimapPos.X = FMath::Clamp(MinimapPos.X, Config.ScreenX + 4.f,
 			Config.ScreenX + Config.Size - 4.f);
 		MinimapPos.Y = FMath::Clamp(MinimapPos.Y, Config.ScreenY + 4.f,
 			Config.ScreenY + Config.Size - 4.f);
 
-		// Red diamond for enemies
 		float DS = Config.PlayerDotSize;
 		FLinearColor EnemyColor(1.f, 0.15f, 0.15f, 0.9f);
+		// Shadow
+		FLinearColor ShadowCol(0.f, 0.f, 0.f, 0.4f);
+		HUD->DrawRect(ShadowCol, MinimapPos.X - DS - 1.f, MinimapPos.Y - DS - 1.f,
+			DS * 2.f + 2.f, DS * 2.f + 2.f);
+		// Diamond
 		HUD->DrawLine(MinimapPos.X, MinimapPos.Y - DS, MinimapPos.X + DS, MinimapPos.Y, EnemyColor, 1.5f);
 		HUD->DrawLine(MinimapPos.X + DS, MinimapPos.Y, MinimapPos.X, MinimapPos.Y + DS, EnemyColor, 1.5f);
 		HUD->DrawLine(MinimapPos.X, MinimapPos.Y + DS, MinimapPos.X - DS, MinimapPos.Y, EnemyColor, 1.5f);
 		HUD->DrawLine(MinimapPos.X - DS, MinimapPos.Y, MinimapPos.X, MinimapPos.Y - DS, EnemyColor, 1.5f);
 	}
 
-	// Player chevron at center (always pointing up = forward)
+	// Player chevron at center
 	FLinearColor PlayerColor(0.2f, 0.9f, 1.f, 1.f);
-	float CS = 7.f; // Chevron size
+	float CS = 7.f;
+	// Shadow behind chevron
+	FLinearColor ChevShadow(0.f, 0.f, 0.f, 0.5f);
+	HUD->DrawLine(CenterX + 1.f, CenterY - CS + 1.f, CenterX + CS * 0.6f + 1.f, CenterY + CS * 0.4f + 1.f, ChevShadow, 2.f);
+	HUD->DrawLine(CenterX + 1.f, CenterY - CS + 1.f, CenterX - CS * 0.6f + 1.f, CenterY + CS * 0.4f + 1.f, ChevShadow, 2.f);
+	// Chevron
 	HUD->DrawLine(CenterX, CenterY - CS, CenterX + CS * 0.6f, CenterY + CS * 0.4f, PlayerColor, 2.f);
 	HUD->DrawLine(CenterX, CenterY - CS, CenterX - CS * 0.6f, CenterY + CS * 0.4f, PlayerColor, 2.f);
 	HUD->DrawLine(CenterX - CS * 0.6f, CenterY + CS * 0.4f,
@@ -77,21 +89,30 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 
 	// Cardinal direction labels
 	UFont* Font = nullptr;
-	if (AExoCharacter* HC = Cast<AExoCharacter>(PlayerPawn))
+	if (Cast<AExoCharacter>(PlayerPawn))
 		Font = Cast<UFont>(StaticLoadObject(UFont::StaticClass(), nullptr,
 			TEXT("/Engine/EngineFonts/Roboto")));
 	DrawCardinals(HUD, Font, CenterX, CenterY, PlayerYaw, Config);
 
-	// Border (bright edge)
+	// Border with corner accents
 	FLinearColor BorderColor(0.25f, 0.4f, 0.55f, 0.9f);
-	HUD->DrawLine(Config.ScreenX, Config.ScreenY,
-		Config.ScreenX + Config.Size, Config.ScreenY, BorderColor, Config.BorderWidth);
-	HUD->DrawLine(Config.ScreenX + Config.Size, Config.ScreenY,
-		Config.ScreenX + Config.Size, Config.ScreenY + Config.Size, BorderColor, Config.BorderWidth);
-	HUD->DrawLine(Config.ScreenX + Config.Size, Config.ScreenY + Config.Size,
-		Config.ScreenX, Config.ScreenY + Config.Size, BorderColor, Config.BorderWidth);
-	HUD->DrawLine(Config.ScreenX, Config.ScreenY + Config.Size,
-		Config.ScreenX, Config.ScreenY, BorderColor, Config.BorderWidth);
+	float SX = Config.ScreenX, SY = Config.ScreenY, SS = Config.Size;
+	HUD->DrawLine(SX, SY, SX + SS, SY, BorderColor, Config.BorderWidth);
+	HUD->DrawLine(SX + SS, SY, SX + SS, SY + SS, BorderColor, Config.BorderWidth);
+	HUD->DrawLine(SX + SS, SY + SS, SX, SY + SS, BorderColor, Config.BorderWidth);
+	HUD->DrawLine(SX, SY + SS, SX, SY, BorderColor, Config.BorderWidth);
+
+	// Corner bracket accents (brighter)
+	float BL = 15.f;
+	FLinearColor AccCol(0.f, 0.6f, 1.f, 0.5f);
+	HUD->DrawLine(SX, SY, SX + BL, SY, AccCol, 2.f);
+	HUD->DrawLine(SX, SY, SX, SY + BL, AccCol, 2.f);
+	HUD->DrawLine(SX + SS, SY, SX + SS - BL, SY, AccCol, 2.f);
+	HUD->DrawLine(SX + SS, SY, SX + SS, SY + BL, AccCol, 2.f);
+	HUD->DrawLine(SX, SY + SS, SX + BL, SY + SS, AccCol, 2.f);
+	HUD->DrawLine(SX, SY + SS, SX, SY + SS - BL, AccCol, 2.f);
+	HUD->DrawLine(SX + SS, SY + SS, SX + SS - BL, SY + SS, AccCol, 2.f);
+	HUD->DrawLine(SX + SS, SY + SS, SX + SS, SY + SS - BL, AccCol, 2.f);
 }
 
 FVector2D FExoMinimap::WorldToMinimap(const FVector& WorldPos, const FVector& CenterPos,
@@ -100,7 +121,6 @@ FVector2D FExoMinimap::WorldToMinimap(const FVector& WorldPos, const FVector& Ce
 	FVector Offset = WorldPos - CenterPos;
 	float Scale = Config.Size / (Config.WorldRange * 2.f);
 
-	// Rotate offset by -PlayerYaw so minimap rotates with player
 	float Rad = FMath::DegreesToRadians(-PlayerYaw);
 	float RotX = Offset.X * FMath::Cos(Rad) - Offset.Y * FMath::Sin(Rad);
 	float RotY = Offset.X * FMath::Sin(Rad) + Offset.Y * FMath::Cos(Rad);
@@ -134,16 +154,18 @@ void FExoMinimap::DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfi
 			ZoneColor, 1.5f);
 	}
 
-	// Target zone (white, dimmer)
+	// Target zone (dashed look via alternating brightness)
 	FVector TargetWorld(Zone->GetTargetCenter().X, Zone->GetTargetCenter().Y, 0.f);
 	FVector2D TargetMini = WorldToMinimap(TargetWorld, CenterPos, PlayerYaw, Config);
 	float TargetR = Zone->GetTargetRadius() * ZoneScale;
 
-	FLinearColor TargetColor(1.f, 1.f, 1.f, 0.25f);
 	for (int32 i = 0; i < Segments; i++)
 	{
 		float A1 = i * AngleStep;
 		float A2 = (i + 1) * AngleStep;
+		FLinearColor TargetColor = (i % 2 == 0)
+			? FLinearColor(1.f, 1.f, 1.f, 0.3f)
+			: FLinearColor(1.f, 1.f, 1.f, 0.1f);
 		HUD->DrawLine(
 			TargetMini.X + FMath::Cos(A1) * TargetR, TargetMini.Y + FMath::Sin(A1) * TargetR,
 			TargetMini.X + FMath::Cos(A2) * TargetR, TargetMini.Y + FMath::Sin(A2) * TargetR,
@@ -154,15 +176,13 @@ void FExoMinimap::DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfi
 void FExoMinimap::DrawFOVCone(AHUD* HUD, float CenterX, float CenterY,
 	const FMinimapConfig& Config)
 {
-	// FOV cone — 60° wedge pointing up (forward)
 	float ConeLen = Config.Size * 0.35f;
 	float HalfAngle = 30.f;
 	float LeftRad = FMath::DegreesToRadians(-90.f - HalfAngle);
 	float RightRad = FMath::DegreesToRadians(-90.f + HalfAngle);
 
-	FLinearColor ConeColor(0.2f, 0.8f, 1.f, 0.1f);
+	FLinearColor ConeColor(0.2f, 0.8f, 1.f, 0.08f);
 
-	// Draw filled cone with multiple lines
 	int32 Lines = 8;
 	for (int32 i = 0; i <= Lines; i++)
 	{
@@ -173,7 +193,6 @@ void FExoMinimap::DrawFOVCone(AHUD* HUD, float CenterX, float CenterY,
 		HUD->DrawLine(CenterX, CenterY, EndX, EndY, ConeColor, 1.f);
 	}
 
-	// Cone edge lines (brighter)
 	FLinearColor EdgeColor(0.2f, 0.8f, 1.f, 0.25f);
 	HUD->DrawLine(CenterX, CenterY,
 		CenterX + FMath::Cos(LeftRad) * ConeLen,
@@ -181,6 +200,21 @@ void FExoMinimap::DrawFOVCone(AHUD* HUD, float CenterX, float CenterY,
 	HUD->DrawLine(CenterX, CenterY,
 		CenterX + FMath::Cos(RightRad) * ConeLen,
 		CenterY + FMath::Sin(RightRad) * ConeLen, EdgeColor, 1.5f);
+
+	// Arc at the end of the FOV cone
+	FLinearColor ArcCol(0.2f, 0.8f, 1.f, 0.15f);
+	int32 ArcSegs = 8;
+	for (int32 i = 0; i < ArcSegs; i++)
+	{
+		float T0 = (float)i / ArcSegs;
+		float T1 = (float)(i + 1) / ArcSegs;
+		float R0 = FMath::Lerp(LeftRad, RightRad, T0);
+		float R1 = FMath::Lerp(LeftRad, RightRad, T1);
+		HUD->DrawLine(
+			CenterX + FMath::Cos(R0) * ConeLen, CenterY + FMath::Sin(R0) * ConeLen,
+			CenterX + FMath::Cos(R1) * ConeLen, CenterY + FMath::Sin(R1) * ConeLen,
+			ArcCol, 1.f);
+	}
 }
 
 void FExoMinimap::DrawCardinals(AHUD* HUD, UFont* Font, float CenterX, float CenterY,
@@ -203,10 +237,12 @@ void FExoMinimap::DrawCardinals(AHUD* HUD, UFont* Font, float CenterX, float Cen
 		float LX = CenterX + FMath::Cos(RelAngle) * LabelDist - 4.f;
 		float LY = CenterY + FMath::Sin(RelAngle) * LabelDist - 6.f;
 
-		// Only draw if within minimap bounds
 		if (LX >= Config.ScreenX && LX <= Config.ScreenX + Config.Size - 8.f &&
 			LY >= Config.ScreenY && LY <= Config.ScreenY + Config.Size - 12.f)
 		{
+			// Shadow for readability
+			HUD->DrawText(C.Label, FLinearColor(0.f, 0.f, 0.f, C.Color.A * 0.5f),
+				LX + 1.f, LY + 1.f, Font, 0.8f);
 			HUD->DrawText(C.Label, C.Color, LX, LY, Font, 0.8f);
 		}
 	}
@@ -215,7 +251,7 @@ void FExoMinimap::DrawCardinals(AHUD* HUD, UFont* Font, float CenterX, float Cen
 void FExoMinimap::DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
 	const FMinimapConfig& Config)
 {
-	FLinearColor GridColor(0.15f, 0.2f, 0.25f, 0.2f);
+	FLinearColor GridColor(0.15f, 0.2f, 0.25f, 0.15f);
 	float HalfSize = Config.Size * 0.5f;
 
 	// Cross through center
@@ -224,13 +260,13 @@ void FExoMinimap::DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
 	HUD->DrawLine(Config.ScreenX, CenterY, Config.ScreenX + Config.Size, CenterY,
 		GridColor, 0.5f);
 
-	// Range rings (25% and 50% of range)
-	FLinearColor RingColor(0.15f, 0.2f, 0.3f, 0.15f);
+	// Range rings (25%, 50%, 75%)
+	FLinearColor RingColor(0.15f, 0.2f, 0.3f, 0.12f);
 	int32 Segs = 24;
 	float AngleStep = 2.f * PI / Segs;
-	for (float Pct : {0.25f, 0.5f})
+	for (float Pct : {0.25f, 0.5f, 0.75f})
 	{
-		float R = HalfSize * Pct * 2.f; // Scale to fill minimap
+		float R = HalfSize * Pct * 2.f;
 		for (int32 i = 0; i < Segs; i++)
 		{
 			float A1 = i * AngleStep;
