@@ -31,7 +31,6 @@ public:
 	virtual void Interact(AExoCharacter* Interactor) override;
 	virtual FString GetInteractionPrompt() override;
 
-	/** Current state of the supply drop. */
 	ESupplyDropState GetState() const { return CurrentState; }
 
 protected:
@@ -40,6 +39,7 @@ protected:
 	void TickFalling(float DeltaTime);
 	void SpawnLoot();
 	void TransitionToState(ESupplyDropState NewState);
+	void BuildCrateMesh();
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* CrateMesh;
@@ -47,8 +47,25 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UPointLightComponent* BeaconLight;
 
+	// Procedural parts
+	UPROPERTY()
+	UStaticMeshComponent* CrateBody;
+	UPROPERTY()
+	UStaticMeshComponent* CrateLid;
+	UPROPERTY()
+	UStaticMeshComponent* ParachuteDome;
+	UPROPERTY()
+	UStaticMeshComponent* ParachuteStrut1;
+	UPROPERTY()
+	UStaticMeshComponent* ParachuteStrut2;
+	UPROPERTY()
+	UPointLightComponent* CrateGlow;
+
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
-	float DropSpeed = 2000.f;
+	float DropSpeed = 1500.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
+	float SwayAmplitude = 200.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
 	float BeaconRange = 30000.f;
@@ -58,4 +75,12 @@ protected:
 
 private:
 	ESupplyDropState CurrentState = ESupplyDropState::Falling;
+	float SwayTimer = 0.f;
+	float LidOpenAlpha = 0.f;
+
+	// Cached meshes
+	UStaticMesh* CubeMeshRef = nullptr;
+	UStaticMesh* SphereMeshRef = nullptr;
+	UStaticMesh* CylinderMeshRef = nullptr;
+	UMaterialInterface* BaseMaterialRef = nullptr;
 };

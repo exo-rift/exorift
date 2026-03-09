@@ -63,6 +63,24 @@ protected:
 
 	void PickNextWeather();
 	void ApplyToPostProcess();
+	void SpawnRainParticles(float DeltaTime);
+
+	// Components created at runtime for weather effects
+	UPROPERTY()
+	class UExponentialHeightFogComponent* FogComp = nullptr;
+
+	UPROPERTY()
+	class UDirectionalLightComponent* WeatherLightComp = nullptr;
+
+	// Rain particle pool
+	struct FRainDrop
+	{
+		FVector Position;
+		FVector Velocity;
+		float Life;
+	};
+	TArray<FRainDrop> RainDrops;
+	float RainSpawnAccum = 0.f;
 
 private:
 	EExoWeatherState CurrentWeather = EExoWeatherState::Clear;

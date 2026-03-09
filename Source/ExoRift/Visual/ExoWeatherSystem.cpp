@@ -2,6 +2,7 @@
 #include "Visual/ExoPostProcess.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
 
@@ -15,6 +16,24 @@ AExoWeatherSystem::AExoWeatherSystem()
 void AExoWeatherSystem::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Create fog component for weather
+	FogComp = NewObject<UExponentialHeightFogComponent>(this);
+	FogComp->SetupAttachment(RootComponent);
+	FogComp->RegisterComponent();
+	FogComp->SetFogDensity(0.0f);
+	FogComp->SetFogHeightFalloff(0.2f);
+	FogComp->SetFogInscatteringColor(FLinearColor(0.7f, 0.8f, 1.f));
+	FogComp->SetStartDistance(5000.f);
+
+	// Create dimming directional light for overcast/storm
+	WeatherLightComp = NewObject<UDirectionalLightComponent>(this);
+	WeatherLightComp->SetupAttachment(RootComponent);
+	WeatherLightComp->RegisterComponent();
+	WeatherLightComp->SetWorldRotation(FRotator(-60.f, 0.f, 0.f));
+	WeatherLightComp->SetIntensity(0.f); // Off by default
+	WeatherLightComp->SetLightColor(FLinearColor(0.3f, 0.35f, 0.5f));
+	WeatherLightComp->CastShadows = false;
 
 	// Initialize current values from Clear state
 	bool bDummy;
@@ -77,6 +96,15 @@ void AExoWeatherSystem::Tick(float DeltaTime)
 			PickNextWeather();
 			ChangeTimer = WeatherChangeInterval;
 		}
+
+		// Still apply (for steady-state fog updates)
+		ApplyToPostProcess();
+	}
+
+	// Rain particles when raining
+	if (bCurrentRaining || bTargetRaining)
+	{
+		SpawnRainParticles(DeltaTime);
 	}
 }
 
@@ -86,7 +114,6 @@ void AExoWeatherSystem::Tick(float DeltaTime)
 
 void AExoWeatherSystem::PickNextWeather()
 {
-	// Pick a random different weather
 	EExoWeatherState NewWeather = CurrentWeather;
 	int32 Safety = 10;
 	while (NewWeather == CurrentWeather && Safety-- > 0)
@@ -124,7 +151,7 @@ void AExoWeatherSystem::GetWeatherParams(EExoWeatherState State, float& OutFogDe
 	switch (State)
 	{
 	case EExoWeatherState::Clear:
-		OutFogDensity = 0.f;
+		OutFogDensity = 0.0002f;
 		OutFogColor = FLinearColor(0.7f, 0.8f, 1.f, 1.f);
 		OutWindStrength = 0.f;
 		OutVisibility = 1.f;
@@ -166,18 +193,118 @@ void AExoWeatherSystem::GetWeatherParams(EExoWeatherState State, float& OutFogDe
 }
 
 // ---------------------------------------------------------------------------
-// Post-process integration
+// Post-process & fog integration
 // ---------------------------------------------------------------------------
 
 void AExoWeatherSystem::ApplyToPostProcess()
 {
-	AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
-	if (!PP) return;
+	// Update fog component
+	if (FogComp)
+	{
+		FogComp->SetFogDensity(CurrentFogDensity);
+		FogComp->SetFogInscatteringColor(CurrentFogColor);
 
-	// Subtle bloom increase during fog/storm
-	// Post-process component is not directly accessible via public API,
-	// so we adjust through the existing interface indirectly.
-	// For now we just log — the main gameplay effect is the visibility multiplier
-	// that AI reads, plus HUD showing the state. Full fog volume integration
-	// would require ExponentialHeightFog actor which can be added later.
+		// Increase fog max opacity during heavy weather
+		float FogOpacity = FMath::GetMappedRangeValueClamped(
+			FVector2D(0.f, 0.01f), FVector2D(0.3f, 0.95f), CurrentFogDensity);
+		FogComp->SetFogMaxOpacity(FogOpacity);
+	}
+
+	// Dim ambient light during storms
+	if (WeatherLightComp)
+	{
+		// Overcast/storm adds a blue fill light
+		float FillIntensity = (1.f - CurrentVisibility) * 0.5f;
+		WeatherLightComp->SetIntensity(FillIntensity);
+	}
+
+	// Adjust post-process for weather
+	AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+	if (!PP || !PP->PostProcessComp) return;
+
+	// Bloom increases during fog and rain
+	float WeatherBloom = 0.7f + CurrentFogDensity * 30.f;
+	PP->PostProcessComp->Settings.BloomIntensity = FMath::Min(WeatherBloom, 1.5f);
+
+	// Color grading shifts cooler during storms
+	float CoolShift = (1.f - CurrentVisibility) * 0.15f;
+	PP->PostProcessComp->Settings.bOverride_ColorGamma = (CoolShift > 0.01f);
+	if (CoolShift > 0.01f)
+	{
+		PP->PostProcessComp->Settings.ColorGamma = FVector4(
+			1.f - CoolShift * 0.3f,   // Less red
+			1.f - CoolShift * 0.1f,    // Slightly less green
+			1.f + CoolShift * 0.2f,    // More blue
+			1.f);
+	}
+
+	// Auto-exposure darkens during storms
+	float ExposureBias = CurrentVisibility * 0.5f - 0.2f;
+	PP->PostProcessComp->Settings.AutoExposureBias = ExposureBias;
+}
+
+// ---------------------------------------------------------------------------
+// Rain particle simulation
+// ---------------------------------------------------------------------------
+
+void AExoWeatherSystem::SpawnRainParticles(float DeltaTime)
+{
+	// Get player camera position for rain origin
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC || !PC->GetPawn()) return;
+
+	FVector PlayerLoc = PC->GetPawn()->GetActorLocation();
+
+	// Rain intensity based on weather
+	float RainIntensity = bCurrentRaining ? CurrentWindStrength : 0.f;
+	if (bTargetRaining && bTransitioning)
+	{
+		RainIntensity = FMath::Max(RainIntensity, TransitionAlpha * TargetWindStrength);
+	}
+
+	if (RainIntensity <= 0.01f)
+	{
+		RainDrops.Empty();
+		return;
+	}
+
+	// Spawn rate proportional to intensity
+	float SpawnRate = RainIntensity * 200.f;
+	RainSpawnAccum += SpawnRate * DeltaTime;
+
+	int32 MaxDrops = FMath::RoundToInt32(RainIntensity * 300.f);
+
+	while (RainSpawnAccum >= 1.f && RainDrops.Num() < MaxDrops)
+	{
+		RainSpawnAccum -= 1.f;
+
+		FRainDrop Drop;
+		Drop.Position = PlayerLoc + FVector(
+			FMath::RandRange(-5000.f, 5000.f),
+			FMath::RandRange(-5000.f, 5000.f),
+			FMath::RandRange(2000.f, 4000.f));
+
+		// Rain falls with wind
+		Drop.Velocity = FVector(
+			CurrentWindStrength * 500.f,
+			FMath::RandRange(-100.f, 100.f),
+			FMath::RandRange(-4000.f, -6000.f));
+
+		Drop.Life = 0.f;
+		RainDrops.Add(Drop);
+	}
+
+	// Update & remove dead drops (rain is purely visual via debug draw for now,
+	// but the positions are tracked for splash effects on the ground)
+	for (int32 i = RainDrops.Num() - 1; i >= 0; --i)
+	{
+		FRainDrop& D = RainDrops[i];
+		D.Position += D.Velocity * DeltaTime;
+		D.Life += DeltaTime;
+
+		if (D.Life > 1.5f || D.Position.Z < PlayerLoc.Z - 500.f)
+		{
+			RainDrops.RemoveAtSwap(i);
+		}
+	}
 }

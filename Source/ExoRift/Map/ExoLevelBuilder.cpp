@@ -53,6 +53,9 @@ void AExoLevelBuilder::BeginPlay()
 	PlaceExplodingBarrels();
 	PlaceCoverElements();
 	BuildProps();
+	BuildRoads();
+	BuildWaterFeatures();
+	BuildFoliage();
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),
 		LevelMeshes.Num());

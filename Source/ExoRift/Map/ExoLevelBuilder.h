@@ -50,6 +50,13 @@ private:
 	void SpawnAntenna(const FVector& Base, float Height);
 	void SpawnPipeRun(const FVector& Start, const FVector& End, float Radius);
 
+	// --- Roads & environment (in ExoLevelBuilderRoads.cpp) ---
+	void BuildRoads();
+	void SpawnRoadSegment(const FVector& Start, const FVector& End, float Width);
+	void SpawnBridge(const FVector& Start, const FVector& End, float Width, float Height);
+	void BuildWaterFeatures();
+	void BuildFoliage();
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

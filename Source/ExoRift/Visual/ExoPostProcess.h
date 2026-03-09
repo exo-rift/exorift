@@ -32,9 +32,11 @@ public:
 
 	static AExoPostProcess* Get(UWorld* World);
 
-protected:
+	/** Post-process component — public for weather system integration. */
 	UPROPERTY(VisibleAnywhere)
 	UPostProcessComponent* PostProcessComp;
+
+protected:
 
 	// Damage flash (red vignette pulse)
 	float DamageFlashIntensity = 0.f;

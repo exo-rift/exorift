@@ -6,7 +6,17 @@
 
 class UCameraComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 class AExoDropPodManager;
+
+UENUM()
+enum class EDropPodPhase : uint8
+{
+	FreeFall,       // High altitude, fast descent, player can steer
+	Braking,        // Thrusters fire, decelerating
+	Landing,        // Final approach
+	Landed          // On ground, deploying player
+};
 
 UCLASS()
 class EXORIFT_API AExoDropPod : public AActor
@@ -20,8 +30,13 @@ public:
 
 	void InitPod(AController* InPassenger, AExoDropPodManager* InManager);
 
+	/** Call from player input to steer during freefall. X=left/right, Y=forward/back. */
+	void ApplySteerInput(FVector2D Input);
+
 protected:
 	void OnLanded();
+	void BuildPodMesh();
+	void UpdateThrusterVFX(float DeltaTime, float BrakeAlpha);
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* PodMesh;
@@ -29,17 +44,32 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* PodCamera;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Drop")
-	float DescentSpeed = 8000.f;
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* ThrusterLight;
+
+	// Pod hull parts (built from basic shapes)
+	UPROPERTY()
+	UStaticMeshComponent* HullBody;
+	UPROPERTY()
+	UStaticMeshComponent* HullNose;
+	UPROPERTY()
+	UStaticMeshComponent* FinLeft;
+	UPROPERTY()
+	UStaticMeshComponent* FinRight;
+	UPROPERTY()
+	UStaticMeshComponent* ThrusterCone;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drop")
-	float DecelerationAltitude = 5000.f;
+	float MaxDescentSpeed = 12000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drop")
-	float LandingSpeed = 1000.f;
+	float BrakeAltitude = 8000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drop")
-	float GroundTraceLength = 100000.f;
+	float LandingSpeed = 600.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drop")
+	float SteerSpeed = 4000.f;
 
 	UPROPERTY()
 	AController* Passenger = nullptr;
@@ -47,7 +77,16 @@ protected:
 	UPROPERTY()
 	AExoDropPodManager* Manager = nullptr;
 
-	bool bHasLanded = false;
+	EDropPodPhase Phase = EDropPodPhase::FreeFall;
 	float GroundZ = 0.f;
 	bool bGroundDetected = false;
+	FVector2D SteerInput = FVector2D::ZeroVector;
+	float PodTilt = 0.f;           // Current tilt angle for steering feedback
+	float LandedTimer = 0.f;
+
+	// Cached meshes
+	UStaticMesh* CubeMesh = nullptr;
+	UStaticMesh* CylinderMesh = nullptr;
+	UStaticMesh* ConeMesh = nullptr;
+	UMaterialInterface* BaseMaterial = nullptr;
 };
