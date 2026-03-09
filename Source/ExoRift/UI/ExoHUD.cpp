@@ -87,6 +87,7 @@ void AExoHUD::DrawHUD()
 	DrawRainOverlay();
 	DrawAbilities();
 	DrawInteractionPrompt();
+	DrawVehicleHUD();
 
 	// Compass bar at top of screen
 	{

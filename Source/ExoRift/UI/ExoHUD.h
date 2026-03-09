@@ -52,6 +52,7 @@ protected:
 	void DrawSupplyDropAnnouncement();
 	void DrawMatchTimer();
 	void DrawZoneTimer();
+	void DrawVehicleHUD();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

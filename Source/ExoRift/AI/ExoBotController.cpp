@@ -3,6 +3,7 @@
 #include "AI/ExoBotController.h"
 #include "AI/ExoBotCharacter.h"
 #include "Player/ExoCharacter.h"
+#include "Player/ExoDecoyActor.h"
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -283,11 +284,18 @@ void AExoBotController::TickBasicAI(float DeltaTime)
 void AExoBotController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (!Stimulus.WasSuccessfullySensed()) return;
+	if (!Actor || Actor == GetPawn()) return;
 
-	AExoCharacter* Other = Cast<AExoCharacter>(Actor);
-	if (Other && Other->IsAlive() && !CurrentTarget)
+	// Accept both real characters and decoys as targets
+	bool bValidTarget = false;
+	if (AExoCharacter* Other = Cast<AExoCharacter>(Actor))
+		bValidTarget = Other->IsAlive();
+	else
+		bValidTarget = Actor->IsA<AExoDecoyActor>();
+
+	if (bValidTarget && !CurrentTarget)
 	{
-		CurrentTarget = Other;
+		CurrentTarget = Actor;
 		bReactionPending = true;
 		ReactionTimer = ReactionTime;
 	}

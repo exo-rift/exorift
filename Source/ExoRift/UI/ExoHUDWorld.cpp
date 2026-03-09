@@ -1,4 +1,4 @@
-// ExoHUDWorld.cpp — World markers: weather, abilities, supply drops
+// ExoHUDWorld.cpp — World markers: weather, abilities, supply drops, vehicles
 #include "UI/ExoHUD.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoAbilityComponent.h"
@@ -133,13 +133,13 @@ void AExoHUD::DrawAbilities()
 	float StartX = (Canvas->SizeX - TotalW) * 0.5f;
 	float Y = Canvas->SizeY - 95.f;
 
-	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B"), TEXT("G"), TEXT("?") };
+	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B"), TEXT("G"), TEXT("H") };
 	const FLinearColor ReadyColors[] = {
 		FLinearColor(0.f, 0.9f, 1.f, 0.9f),   // Cyan - Dash
 		FLinearColor(1.f, 0.9f, 0.1f, 0.9f),   // Yellow - Scan
 		FLinearColor(0.2f, 0.5f, 1.f, 0.9f),   // Blue - Shield
 		FLinearColor(0.2f, 1.f, 0.5f, 0.9f),   // Green - Grapple
-		FLinearColor(0.7f, 0.7f, 0.7f, 0.9f)   // Grey - Default
+		FLinearColor(0.6f, 0.3f, 1.f, 0.9f)    // Purple - Decoy
 	};
 	const FLinearColor Grey(0.3f, 0.3f, 0.35f, 0.7f);
 

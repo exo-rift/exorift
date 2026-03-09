@@ -19,6 +19,28 @@ void AExoLevelBuilder::BuildStructures()
 	SpawnTower(FVector(0.f, 0.f, 4000.f), 400.f, 2000.f);
 	SpawnAntenna(FVector(0.f, 0.f, 6000.f), 2000.f);
 
+	// Landing pad (east of hub) — flat platform with emissive markings
+	FVector PadCenter(8000.f, 0.f, 30.f);
+	SpawnStaticMesh(PadCenter, FVector(30.f, 30.f, 0.3f),
+		FRotator::ZeroRotator, CubeMesh, FLinearColor(0.06f, 0.06f, 0.07f));
+	// Pad border stripes
+	UStaticMeshComponent* PadBorderN = SpawnStaticMesh(
+		PadCenter + FVector(0.f, 1500.f, 5.f), FVector(30.f, 0.1f, 0.05f),
+		FRotator::ZeroRotator, CubeMesh, FLinearColor(0.1f, 0.4f, 0.1f));
+	UStaticMeshComponent* PadBorderS = SpawnStaticMesh(
+		PadCenter + FVector(0.f, -1500.f, 5.f), FVector(30.f, 0.1f, 0.05f),
+		FRotator::ZeroRotator, CubeMesh, FLinearColor(0.1f, 0.4f, 0.1f));
+	// Center H marking
+	SpawnStaticMesh(PadCenter + FVector(0.f, 0.f, 5.f),
+		FVector(0.15f, 6.f, 0.04f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.8f, 0.8f, 0.8f)); // Vertical bar of H
+	SpawnStaticMesh(PadCenter + FVector(300.f, 0.f, 5.f),
+		FVector(0.15f, 6.f, 0.04f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.8f, 0.8f, 0.8f)); // Second vertical
+	SpawnStaticMesh(PadCenter + FVector(150.f, 0.f, 5.f),
+		FVector(3.f, 0.15f, 0.04f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.8f, 0.8f, 0.8f)); // Cross bar
+
 	// === NORTH COMPOUND — industrial facility ===
 	float NY = 80000.f;
 	// Main warehouse
@@ -192,6 +214,32 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY - 15.f, Size.Z + 20.f)),
 		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
+
+	// Emissive accent strips (sci-fi window line effect on front/back walls)
+	float StripZ = Size.Z * 0.6f;
+	FLinearColor StripCol(0.05f, 0.15f, 0.3f); // Cool blue accent
+	UStaticMeshComponent* FrontStrip = SpawnStaticMesh(
+		Center + Rot.RotateVector(FVector(0.f, HalfY + 1.f, StripZ)),
+		FVector(Size.X / 100.f * 0.8f, 0.02f, 0.15f), Rot, CubeMesh, StripCol);
+	if (FrontStrip && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* StripMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		StripMat->SetVectorParameterValue(TEXT("BaseColor"), StripCol);
+		StripMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.1f, 0.5f, 1.2f));
+		FrontStrip->SetMaterial(0, StripMat);
+	}
+	UStaticMeshComponent* BackStrip = SpawnStaticMesh(
+		Center + Rot.RotateVector(FVector(0.f, -HalfY - 1.f, StripZ)),
+		FVector(Size.X / 100.f * 0.8f, 0.02f, 0.15f), Rot, CubeMesh, StripCol);
+	if (BackStrip && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* StripMat2 = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		StripMat2->SetVectorParameterValue(TEXT("BaseColor"), StripCol);
+		StripMat2->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.1f, 0.5f, 1.2f));
+		BackStrip->SetMaterial(0, StripMat2);
+	}
 
 	// Interior light
 	UPointLightComponent* IntLight = NewObject<UPointLightComponent>(this);

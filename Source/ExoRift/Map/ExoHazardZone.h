@@ -5,6 +5,9 @@
 #include "ExoHazardZone.generated.h"
 
 class AExoCharacter;
+class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UENUM(BlueprintType)
 enum class EHazardType : uint8
@@ -23,11 +26,14 @@ class EXORIFT_API AExoHazardZone : public AActor
 public:
 	AExoHazardZone();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	/** Enable or disable the hazard at runtime (for timed hazards). */
 	void SetHazardEnabled(bool bEnable);
 	bool IsHazardEnabled() const { return bEnabled; }
+
+	EHazardType GetHazardType() const { return HazardType; }
+	float GetHazardRadius() const { return HazardRadius; }
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Hazard")
@@ -47,4 +53,24 @@ protected:
 
 private:
 	void ApplyHazardDamage(float DeltaTime);
+	void UpdateVFX(float DeltaTime);
+	FLinearColor GetHazardColor() const;
+
+	// Visual components
+	UPROPERTY()
+	UStaticMeshComponent* GroundDisk = nullptr;
+
+	UPROPERTY()
+	UStaticMeshComponent* BoundaryRing = nullptr;
+
+	UPROPERTY()
+	UPointLightComponent* AmbientGlow = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DiskMat = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* RingMat = nullptr;
+
+	float Age = 0.f;
 };

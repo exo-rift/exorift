@@ -2,6 +2,7 @@
 #include "AI/ExoBotController.h"
 #include "AI/ExoBotCharacter.h"
 #include "Player/ExoCharacter.h"
+#include "Player/ExoDecoyActor.h"
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "Weapons/ExoGrenadeComponent.h"
@@ -34,11 +35,28 @@ void AExoBotController::FindTarget()
 	float BestScore = -1.f;
 	for (AActor* Actor : PerceivedActors)
 	{
-		AExoCharacter* Other = Cast<AExoCharacter>(Actor);
-		if (!Other || !Other->IsAlive() || Other == BotPawn) continue;
+		if (!Actor || Actor == BotPawn) continue;
 
-		float Dist = FVector::Dist(BotPawn->GetActorLocation(), Other->GetActorLocation());
+		float Dist = FVector::Dist(BotPawn->GetActorLocation(), Actor->GetActorLocation());
 		if (Dist > EffectiveSight) continue;
+
+		// Check for decoys — treat as lower-priority targets
+		AExoDecoyActor* Decoy = Cast<AExoDecoyActor>(Actor);
+		if (Decoy)
+		{
+			float DistScore = 1.f - FMath::Clamp(Dist / EffectiveSight, 0.f, 1.f);
+			// Decoys score lower than real players (0.5 base vs 0.3+ for characters)
+			float Score = DistScore * 0.4f + 0.1f;
+			if (Score > BestScore)
+			{
+				BestScore = Score;
+				CurrentTarget = Decoy;
+			}
+			continue;
+		}
+
+		AExoCharacter* Other = Cast<AExoCharacter>(Actor);
+		if (!Other || !Other->IsAlive()) continue;
 
 		float DistScore = 1.f - FMath::Clamp(Dist / EffectiveSight, 0.f, 1.f);
 		float HealthScore = 1.f - FMath::Clamp(Other->GetHealth() / Other->GetMaxHealth(), 0.f, 1.f);

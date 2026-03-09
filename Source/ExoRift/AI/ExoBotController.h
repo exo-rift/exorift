@@ -12,6 +12,7 @@ class AExoBotCharacter;
 class AExoZoneSystem;
 class AExoCharacter;
 class AExoWeaponPickup;
+class AExoDecoyActor;
 
 /**
  * Enhanced AI controller with difficulty scaling, strafing, cover-seeking,

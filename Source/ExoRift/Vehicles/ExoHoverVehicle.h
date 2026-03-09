@@ -8,6 +8,8 @@
 class UCameraComponent;
 class USphereComponent;
 class USpringArmComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 class AExoCharacter;
 
 UCLASS()
@@ -18,6 +20,7 @@ class EXORIFT_API AExoHoverVehicle : public APawn, public IExoInteractable
 public:
 	AExoHoverVehicle();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -32,6 +35,10 @@ public:
 	void ExitVehicle();
 
 	bool IsOccupied() const { return bIsOccupied; }
+	bool IsBoosting() const { return bIsBoosting && CurrentBoostEnergy > 0.f; }
+	float GetBoostEnergy() const { return CurrentBoostEnergy; }
+	float GetMaxBoostEnergy() const { return BoostEnergy; }
+	float GetCurrentSpeed() const { return CurrentSpeed; }
 
 protected:
 	// --- Components ---
@@ -106,4 +113,21 @@ private:
 	// Physics
 	void ApplyHoverForce(float DeltaTime);
 	void ApplyMovement(float DeltaTime);
+	void UpdateVFX(float DeltaTime);
+
+	// VFX
+	UPROPERTY()
+	UPointLightComponent* EngineGlowL = nullptr;
+	UPROPERTY()
+	UPointLightComponent* EngineGlowR = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* ThrusterL = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* ThrusterR = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* ThrusterMat = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* BodyMat = nullptr;
+
+	float CurrentLeanAngle = 0.f;
 };

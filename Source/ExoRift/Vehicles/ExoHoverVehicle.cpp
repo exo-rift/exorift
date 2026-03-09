@@ -1,10 +1,14 @@
+// ExoHoverVehicle.cpp — Constructor, input, physics, enter/exit
+// VFX (BeginPlay, UpdateVFX) in ExoHoverVehicleVFX.cpp
 #include "Vehicles/ExoHoverVehicle.h"
 #include "Player/ExoCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "UObject/ConstructorHelpers.h"
 #include "ExoRift.h"
 
 AExoHoverVehicle::AExoHoverVehicle()
@@ -34,6 +38,46 @@ AExoHoverVehicle::AExoHoverVehicle()
 	InteractionSphere->SetSphereRadius(250.f);
 	InteractionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	InteractionSphere->SetGenerateOverlapEvents(true);
+
+	// Thruster meshes (small cylinders at rear)
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
+		TEXT("/Engine/BasicShapes/Cylinder"));
+
+	if (CylFinder.Succeeded())
+	{
+		ThrusterL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ThrusterL"));
+		ThrusterL->SetupAttachment(VehicleMesh);
+		ThrusterL->SetStaticMesh(CylFinder.Object);
+		ThrusterL->SetRelativeLocation(FVector(-80.f, -40.f, -10.f));
+		ThrusterL->SetRelativeScale3D(FVector(0.08f, 0.08f, 0.15f));
+		ThrusterL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ThrusterL->CastShadow = false;
+
+		ThrusterR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ThrusterR"));
+		ThrusterR->SetupAttachment(VehicleMesh);
+		ThrusterR->SetStaticMesh(CylFinder.Object);
+		ThrusterR->SetRelativeLocation(FVector(-80.f, 40.f, -10.f));
+		ThrusterR->SetRelativeScale3D(FVector(0.08f, 0.08f, 0.15f));
+		ThrusterR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ThrusterR->CastShadow = false;
+	}
+
+	// Engine glow lights (cyan-blue hover energy)
+	EngineGlowL = CreateDefaultSubobject<UPointLightComponent>(TEXT("EngineGlowL"));
+	EngineGlowL->SetupAttachment(VehicleMesh);
+	EngineGlowL->SetRelativeLocation(FVector(-80.f, -40.f, -30.f));
+	EngineGlowL->SetIntensity(5000.f);
+	EngineGlowL->SetAttenuationRadius(300.f);
+	EngineGlowL->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
+	EngineGlowL->CastShadows = false;
+
+	EngineGlowR = CreateDefaultSubobject<UPointLightComponent>(TEXT("EngineGlowR"));
+	EngineGlowR->SetupAttachment(VehicleMesh);
+	EngineGlowR->SetRelativeLocation(FVector(-80.f, 40.f, -30.f));
+	EngineGlowR->SetIntensity(5000.f);
+	EngineGlowR->SetAttenuationRadius(300.f);
+	EngineGlowR->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
+	EngineGlowR->CastShadows = false;
 
 	CurrentBoostEnergy = BoostEnergy;
 
@@ -178,6 +222,8 @@ void AExoHoverVehicle::Tick(float DeltaTime)
 	{
 		ApplyMovement(DeltaTime);
 	}
+
+	UpdateVFX(DeltaTime);
 }
 
 // ---------------------------------------------------------------------------
@@ -248,13 +294,28 @@ void AExoHoverVehicle::ApplyMovement(float DeltaTime)
 		CurrentSpeed = FMath::FInterpTo(CurrentSpeed, 0.f, DeltaTime, 2.f);
 	}
 
-	// Steering
+	// Steering with lean
 	if (FMath::Abs(CurrentSpeed) > 10.f)
 	{
 		float YawDelta = SteerInput * TurnRate * DeltaTime;
 		FRotator CurrentRot = GetActorRotation();
 		CurrentRot.Yaw += YawDelta;
+
+		// Lean into turns — proportional to speed and steer input
+		float SpeedFactor = FMath::Clamp(FMath::Abs(CurrentSpeed) / MaxSpeed, 0.f, 1.f);
+		float TargetLean = -SteerInput * 15.f * SpeedFactor;
+		CurrentLeanAngle = FMath::FInterpTo(CurrentLeanAngle, TargetLean, DeltaTime, 5.f);
+		CurrentRot.Roll = CurrentLeanAngle;
+
 		SetActorRotation(CurrentRot);
+	}
+	else
+	{
+		// Return to level when stopped
+		CurrentLeanAngle = FMath::FInterpTo(CurrentLeanAngle, 0.f, DeltaTime, 5.f);
+		FRotator Rot = GetActorRotation();
+		Rot.Roll = CurrentLeanAngle;
+		SetActorRotation(Rot);
 	}
 
 	// Apply forward movement
@@ -266,3 +327,4 @@ void AExoHoverVehicle::ApplyMovement(float DeltaTime)
 	FVector HorizontalMove = FVector(Velocity.X, Velocity.Y, 0.f) * DeltaTime;
 	AddActorWorldOffset(HorizontalMove, true);
 }
+

@@ -5,10 +5,13 @@
 #include "ExoDecoyActor.generated.h"
 
 class UAIPerceptionStimuliSourceComponent;
+class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 /**
- * Decoy actor that draws bot aggro via AI perception stimuli.
- * Stands still at spawn location and auto-destroys after its lifespan expires.
+ * Holographic decoy that draws bot aggro via AI perception stimuli.
+ * Flickers and bobs at spawn location. Auto-destroys after lifespan.
  */
 UCLASS()
 class EXORIFT_API AExoDecoyActor : public AActor
@@ -18,13 +21,36 @@ class EXORIFT_API AExoDecoyActor : public AActor
 public:
 	AExoDecoyActor();
 
+	virtual void Tick(float DeltaTime) override;
+
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, Category = "Decoy")
-	UStaticMeshComponent* DecoyMesh;
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* BodyMesh;
 
-	/** Registers this actor as a sight stimulus so bot AI perception detects it. */
-	UPROPERTY(VisibleAnywhere, Category = "AI")
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* HeadMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* BaseDisk;
+
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* HoloLight;
+
+	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionStimuliSourceComponent* StimuliSource;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* HoloMat = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* BaseMat = nullptr;
+
+private:
+	float Age = 0.f;
+	float FlickerSeed = 0.f;
+	FVector SpawnLocation = FVector::ZeroVector;
+
+	void UpdateHologram(float DeltaTime);
 };
