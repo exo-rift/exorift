@@ -92,12 +92,20 @@ void AExoLootContainer::BuildVisuals()
 	MakePart(FVector(52.f, 0.f, 20.f), FVector(0.04f, 0.08f, 0.06f),
 		FLinearColor(0.15f, 0.15f, 0.15f));
 
+	// Top beacon light (subtle beam above closed container)
+	MakePart(FVector(0.f, 0.f, 35.f), FVector(0.03f, 0.03f, 0.3f), AccentColor);
+
+	// Edge trim strips (top edges)
+	FLinearColor TrimCol(0.15f, 0.35f, 0.7f);
+	MakePart(FVector(50.f, 0.f, 25.f), FVector(0.02f, 0.55f, 0.02f), TrimCol);
+	MakePart(FVector(-50.f, 0.f, 25.f), FVector(0.02f, 0.55f, 0.02f), TrimCol);
+
 	// Interior glow light
 	ContainerGlow = NewObject<UPointLightComponent>(this);
 	ContainerGlow->SetupAttachment(RootComponent);
 	ContainerGlow->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
-	ContainerGlow->SetIntensity(0.f); // Off until opened
-	ContainerGlow->SetAttenuationRadius(400.f);
+	ContainerGlow->SetIntensity(0.f);
+	ContainerGlow->SetAttenuationRadius(500.f);
 	ContainerGlow->SetLightColor(FColor(100, 200, 255));
 	ContainerGlow->CastShadows = false;
 	ContainerGlow->RegisterComponent();
@@ -131,11 +139,20 @@ void AExoLootContainer::Tick(float DeltaTime)
 	}
 	else if (State == ELootContainerState::Closed)
 	{
-		// Subtle pulse on closed containers to make them visible
+		float Time = GetWorld()->GetTimeSeconds();
+
+		// Pulsing glow beacon on closed containers
 		if (ContainerGlow)
 		{
-			float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 1.5f));
-			ContainerGlow->SetIntensity(Pulse * 500.f);
+			float Pulse = 0.3f + 0.7f * FMath::Abs(FMath::Sin(Time * 1.5f));
+			ContainerGlow->SetIntensity(Pulse * 800.f);
+		}
+
+		// Slow rotation of lid accent (visual hint the container is interactive)
+		if (LidComp)
+		{
+			float Bob = FMath::Sin(Time * 2.f) * 0.3f;
+			LidComp->SetRelativeLocation(FVector(0.f, 0.f, 30.f + Bob));
 		}
 	}
 }

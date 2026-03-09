@@ -45,6 +45,10 @@ AExoDropPod::AExoDropPod()
 		TEXT("/Engine/BasicShapes/Cone"));
 	if (ConeFind.Succeeded()) ConeMesh = ConeFind.Object;
 
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFind(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	if (SphereFind.Succeeded()) SphereMesh = SphereFind.Object;
+
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
 	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
@@ -108,6 +112,50 @@ void AExoDropPod::BuildPodMesh()
 		FVector(0.02f, 0.02f, 1.2f), AccentColor);
 	MakeComp(CubeMesh, FVector(0.f, -60.f, 40.f),
 		FVector(0.02f, 0.02f, 1.2f), AccentColor);
+
+	// --- VFX: Thruster flame (elongated bright cylinder below thruster) ---
+	if (CylinderMesh && BaseMaterial)
+	{
+		ThrusterFlame = NewObject<UStaticMeshComponent>(this);
+		ThrusterFlame->SetupAttachment(RootComponent);
+		ThrusterFlame->SetStaticMesh(CylinderMesh);
+		ThrusterFlame->SetRelativeLocation(FVector(0.f, 0.f, -250.f));
+		ThrusterFlame->SetRelativeScale3D(FVector(0.3f, 0.3f, 0.01f));
+		ThrusterFlame->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ThrusterFlame->CastShadow = false;
+		ThrusterFlame->RegisterComponent();
+		FlameMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		FlameMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(2.f, 4.f, 10.f));
+		FlameMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.f, 4.f, 10.f));
+		ThrusterFlame->SetMaterial(0, FlameMat);
+	}
+
+	// --- VFX: Heat shield glow (sphere around pod during freefall) ---
+	if (SphereMesh && BaseMaterial)
+	{
+		HeatShield = NewObject<UStaticMeshComponent>(this);
+		HeatShield->SetupAttachment(RootComponent);
+		HeatShield->SetStaticMesh(SphereMesh);
+		HeatShield->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+		HeatShield->SetRelativeScale3D(FVector(2.5f, 2.5f, 3.5f));
+		HeatShield->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HeatShield->CastShadow = false;
+		HeatShield->RegisterComponent();
+		HeatMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		HeatMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.3f, 0.05f));
+		HeatMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(3.f, 0.8f, 0.15f));
+		HeatShield->SetMaterial(0, HeatMat);
+
+		// Heat glow light
+		HeatLight = NewObject<UPointLightComponent>(this);
+		HeatLight->SetupAttachment(RootComponent);
+		HeatLight->SetRelativeLocation(FVector(0.f, 0.f, -100.f));
+		HeatLight->SetIntensity(0.f);
+		HeatLight->SetAttenuationRadius(2000.f);
+		HeatLight->SetLightColor(FLinearColor(1.f, 0.4f, 0.1f));
+		HeatLight->CastShadows = false;
+		HeatLight->RegisterComponent();
+	}
 }
 
 void AExoDropPod::InitPod(AController* InPassenger, AExoDropPodManager* InManager)
@@ -244,32 +292,84 @@ void AExoDropPod::UpdateThrusterVFX(float DeltaTime, float BrakeAlpha)
 {
 	if (!ThrusterLight) return;
 
+	float Time = GetWorld()->GetTimeSeconds();
+
 	// Thruster light intensity based on braking
 	float TargetIntensity = 0.f;
 	if (Phase == EDropPodPhase::FreeFall)
-	{
-		// Faint glow during freefall
 		TargetIntensity = 5000.f;
-	}
 	else if (Phase == EDropPodPhase::Braking)
-	{
-		// Intense during braking
 		TargetIntensity = FMath::Lerp(5000.f, 80000.f, BrakeAlpha);
-	}
 	else if (Phase == EDropPodPhase::Landing)
-	{
 		TargetIntensity = 80000.f;
-	}
 
 	float CurrentIntensity = ThrusterLight->Intensity;
 	ThrusterLight->SetIntensity(FMath::FInterpTo(CurrentIntensity, TargetIntensity, DeltaTime, 4.f));
 
-	// Color shifts from blue to white-hot during heavy braking
 	FLinearColor ThrusterColor = FMath::Lerp(
-		FLinearColor(0.3f, 0.5f, 1.f),   // Blue
-		FLinearColor(0.8f, 0.9f, 1.f),    // White-hot
+		FLinearColor(0.3f, 0.5f, 1.f),
+		FLinearColor(0.8f, 0.9f, 1.f),
 		BrakeAlpha);
 	ThrusterLight->SetLightColor(ThrusterColor);
+
+	// --- Thruster flame: scales up with braking, flickers ---
+	if (ThrusterFlame)
+	{
+		float FlameLen = 0.f;
+		float FlameWidth = 0.3f;
+		if (Phase == EDropPodPhase::FreeFall)
+		{
+			FlameLen = 0.5f;
+			FlameWidth = 0.15f;
+		}
+		else if (Phase == EDropPodPhase::Braking)
+		{
+			FlameLen = FMath::Lerp(0.5f, 4.f, BrakeAlpha);
+			FlameWidth = FMath::Lerp(0.15f, 0.5f, BrakeAlpha);
+		}
+		else if (Phase == EDropPodPhase::Landing)
+		{
+			FlameLen = 4.f;
+			FlameWidth = 0.5f;
+		}
+
+		// Flicker
+		float Flicker = 1.f + 0.15f * FMath::Sin(Time * 25.f) + 0.1f * FMath::Sin(Time * 37.f);
+		ThrusterFlame->SetRelativeScale3D(FVector(FlameWidth * Flicker, FlameWidth * Flicker, FlameLen));
+		ThrusterFlame->SetRelativeLocation(FVector(0.f, 0.f, -200.f - FlameLen * 50.f));
+
+		// Color: blue → white-hot
+		if (FlameMat)
+		{
+			FLinearColor FlameCol = FMath::Lerp(
+				FLinearColor(1.f, 3.f, 8.f),
+				FLinearColor(8.f, 8.f, 10.f),
+				BrakeAlpha);
+			FlameMat->SetVectorParameterValue(TEXT("EmissiveColor"), FlameCol);
+		}
+	}
+
+	// --- Heat shield: visible during freefall, fades during braking ---
+	if (HeatShield)
+	{
+		float HeatAlpha = 0.f;
+		if (Phase == EDropPodPhase::FreeFall)
+			HeatAlpha = 0.6f + 0.2f * FMath::Sin(Time * 3.f);
+		else if (Phase == EDropPodPhase::Braking)
+			HeatAlpha = FMath::Max(0.f, 0.6f * (1.f - BrakeAlpha));
+
+		HeatShield->SetVisibility(HeatAlpha > 0.01f);
+		if (HeatMat && HeatAlpha > 0.01f)
+		{
+			FLinearColor HeatCol(3.f * HeatAlpha, 0.8f * HeatAlpha, 0.15f * HeatAlpha);
+			HeatMat->SetVectorParameterValue(TEXT("EmissiveColor"), HeatCol);
+		}
+
+		if (HeatLight)
+		{
+			HeatLight->SetIntensity(HeatAlpha * 30000.f);
+		}
+	}
 }
 
 void AExoDropPod::OnLanded()

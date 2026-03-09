@@ -84,9 +84,22 @@ protected:
 	float PodTilt = 0.f;           // Current tilt angle for steering feedback
 	float LandedTimer = 0.f;
 
+	// VFX components built at runtime
+	UPROPERTY()
+	UStaticMeshComponent* ThrusterFlame = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* HeatShield = nullptr;
+	UPROPERTY()
+	UPointLightComponent* HeatLight = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* FlameMat = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* HeatMat = nullptr;
+
 	// Cached meshes
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* ConeMesh = nullptr;
+	UStaticMesh* SphereMesh = nullptr;
 	UMaterialInterface* BaseMaterial = nullptr;
 };
