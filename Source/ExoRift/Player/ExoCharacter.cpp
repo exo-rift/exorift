@@ -3,14 +3,13 @@
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoAbilityComponent.h"
 #include "Player/ExoKillStreakComponent.h"
+#include "Player/ExoInventoryComponent.h"
 #include "Player/ExoPlayerController.h"
 #include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapons/ExoWeaponBase.h"
-#include "Weapons/ExoWeaponRifle.h"
-#include "Weapons/ExoWeaponPistol.h"
 #include "Core/ExoGameMode.h"
 #include "Visual/ExoPostProcess.h"
 #include "UI/ExoHitMarker.h"
@@ -51,6 +50,9 @@ AExoCharacter::AExoCharacter()
 	// Kill Streak
 	KillStreakComp = CreateDefaultSubobject<UExoKillStreakComponent>(TEXT("KillStreakComp"));
 
+	// Inventory
+	InventoryComp = CreateDefaultSubobject<UExoInventoryComponent>(TEXT("InventoryComp"));
+
 	// Third person mesh (hidden from owner)
 	GetMesh()->SetOwnerNoSee(true);
 
@@ -68,7 +70,7 @@ void AExoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	Health = MaxHealth;
-	SpawnDefaultWeapons();
+	// Default weapons are now spawned by UExoInventoryComponent::BeginPlay
 }
 
 void AExoCharacter::Tick(float DeltaTime)
@@ -133,49 +135,31 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 
 void AExoCharacter::StartFire()
 {
-	if (CurrentWeapon && !bIsDead && !bIsSliding && !bIsMantling) CurrentWeapon->StartFire();
+	AExoWeaponBase* Weapon = GetCurrentWeapon();
+	if (Weapon && !bIsDead && !bIsSliding && !bIsMantling) Weapon->StartFire();
 }
 
 void AExoCharacter::StopFire()
 {
-	if (CurrentWeapon) CurrentWeapon->StopFire();
+	AExoWeaponBase* Weapon = GetCurrentWeapon();
+	if (Weapon) Weapon->StopFire();
+}
+
+AExoWeaponBase* AExoCharacter::GetCurrentWeapon() const
+{
+	return InventoryComp ? InventoryComp->GetCurrentWeapon() : nullptr;
 }
 
 void AExoCharacter::SwapWeapon()
 {
-	if (WeaponInventory.Num() <= 1 || bIsDead) return;
-
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->StopFire();
-		CurrentWeapon->SetActorHiddenInGame(true);
-	}
-
-	CurrentWeaponIndex = (CurrentWeaponIndex + 1) % WeaponInventory.Num();
-	CurrentWeapon = WeaponInventory[CurrentWeaponIndex];
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->SetActorHiddenInGame(false);
-	}
+	if (bIsDead || !InventoryComp) return;
+	InventoryComp->CycleWeapon(1);
 }
 
 void AExoCharacter::EquipWeapon(AExoWeaponBase* Weapon)
 {
-	if (!Weapon) return;
-
-	Weapon->SetOwner(this);
-	Weapon->AttachToComponent(FirstPersonCamera, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("GripPoint"));
-	WeaponInventory.Add(Weapon);
-
-	if (!CurrentWeapon)
-	{
-		CurrentWeapon = Weapon;
-		CurrentWeaponIndex = 0;
-	}
-	else
-	{
-		Weapon->SetActorHiddenInGame(true);
-	}
+	if (!Weapon || !InventoryComp) return;
+	InventoryComp->AddWeapon(Weapon);
 }
 
 void AExoCharacter::StartSprint()
@@ -220,25 +204,6 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("%s eliminated"), *GetName());
-}
-
-void AExoCharacter::SpawnDefaultWeapons()
-{
-	if (!HasAuthority()) return;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = this;
-
-	// Spawn rifle
-	AExoWeaponRifle* Rifle = GetWorld()->SpawnActor<AExoWeaponRifle>(AExoWeaponRifle::StaticClass(),
-		GetActorLocation(), GetActorRotation(), SpawnParams);
-	if (Rifle) EquipWeapon(Rifle);
-
-	// Spawn pistol
-	AExoWeaponPistol* Pistol = GetWorld()->SpawnActor<AExoWeaponPistol>(AExoWeaponPistol::StaticClass(),
-		GetActorLocation(), GetActorRotation(), SpawnParams);
-	if (Pistol) EquipWeapon(Pistol);
 }
 
 // --- Sliding ---
@@ -395,5 +360,4 @@ void AExoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AExoCharacter, Health);
-	DOREPLIFETIME(AExoCharacter, CurrentWeapon);
 }

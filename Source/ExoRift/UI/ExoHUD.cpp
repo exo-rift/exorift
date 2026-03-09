@@ -1,7 +1,10 @@
 #include "UI/ExoHUD.h"
+#include "UI/ExoSettingsMenu.h"
+#include "Core/ExoGameSettings.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
 #include "Player/ExoInteractionComponent.h"
+#include "Player/ExoInventoryComponent.h"
 #include "Weapons/ExoWeaponBase.h"
 #include "Core/ExoGameState.h"
 #include "Core/ExoPlayerState.h"
@@ -83,6 +86,15 @@ void AExoHUD::DrawHUD()
 
 	// Minimap
 	FExoMinimap::Draw(this, Canvas, MinimapConfig);
+
+	// FPS counter (drawn on top of gameplay HUD)
+	DrawFPS();
+
+	// Settings menu overlay — drawn last so it covers everything
+	if (FExoSettingsMenu::bIsOpen)
+	{
+		FExoSettingsMenu::Draw(this, Canvas, HUDFont);
+	}
 }
 
 void AExoHUD::DrawCrosshair()
@@ -215,25 +227,62 @@ void AExoHUD::DrawWeaponIndicator()
 	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
 	if (!Char) return;
 
-	// Show current weapon slot indicator in bottom right
-	float X = Canvas->SizeX - 150.f;
-	float Y = Canvas->SizeY - 80.f;
+	UExoInventoryComponent* Inv = Char->GetInventoryComponent();
+	if (!Inv) return;
 
-	DrawRect(ColorBgDark, X - 5.f, Y - 5.f, 130.f, 60.f);
+	const int32 Slots = Inv->GetSlotCount();
+	const float SlotW = 120.f;
+	const float SlotH = 42.f;
+	const float SlotGap = 4.f;
+	const float TotalH = Slots * SlotH + (Slots - 1) * SlotGap;
+	const float BaseX = Canvas->SizeX - SlotW - 20.f;
+	const float BaseY = Canvas->SizeY - TotalH - 100.f;
 
-	AExoWeaponBase* Weapon = Char->GetCurrentWeapon();
-	if (Weapon)
+	const TCHAR* SlotLabels[] = { TEXT("[1] PRI"), TEXT("[2] SEC"), TEXT("[3] UTL") };
+	const int32 ActiveSlot = Inv->GetCurrentSlotIndex();
+
+	for (int32 i = 0; i < Slots; ++i)
 	{
-		FString TypeStr;
-		switch (Weapon->GetWeaponType())
+		float Y = BaseY + i * (SlotH + SlotGap);
+		AExoWeaponBase* W = Inv->GetWeapon(i);
+		bool bActive = (i == ActiveSlot);
+
+		// Background: brighter for active slot, dimmed for others
+		FLinearColor BgCol = bActive
+			? FLinearColor(0.1f, 0.1f, 0.15f, 0.85f)
+			: FLinearColor(0.03f, 0.03f, 0.05f, 0.5f);
+		DrawRect(BgCol, BaseX, Y, SlotW, SlotH);
+
+		if (W)
 		{
-		case EWeaponType::Rifle: TypeStr = TEXT("[1] RIFLE"); break;
-		case EWeaponType::Pistol: TypeStr = TEXT("[2] PISTOL"); break;
-		case EWeaponType::GrenadeLauncher: TypeStr = TEXT("[3] LAUNCHER"); break;
+			FLinearColor RarityCol = AExoWeaponBase::GetRarityColor(W->Rarity);
+			if (!bActive) RarityCol.A = 0.5f;
+
+			// Left rarity stripe (3px wide)
+			DrawRect(RarityCol, BaseX, Y, 3.f, SlotH);
+
+			// Slot label + weapon name
+			DrawText(SlotLabels[i], RarityCol, BaseX + 8.f, Y + 2.f, HUDFont, 0.65f);
+			FLinearColor NameCol = bActive ? RarityCol : (RarityCol * 0.7f);
+			DrawText(W->GetWeaponName(), NameCol, BaseX + 8.f, Y + 20.f, HUDFont, 0.6f);
 		}
-		FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Weapon->Rarity);
-		DrawText(TypeStr, RarityColor, X, Y, HUDFont, 0.8f);
-		DrawText(Weapon->GetWeaponName(), RarityColor * 0.85f, X, Y + 22.f, HUDFont, 0.7f);
+		else
+		{
+			// Empty slot
+			FLinearColor DimCol(0.25f, 0.25f, 0.3f, bActive ? 0.6f : 0.3f);
+			DrawText(SlotLabels[i], DimCol, BaseX + 8.f, Y + 2.f, HUDFont, 0.65f);
+			DrawText(TEXT("- empty -"), DimCol * 0.7f, BaseX + 8.f, Y + 20.f, HUDFont, 0.55f);
+		}
+
+		// Active slot border highlight
+		if (bActive)
+		{
+			FLinearColor Border(0.6f, 0.8f, 1.f, 0.7f);
+			DrawLine(BaseX, Y, BaseX + SlotW, Y, Border);
+			DrawLine(BaseX, Y + SlotH, BaseX + SlotW, Y + SlotH, Border);
+			DrawLine(BaseX, Y, BaseX, Y + SlotH, Border);
+			DrawLine(BaseX + SlotW, Y, BaseX + SlotW, Y + SlotH, Border);
+		}
 	}
 }
 
@@ -460,6 +509,27 @@ void AExoHUD::DrawAbilities()
 			DrawRect(GlowCol, X + 1.f, Y + 1.f, SlotW - 2.f, SlotH - 2.f);
 		}
 	}
+}
+
+void AExoHUD::DrawFPS()
+{
+	UExoGameSettings* Settings = UExoGameSettings::Get(GetWorld());
+	if (!Settings || !Settings->bShowFPS) return;
+
+	float DeltaSec = GetWorld()->GetDeltaSeconds();
+	float CurrentFPS = (DeltaSec > 0.f) ? (1.f / DeltaSec) : 0.f;
+	SmoothedFPS = FMath::FInterpTo(SmoothedFPS, CurrentFPS, DeltaSec, 5.f);
+
+	FString FPSText = FString::Printf(TEXT("FPS: %d"), FMath::RoundToInt(SmoothedFPS));
+	FLinearColor FPSColor = (SmoothedFPS >= 55.f)
+		? FLinearColor(0.2f, 1.f, 0.3f, 0.9f)
+		: FLinearColor(1.f, 0.3f, 0.2f, 0.9f);
+
+	float TextW, TextH;
+	GetTextSize(FPSText, TextW, TextH, HUDFont, 0.85f);
+	float X = Canvas->SizeX - TextW - 20.f;
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X - 6.f, 8.f, TextW + 12.f, TextH + 4.f);
+	DrawText(FPSText, FPSColor, X, 10.f, HUDFont, 0.85f);
 }
 
 FVector2D AExoHUD::GetScreenCenter() const

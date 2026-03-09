@@ -7,6 +7,7 @@
 class UInputMappingContext;
 class UInputAction;
 class AExoSpectatorPawn;
+class UExoGameSettings;
 struct FInputActionValue;
 
 UCLASS()
@@ -38,12 +39,20 @@ protected:
 	void HandleCrouch();
 	void HandleCrouchReleased();
 	void HandleInteract();
+	void HandleDropWeapon();
 	void HandlePing();
 
 	// Ability input handlers
 	void HandleAbility1();
 	void HandleAbility2();
 	void HandleAbility3();
+
+	// Settings menu input handlers
+	void HandlePause();
+	void HandleMenuUp();
+	void HandleMenuDown();
+	void HandleMenuLeft();
+	void HandleMenuRight();
 
 	// Spectator cycling
 	void HandleSpectateNext();
@@ -78,6 +87,9 @@ protected:
 	UInputAction* CrouchAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* DropWeaponAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* PingAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -88,6 +100,21 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* Ability3Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* PauseAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* MenuUpAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* MenuDownAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* MenuLeftAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* MenuRightAction;
 
 private:
 	void SetupEnhancedInput();

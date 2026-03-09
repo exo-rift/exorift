@@ -47,8 +47,11 @@ protected:
 	static const FLinearColor ColorWhite;
 	static const FLinearColor ColorShieldBlue;
 
+	void DrawFPS();
+
 	float CrosshairSpread = 0.f;
 	bool bShowZoneWarning = false;
+	float SmoothedFPS = 60.f;
 
 	UPROPERTY()
 	UFont* HUDFont;

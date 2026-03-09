@@ -10,6 +10,7 @@ class UExoShieldComponent;
 class UExoInteractionComponent;
 class UExoAbilityComponent;
 class UExoKillStreakComponent;
+class UExoInventoryComponent;
 
 UCLASS()
 class EXORIFT_API AExoCharacter : public ACharacter
@@ -29,7 +30,10 @@ public:
 	void StopFire();
 	void SwapWeapon();
 	void EquipWeapon(AExoWeaponBase* Weapon);
-	AExoWeaponBase* GetCurrentWeapon() const { return CurrentWeapon; }
+	AExoWeaponBase* GetCurrentWeapon() const;
+
+	// Inventory
+	UExoInventoryComponent* GetInventoryComponent() const { return InventoryComp; }
 
 	// Health & Shield
 	float GetHealth() const { return Health; }
@@ -67,7 +71,6 @@ public:
 
 protected:
 	void Die(AController* Killer, const FString& WeaponName);
-	void SpawnDefaultWeapons();
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	UCameraComponent* FirstPersonCamera;
@@ -87,6 +90,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "KillStreak")
 	UExoKillStreakComponent* KillStreakComp;
 
+	UPROPERTY(VisibleAnywhere, Category = "Inventory")
+	UExoInventoryComponent* InventoryComp;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 	float MaxHealth = 100.f;
 
@@ -96,13 +102,6 @@ protected:
 	UFUNCTION()
 	void OnRep_Health();
 
-	UPROPERTY(Replicated)
-	AExoWeaponBase* CurrentWeapon = nullptr;
-
-	UPROPERTY()
-	TArray<AExoWeaponBase*> WeaponInventory;
-
-	int32 CurrentWeaponIndex = 0;
 	bool bIsSprinting = false;
 	bool bIsDead = false;
 
