@@ -1,19 +1,24 @@
 #include "Weapons/ExoWeaponPickup.h"
+#include "Weapons/ExoWeaponBase.h"
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
 #include "Weapons/ExoWeaponGrenadeLauncher.h"
 #include "Player/ExoCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ExoRift.h"
 
 AExoWeaponPickup::AExoWeaponPickup()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Collision sphere kept for spatial queries (interaction trace hits it)
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
 	CollisionSphere->InitSphereRadius(150.f);
-	CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	CollisionSphere->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	CollisionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CollisionSphere->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	RootComponent = CollisionSphere;
 
 	DisplayMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DisplayMesh"));
@@ -21,7 +26,7 @@ AExoWeaponPickup::AExoWeaponPickup()
 	DisplayMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DisplayMesh->SetRelativeScale3D(FVector(0.5f));
 
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AExoWeaponPickup::OnOverlapBegin);
+	// No overlap delegate — pickup is now interaction-based
 
 	// Random bob phase so pickups don't all bob in sync
 	BobPhase = FMath::RandRange(0.f, 2.f * PI);
@@ -47,6 +52,21 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 		FRotator Rot = GetActorRotation();
 		Rot.Yaw += DeltaTime * 45.f;
 		SetActorRotation(Rot);
+
+		// Tint display mesh with rarity color
+		if (DisplayMesh && DisplayMesh->GetMaterial(0))
+		{
+			UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(DisplayMesh->GetMaterial(0));
+			if (!DynMat)
+			{
+				DynMat = DisplayMesh->CreateAndSetMaterialInstanceDynamic(0);
+			}
+			if (DynMat)
+			{
+				FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Rarity);
+				DynMat->SetVectorParameterValue(TEXT("BaseColor"), RarityColor);
+			}
+		}
 	}
 	else if (bRespawns)
 	{
@@ -58,26 +78,44 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 	}
 }
 
-void AExoWeaponPickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-	bool bFromSweep, const FHitResult& SweepResult)
+// ---------------------------------------------------------------------------
+// IExoInteractable implementation
+// ---------------------------------------------------------------------------
+
+void AExoWeaponPickup::Interact(AExoCharacter* Interactor)
 {
-	if (!bIsActive) return;
+	if (!bIsActive || !Interactor || !Interactor->IsAlive()) return;
 
-	AExoCharacter* Character = Cast<AExoCharacter>(OtherActor);
-	if (Character && Character->IsAlive())
+	SpawnWeaponForPlayer(Interactor);
+	SetPickupActive(false);
+
+	if (bRespawns)
 	{
-		SpawnWeaponForPlayer(Character);
-		SetPickupActive(false);
+		RespawnTimer = RespawnTime;
+	}
+	else
+	{
+		SetLifeSpan(0.1f);
+	}
+}
 
-		if (bRespawns)
-		{
-			RespawnTimer = RespawnTime;
-		}
-		else
-		{
-			SetLifeSpan(0.1f);
-		}
+FString AExoWeaponPickup::GetInteractionPrompt()
+{
+	return FString::Printf(TEXT("Press E to pick up %s"), *GetWeaponDisplayName());
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+FString AExoWeaponPickup::GetWeaponDisplayName() const
+{
+	switch (WeaponType)
+	{
+	case EWeaponType::Rifle:           return TEXT("Rifle");
+	case EWeaponType::Pistol:          return TEXT("Pistol");
+	case EWeaponType::GrenadeLauncher: return TEXT("Grenade Launcher");
+	default:                           return TEXT("Weapon");
 	}
 }
 
@@ -103,9 +141,10 @@ void AExoWeaponPickup::SpawnWeaponForPlayer(AExoCharacter* Character)
 			WeaponClass, GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
 		if (Weapon)
 		{
+			Weapon->Rarity = Rarity;
 			Character->EquipWeapon(Weapon);
-			UE_LOG(LogExoRift, Log, TEXT("%s picked up %s"),
-				*Character->GetName(), *Weapon->GetWeaponName());
+			UE_LOG(LogExoRift, Log, TEXT("%s picked up %s (Rarity: %d)"),
+				*Character->GetName(), *Weapon->GetWeaponName(), static_cast<uint8>(Rarity));
 		}
 	}
 }

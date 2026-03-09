@@ -22,6 +22,15 @@ enum class EWeaponType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EWeaponRarity : uint8
+{
+	Common,
+	Rare,
+	Epic,
+	Legendary
+};
+
+UENUM(BlueprintType)
 enum class EAILODLevel : uint8
 {
 	Full,       // <100m  — full BT, aiming, cover

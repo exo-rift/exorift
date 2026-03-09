@@ -3,6 +3,7 @@
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
 #include "Visual/ExoPostProcess.h"
+#include "Visual/ExoTracerManager.h"
 #include "Core/ExoAudioManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -16,6 +17,42 @@ AExoWeaponBase::AExoWeaponBase()
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
+}
+
+float AExoWeaponBase::GetRarityDamageMultiplier() const
+{
+	switch (Rarity)
+	{
+	case EWeaponRarity::Common:    return 1.0f;
+	case EWeaponRarity::Rare:      return 1.15f;
+	case EWeaponRarity::Epic:      return 1.3f;
+	case EWeaponRarity::Legendary: return 1.5f;
+	default:                       return 1.0f;
+	}
+}
+
+float AExoWeaponBase::GetRarityHeatMultiplier() const
+{
+	switch (Rarity)
+	{
+	case EWeaponRarity::Common:    return 1.0f;
+	case EWeaponRarity::Rare:      return 0.95f;
+	case EWeaponRarity::Epic:      return 0.85f;
+	case EWeaponRarity::Legendary: return 0.75f;
+	default:                       return 1.0f;
+	}
+}
+
+FLinearColor AExoWeaponBase::GetRarityColor(EWeaponRarity InRarity)
+{
+	switch (InRarity)
+	{
+	case EWeaponRarity::Common:    return FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
+	case EWeaponRarity::Rare:      return FLinearColor(0.2f, 0.5f, 1.0f, 1.f);
+	case EWeaponRarity::Epic:      return FLinearColor(0.7f, 0.2f, 1.0f, 1.f);
+	case EWeaponRarity::Legendary: return FLinearColor(1.0f, 0.85f, 0.2f, 1.f);
+	default:                       return FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
+	}
 }
 
 void AExoWeaponBase::Tick(float DeltaTime)
@@ -86,6 +123,36 @@ void AExoWeaponBase::FireShot()
 	}
 
 	FHitResult Hit = DoLineTrace(MaxRange);
+
+	// Tracer & muzzle flash
+	{
+		FVector MuzzleLoc = WeaponMesh ? WeaponMesh->GetSocketLocation(TEXT("Muzzle")) : GetActorLocation();
+		FVector TraceEnd;
+		if (Hit.bBlockingHit)
+		{
+			TraceEnd = Hit.ImpactPoint;
+		}
+		else
+		{
+			// Use forward direction * range as end point
+			FVector ViewStart;
+			FRotator ViewDir;
+			APawn* VP = Cast<APawn>(GetOwner());
+			if (VP && VP->GetController())
+			{
+				VP->GetController()->GetPlayerViewPoint(ViewStart, ViewDir);
+				TraceEnd = ViewStart + ViewDir.Vector() * MaxRange;
+			}
+			else
+			{
+				TraceEnd = MuzzleLoc + GetActorForwardVector() * MaxRange;
+			}
+		}
+
+		FExoTracerManager::SpawnTracer(GetWorld(), MuzzleLoc, TraceEnd, Hit.bBlockingHit);
+		FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc, GetActorRotation());
+	}
+
 	if (Hit.bBlockingHit)
 	{
 		AActor* HitActor = Hit.GetActor();
@@ -97,8 +164,21 @@ void AExoWeaponBase::FireShot()
 				InstigatorController = OwnerPawn->GetController();
 			}
 
+			// Base damage with rarity scaling
+			float FinalDamage = Damage * GetRarityDamageMultiplier();
+
+			// Distance-based damage falloff (applied before headshot)
+			float HitDistance = Hit.Distance;
+			if (HitDistance > FalloffStartRange && FalloffEndRange > FalloffStartRange)
+			{
+				float FalloffAlpha = FMath::Clamp(
+					(HitDistance - FalloffStartRange) / (FalloffEndRange - FalloffStartRange),
+					0.f, 1.f);
+				float DamageMult = FMath::Lerp(1.f, MinDamageMultiplier, FalloffAlpha);
+				FinalDamage *= DamageMult;
+			}
+
 			// Headshot detection
-			float FinalDamage = Damage;
 			bool bHeadshot = false;
 			AExoCharacter* HitChar = Cast<AExoCharacter>(HitActor);
 			if (HitChar)
@@ -158,6 +238,7 @@ void AExoWeaponBase::FireShot()
 
 void AExoWeaponBase::AddHeat(float Amount)
 {
+	Amount *= GetRarityHeatMultiplier();
 	float OldHeat = CurrentHeat;
 	CurrentHeat = FMath::Clamp(CurrentHeat + Amount, 0.f, 1.f);
 

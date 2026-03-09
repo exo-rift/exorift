@@ -18,6 +18,9 @@ AExoWeaponPistol::AExoWeaponPistol()
 	RecoilPitch = -0.5f;
 	RecoilYawRange = 0.2f;
 	HeadshotMultiplier = 2.5f;
+	FalloffStartRange = 8000.f;
+	FalloffEndRange = 20000.f;
+	MinDamageMultiplier = 0.3f;
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PistolMesh(
 		TEXT("/Game/Weapons/Pistol/SKM_Pistol"));

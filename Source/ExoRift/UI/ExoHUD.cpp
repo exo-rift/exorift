@@ -1,6 +1,7 @@
 #include "UI/ExoHUD.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
+#include "Player/ExoInteractionComponent.h"
 #include "Weapons/ExoWeaponBase.h"
 #include "Core/ExoGameState.h"
 #include "Core/ExoPlayerState.h"
@@ -56,6 +57,7 @@ void AExoHUD::DrawHUD()
 	DrawMatchPhase();
 	DrawZoneWarning();
 	DrawKillCount();
+	DrawInteractionPrompt();
 
 	// Hit markers & damage indicators
 	FExoHitMarker::Draw(this, Canvas);
@@ -217,8 +219,9 @@ void AExoHUD::DrawWeaponIndicator()
 		case EWeaponType::Pistol: TypeStr = TEXT("[2] PISTOL"); break;
 		case EWeaponType::GrenadeLauncher: TypeStr = TEXT("[3] LAUNCHER"); break;
 		}
-		DrawText(TypeStr, ColorWhite, X, Y, HUDFont, 0.8f);
-		DrawText(Weapon->GetWeaponName(), FLinearColor(0.6f, 0.7f, 0.8f, 0.8f), X, Y + 22.f, HUDFont, 0.7f);
+		FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Weapon->Rarity);
+		DrawText(TypeStr, RarityColor, X, Y, HUDFont, 0.8f);
+		DrawText(Weapon->GetWeaponName(), RarityColor * 0.85f, X, Y + 22.f, HUDFont, 0.7f);
 	}
 }
 
@@ -356,6 +359,26 @@ void AExoHUD::DrawKillCount()
 	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, 100.f, 28.f);
 	FString KillText = FString::Printf(TEXT("Kills: %d"), PS->Kills);
 	DrawText(KillText, ColorWhite, X, Y, HUDFont, 1.f);
+}
+
+void AExoHUD::DrawInteractionPrompt()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char) return;
+
+	UExoInteractionComponent* InterComp = Char->GetInteractionComponent();
+	if (!InterComp) return;
+
+	FString Prompt = InterComp->GetCurrentPrompt();
+	if (Prompt.IsEmpty()) return;
+
+	float TextW, TextH;
+	GetTextSize(Prompt, TextW, TextH, HUDFont, 0.9f);
+	float X = (Canvas->SizeX - TextW) * 0.5f;
+	float Y = Canvas->SizeY * 0.6f;
+
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.5f), X - 10.f, Y - 4.f, TextW + 20.f, TextH + 8.f);
+	DrawText(Prompt, ColorWhite, X, Y, HUDFont, 0.9f);
 }
 
 FVector2D AExoHUD::GetScreenCenter() const

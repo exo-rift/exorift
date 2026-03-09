@@ -6,6 +6,7 @@
 
 class UInputMappingContext;
 class UInputAction;
+class AExoSpectatorPawn;
 struct FInputActionValue;
 
 UCLASS()
@@ -16,11 +17,15 @@ class EXORIFT_API AExoPlayerController : public APlayerController
 public:
 	AExoPlayerController();
 
+	/** Called by AExoCharacter::Die to transition into spectator mode. */
+	void OnCharacterDied(AController* Killer);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* InPawn) override;
 
+	// Character input handlers
 	void HandleMove(const FInputActionValue& Value);
 	void HandleLook(const FInputActionValue& Value);
 	void HandleJump();
@@ -30,7 +35,15 @@ protected:
 	void HandleSwapWeapon();
 	void HandleSprint();
 	void HandleSprintReleased();
+	void HandleCrouch();
+	void HandleCrouchReleased();
+	void HandleInteract();
 
+	// Spectator cycling
+	void HandleSpectateNext();
+	void HandleSpectatePrev();
+
+	// Input assets
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
 
@@ -52,6 +65,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* SprintAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* CrouchAction;
+
 private:
 	void SetupEnhancedInput();
+
+	/** True once OnCharacterDied has been called — prevents double-transition. */
+	bool bIsSpectating = false;
 };

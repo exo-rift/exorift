@@ -27,6 +27,7 @@ protected:
 	void DrawZoneWarning();
 	void DrawKillCount();
 	void DrawWeaponIndicator();
+	void DrawInteractionPrompt();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

@@ -3,14 +3,16 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Core/ExoTypes.h"
+#include "Player/ExoInteractionComponent.h"
 #include "ExoWeaponPickup.generated.h"
 
 class USphereComponent;
 class UStaticMeshComponent;
 class AExoWeaponBase;
+class AExoCharacter;
 
 UCLASS()
-class EXORIFT_API AExoWeaponPickup : public AActor
+class EXORIFT_API AExoWeaponPickup : public AActor, public IExoInteractable
 {
 	GENERATED_BODY()
 
@@ -21,22 +23,26 @@ public:
 	EWeaponType WeaponType = EWeaponType::Rifle;
 
 	UPROPERTY(EditAnywhere, Category = "Pickup")
+	EWeaponRarity Rarity = EWeaponRarity::Common;
+
+	UPROPERTY(EditAnywhere, Category = "Pickup")
 	bool bRespawns = false;
 
 	UPROPERTY(EditAnywhere, Category = "Pickup")
 	float RespawnTime = 30.f;
 
+	// IExoInteractable
+	virtual void Interact(AExoCharacter* Interactor) override;
+	virtual FString GetInteractionPrompt() override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-		bool bFromSweep, const FHitResult& SweepResult);
-
-	void SpawnWeaponForPlayer(class AExoCharacter* Character);
+	void SpawnWeaponForPlayer(AExoCharacter* Character);
 	void SetPickupActive(bool bActive);
+
+	FString GetWeaponDisplayName() const;
 
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* CollisionSphere;

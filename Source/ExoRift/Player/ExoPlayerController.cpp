@@ -1,5 +1,8 @@
 #include "Player/ExoPlayerController.h"
 #include "Player/ExoCharacter.h"
+#include "Player/ExoSpectatorPawn.h"
+#include "Player/ExoInteractionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
@@ -32,6 +35,14 @@ AExoPlayerController::AExoPlayerController()
 	static ConstructorHelpers::FObjectFinder<UInputAction> SwapFinder(
 		TEXT("/Game/Variant_Shooter/Input/Actions/IA_SwapWeapon"));
 	if (SwapFinder.Succeeded()) SwapWeaponAction = SwapFinder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InteractFinder(
+		TEXT("/Game/Input/Actions/IA_Interact"));
+	if (InteractFinder.Succeeded()) InteractAction = InteractFinder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> CrouchFinder(
+		TEXT("/Game/Input/Actions/IA_Crouch"));
+	if (CrouchFinder.Succeeded()) CrouchAction = CrouchFinder.Object;
 }
 
 void AExoPlayerController::BeginPlay()
@@ -74,6 +85,13 @@ void AExoPlayerController::SetupInputComponent()
 		EIC->BindAction(SprintAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleSprint);
 		EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleSprintReleased);
 	}
+	if (InteractAction)
+		EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleInteract);
+	if (CrouchAction)
+	{
+		EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCrouch);
+		EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCrouchReleased);
+	}
 }
 
 void AExoPlayerController::SetupEnhancedInput()
@@ -85,6 +103,44 @@ void AExoPlayerController::SetupEnhancedInput()
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Death → Spectator transition
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::OnCharacterDied(AController* Killer)
+{
+	if (bIsSpectating) return;
+	bIsSpectating = true;
+
+	APawn* DeadPawn = GetPawn();
+	if (!DeadPawn) return;
+
+	FVector DeathLoc = DeadPawn->GetActorLocation();
+	FRotator DeathRot = DeadPawn->GetActorRotation();
+
+	// Spawn spectator pawn at death location
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	AExoSpectatorPawn* Spectator = GetWorld()->SpawnActor<AExoSpectatorPawn>(
+		AExoSpectatorPawn::StaticClass(), DeathLoc, DeathRot, SpawnParams);
+
+	if (!Spectator) return;
+
+	// Release the dead character and possess the spectator
+	UnPossess();
+	Possess(Spectator);
+
+	// Start the death camera sequence
+	AActor* KillerPawn = Killer ? Killer->GetPawn() : nullptr;
+	Spectator->StartDeathCam(KillerPawn, DeathLoc);
+
+	UE_LOG(LogExoRift, Log, TEXT("PlayerController transitioned to spectator"));
+}
+
+// ---------------------------------------------------------------------------
+// Movement / Camera
+// ---------------------------------------------------------------------------
 
 void AExoPlayerController::HandleMove(const FInputActionValue& Value)
 {
@@ -109,33 +165,88 @@ void AExoPlayerController::HandleLook(const FInputActionValue& Value)
 
 void AExoPlayerController::HandleJump()
 {
-	if (ACharacter* C = Cast<ACharacter>(GetPawn()))
-		C->Jump();
+	AExoCharacter* ExoC = Cast<AExoCharacter>(GetPawn());
+	if (!ExoC) return;
+
+	if (ExoC->GetCharacterMovement()->IsFalling())
+	{
+		// In the air — attempt mantle
+		ExoC->TryMantle();
+	}
+	else
+	{
+		ExoC->Jump();
+	}
 }
 
 void AExoPlayerController::HandleJumpReleased()
 {
-	if (ACharacter* C = Cast<ACharacter>(GetPawn()))
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
 		C->StopJumping();
 }
 
+// ---------------------------------------------------------------------------
+// Fire — doubles as spectate-next when in spectator mode
+// ---------------------------------------------------------------------------
+
 void AExoPlayerController::HandleFire()
 {
+	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
+	{
+		HandleSpectateNext();
+		return;
+	}
+
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
 		C->StartFire();
 }
 
 void AExoPlayerController::HandleFireReleased()
 {
+	// No action needed for spectator; only relevant for live character
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
 		C->StopFire();
 }
 
+// ---------------------------------------------------------------------------
+// Swap weapon — doubles as spectate-prev when in spectator mode
+// ---------------------------------------------------------------------------
+
 void AExoPlayerController::HandleSwapWeapon()
 {
+	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
+	{
+		HandleSpectatePrev();
+		return;
+	}
+
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
 		C->SwapWeapon();
 }
+
+// ---------------------------------------------------------------------------
+// Spectator cycling helpers
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::HandleSpectateNext()
+{
+	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
+	{
+		Spec->CycleSpectateTarget(1);
+	}
+}
+
+void AExoPlayerController::HandleSpectatePrev()
+{
+	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
+	{
+		Spec->CycleSpectateTarget(-1);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Sprint
+// ---------------------------------------------------------------------------
 
 void AExoPlayerController::HandleSprint()
 {
@@ -147,4 +258,54 @@ void AExoPlayerController::HandleSprintReleased()
 {
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
 		C->StopSprint();
+}
+
+// ---------------------------------------------------------------------------
+// Crouch / Slide
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::HandleCrouch()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C) return;
+
+	if (C->IsSprinting())
+	{
+		C->StartSlide();
+	}
+	else
+	{
+		C->Crouch();
+	}
+}
+
+void AExoPlayerController::HandleCrouchReleased()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C) return;
+
+	if (C->IsSliding())
+	{
+		C->StopSlide();
+	}
+	else
+	{
+		C->UnCrouch();
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Interaction
+// ---------------------------------------------------------------------------
+
+void AExoPlayerController::HandleInteract()
+{
+	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
+	if (!ExoChar) return;
+
+	UExoInteractionComponent* InterComp = ExoChar->GetInteractionComponent();
+	if (InterComp)
+	{
+		InterComp->TryInteract();
+	}
 }

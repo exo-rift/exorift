@@ -18,6 +18,9 @@ AExoWeaponRifle::AExoWeaponRifle()
 	RecoilPitch = -0.2f;
 	RecoilYawRange = 0.1f;
 	HeadshotMultiplier = 2.f;
+	FalloffStartRange = 15000.f;
+	FalloffEndRange = 40000.f;
+	MinDamageMultiplier = 0.4f;
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RifleMesh(
 		TEXT("/Game/Weapons/Rifle/SKM_Rifle"));

@@ -23,6 +23,14 @@ public:
 	virtual void StopFire();
 	virtual FString GetWeaponName() const { return WeaponName; }
 
+	// Rarity system
+	UPROPERTY(EditDefaultsOnly, Category = "Rarity")
+	EWeaponRarity Rarity = EWeaponRarity::Common;
+
+	float GetRarityDamageMultiplier() const;
+	float GetRarityHeatMultiplier() const;
+	static FLinearColor GetRarityColor(EWeaponRarity InRarity);
+
 	// Heat accessors
 	float GetCurrentHeat() const { return CurrentHeat; }
 	bool IsOverheated() const { return bIsOverheated; }
@@ -96,6 +104,16 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
 	float RecoilYawRange = 0.15f;
+
+	// Distance-based damage falloff
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	float FalloffStartRange = 20000.f; // Full damage up to this distance
+
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	float FalloffEndRange = 50000.f; // Minimum damage beyond this distance
+
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	float MinDamageMultiplier = 0.3f; // Multiplier at max falloff range
 
 	// Headshot
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
