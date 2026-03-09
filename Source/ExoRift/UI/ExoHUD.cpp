@@ -3,15 +3,19 @@
 #include "Core/ExoGameSettings.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
+#include "Player/ExoArmorComponent.h"
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Weapons/ExoWeaponBase.h"
 #include "Core/ExoGameState.h"
 #include "Core/ExoPlayerState.h"
 #include "Map/ExoZoneSystem.h"
+#include "Map/ExoSupplyDropManager.h"
+#include "Map/ExoSupplyDrop.h"
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
 #include "UI/ExoPingSystem.h"
+#include "UI/ExoCommsWheel.h"
 #include "UI/ExoMatchSummary.h"
 #include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoAbilityComponent.h"
@@ -57,6 +61,7 @@ void AExoHUD::DrawHUD()
 	DrawCrosshair();
 	DrawHealthBar();
 	DrawShieldBar();
+	DrawArmorIndicators();
 	DrawOverheatBar();
 	DrawEnergyBar();
 	DrawWeaponIndicator();
@@ -78,6 +83,10 @@ void AExoHUD::DrawHUD()
 		FExoPingSystem::DrawPings(this, Canvas, HUDFont, ViewLoc);
 	}
 
+	// Supply drop world markers
+	DrawSupplyDropMarkers();
+	DrawSupplyDropAnnouncement();
+
 	// Hit markers & damage indicators
 	FExoHitMarker::Draw(this, Canvas);
 
@@ -93,6 +102,12 @@ void AExoHUD::DrawHUD()
 
 	// FPS counter (drawn on top of gameplay HUD)
 	DrawFPS();
+
+	// Comms wheel overlay
+	if (FExoCommsWheel::bIsOpen)
+	{
+		FExoCommsWheel::Draw(this, Canvas, HUDFont);
+	}
 
 	// Settings menu overlay — drawn last so it covers everything
 	if (FExoSettingsMenu::bIsOpen)
@@ -185,6 +200,50 @@ void AExoHUD::DrawShieldBar()
 
 	FString ShieldText = FString::Printf(TEXT("SH %d"), FMath::CeilToInt(Shield->GetCurrentShield()));
 	DrawText(ShieldText, ColorShieldBlue, X + BarW + 10.f, Y - 1.f, HUDFont, 0.75f);
+}
+
+void AExoHUD::DrawArmorIndicators()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char || !Char->GetArmorComponent()) return;
+
+	UExoArmorComponent* Armor = Char->GetArmorComponent();
+	bool bHasHelmet = Armor->GetHelmetTier() != EArmorTier::None;
+	bool bHasVest = Armor->GetVestTier() != EArmorTier::None;
+	if (!bHasHelmet && !bHasVest) return;
+
+	// Position: small indicators above the shield bar
+	float X = 30.f;
+	float Y = Canvas->SizeY - 108.f;
+	float BarW = 115.f;
+	float BarH = 10.f;
+
+	// Tier color helper
+	auto GetTierColor = [](EArmorTier T) -> FLinearColor
+	{
+		switch (T)
+		{
+		case EArmorTier::Light:  return FLinearColor(0.6f, 0.6f, 0.65f, 0.9f);
+		case EArmorTier::Medium: return FLinearColor(0.3f, 0.55f, 1.f, 0.9f);
+		case EArmorTier::Heavy:  return FLinearColor(1.f, 0.85f, 0.25f, 0.9f);
+		default:                 return FLinearColor(0.4f, 0.4f, 0.4f, 0.5f);
+		}
+	};
+
+	if (bHasHelmet)
+	{
+		FLinearColor Col = GetTierColor(Armor->GetHelmetTier());
+		DrawText(TEXT("HELM"), Col, X, Y - 1.f, HUDFont, 0.6f);
+		DrawProgressBar(X + 42.f, Y, BarW, BarH, Armor->GetHelmetPercent(), Col, ColorBgDark);
+	}
+
+	if (bHasVest)
+	{
+		float VY = bHasHelmet ? Y - 15.f : Y;
+		FLinearColor Col = GetTierColor(Armor->GetVestTier());
+		DrawText(TEXT("VEST"), Col, X, VY - 1.f, HUDFont, 0.6f);
+		DrawProgressBar(X + 42.f, VY, BarW, BarH, Armor->GetVestPercent(), Col, ColorBgDark);
+	}
 }
 
 void AExoHUD::DrawOverheatBar()
@@ -583,6 +642,110 @@ void AExoHUD::DrawEnergyBar()
 	FString EL = FString::Printf(TEXT("ENERGY: %d/%d"), FMath::CeilToInt(W->GetCurrentEnergy()), FMath::CeilToInt(W->GetMaxEnergy()));
 	float TW, TH; GetTextSize(EL, TW, TH, HUDFont, 0.7f);
 	DrawText(EL, bLow ? EC : ColorWhite, X + (BarW - TW) * 0.5f, Y - TH - 2.f, HUDFont, 0.7f);
+}
+
+void AExoHUD::DrawSupplyDropMarkers()
+{
+	AExoSupplyDropManager* Manager = nullptr;
+	for (TActorIterator<AExoSupplyDropManager> It(GetWorld()); It; ++It)
+	{
+		Manager = *It;
+		break;
+	}
+	if (!Manager) return;
+
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	FVector ViewLoc = Char ? Char->GetActorLocation() : FVector::ZeroVector;
+	const float ScreenW = Canvas->SizeX;
+	const float ScreenH = Canvas->SizeY;
+	const FLinearColor DropColor(1.f, 0.85f, 0.15f, 0.9f); // Yellow
+	constexpr float EdgeMargin = 40.f;
+
+	for (AExoSupplyDrop* Drop : Manager->GetActiveDrops())
+	{
+		if (!Drop) continue;
+		ESupplyDropState State = Drop->GetState();
+		if (State == ESupplyDropState::Depleted) continue;
+
+		FVector DropLoc = Drop->GetActorLocation();
+		float DistMeters = FVector::Dist(ViewLoc, DropLoc) / 100.f;
+
+		FVector2D ScreenPos;
+		bool bOnScreen = GetOwningPlayerController()->ProjectWorldLocationToScreen(DropLoc, ScreenPos, true);
+		bool bInBounds = bOnScreen
+			&& ScreenPos.X >= EdgeMargin && ScreenPos.X <= ScreenW - EdgeMargin
+			&& ScreenPos.Y >= EdgeMargin && ScreenPos.Y <= ScreenH - EdgeMargin;
+
+		if (bInBounds)
+		{
+			// Draw yellow diamond marker
+			float Sz = 8.f;
+			DrawLine(ScreenPos.X, ScreenPos.Y - Sz, ScreenPos.X + Sz, ScreenPos.Y, DropColor, 2.f);
+			DrawLine(ScreenPos.X + Sz, ScreenPos.Y, ScreenPos.X, ScreenPos.Y + Sz, DropColor, 2.f);
+			DrawLine(ScreenPos.X, ScreenPos.Y + Sz, ScreenPos.X - Sz, ScreenPos.Y, DropColor, 2.f);
+			DrawLine(ScreenPos.X - Sz, ScreenPos.Y, ScreenPos.X, ScreenPos.Y - Sz, DropColor, 2.f);
+
+			FString Label = (State == ESupplyDropState::Falling)
+				? FString::Printf(TEXT("DROP [%dm]"), FMath::RoundToInt(DistMeters))
+				: FString::Printf(TEXT("SUPPLY [%dm]"), FMath::RoundToInt(DistMeters));
+			float TW, TH;
+			GetTextSize(Label, TW, TH, HUDFont, 0.7f);
+			float TX = ScreenPos.X - TW * 0.5f;
+			float TY = ScreenPos.Y - 22.f;
+			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), TX - 4.f, TY - 2.f, TW + 8.f, TH + 4.f);
+			DrawText(Label, DropColor, TX, TY, HUDFont, 0.7f);
+		}
+		else
+		{
+			// Off-screen edge indicator
+			FVector2D Center(ScreenW * 0.5f, ScreenH * 0.5f);
+			FVector2D Dir = bOnScreen ? (ScreenPos - Center) : (Center - ScreenPos);
+			if (Dir.IsNearlyZero()) Dir = FVector2D(0.f, -1.f);
+			Dir.Normalize();
+
+			float HalfW = ScreenW * 0.5f - EdgeMargin;
+			float HalfH = ScreenH * 0.5f - EdgeMargin;
+			float SX = (FMath::Abs(Dir.X) > KINDA_SMALL_NUMBER) ? HalfW / FMath::Abs(Dir.X) : BIG_NUMBER;
+			float SY = (FMath::Abs(Dir.Y) > KINDA_SMALL_NUMBER) ? HalfH / FMath::Abs(Dir.Y) : BIG_NUMBER;
+			FVector2D EdgePos = Center + Dir * FMath::Min(FMath::Min(SX, SY), 1000.f);
+
+			float Sz = 6.f;
+			DrawLine(EdgePos.X, EdgePos.Y - Sz, EdgePos.X + Sz, EdgePos.Y, DropColor, 2.f);
+			DrawLine(EdgePos.X + Sz, EdgePos.Y, EdgePos.X, EdgePos.Y + Sz, DropColor, 2.f);
+			DrawLine(EdgePos.X, EdgePos.Y + Sz, EdgePos.X - Sz, EdgePos.Y, DropColor, 2.f);
+			DrawLine(EdgePos.X - Sz, EdgePos.Y, EdgePos.X, EdgePos.Y - Sz, DropColor, 2.f);
+
+			FString DT = FString::Printf(TEXT("%dm"), FMath::RoundToInt(DistMeters));
+			float DW, DH;
+			GetTextSize(DT, DW, DH, HUDFont, 0.6f);
+			DrawText(DT, DropColor, EdgePos.X - DW * 0.5f, EdgePos.Y + 10.f, HUDFont, 0.6f);
+		}
+	}
+}
+
+void AExoHUD::DrawSupplyDropAnnouncement()
+{
+	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
+	if (!GS || GS->AnnouncementTimer <= 0.f) return;
+
+	GS->AnnouncementTimer -= GetWorld()->GetDeltaSeconds();
+
+	float Alpha = FMath::Clamp(GS->AnnouncementTimer / 1.5f, 0.f, 1.f);
+	FLinearColor AnnColor(1.f, 0.85f, 0.15f, Alpha);
+
+	FString AnnText = GS->SupplyDropAnnouncement;
+	float TW, TH;
+	GetTextSize(AnnText, TW, TH, HUDFont, 1.3f);
+	float X = (Canvas->SizeX - TW) * 0.5f;
+	float Y = Canvas->SizeY * 0.2f;
+
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Alpha), X - 15.f, Y - 5.f, TW + 30.f, TH + 10.f);
+	DrawText(AnnText, AnnColor, X, Y, HUDFont, 1.3f);
+
+	if (GS->AnnouncementTimer <= 0.f)
+	{
+		GS->SupplyDropAnnouncement.Empty();
+	}
 }
 
 void AExoHUD::DrawFPS()

@@ -54,6 +54,10 @@ protected:
 	void HandleMenuLeft();
 	void HandleMenuRight();
 
+	// Comms wheel
+	void HandleCommsOpen();
+	void HandleCommsClose();
+
 	// Spectator cycling
 	void HandleSpectateNext();
 	void HandleSpectatePrev();
@@ -115,6 +119,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* MenuRightAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* CommsAction;
 
 private:
 	void SetupEnhancedInput();

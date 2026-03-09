@@ -8,6 +8,7 @@
 #include "AI/ExoBotController.h"
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoDropPodManager.h"
+#include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSpawnPoint.h"
 #include "UI/ExoHUD.h"
 #include "Kismet/GameplayStatics.h"
@@ -47,6 +48,9 @@ void AExoGameMode::BeginPlay()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	DropPodManager = GetWorld()->SpawnActor<AExoDropPodManager>(AExoDropPodManager::StaticClass(), SpawnParams);
+
+	// Spawn supply drop manager
+	SupplyDropManager = GetWorld()->SpawnActor<AExoSupplyDropManager>(AExoSupplyDropManager::StaticClass(), SpawnParams);
 
 	TransitionToPhase(EBRMatchPhase::WaitingForPlayers);
 }

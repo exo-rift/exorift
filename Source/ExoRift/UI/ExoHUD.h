@@ -20,6 +20,7 @@ protected:
 	void DrawCrosshair();
 	void DrawHealthBar();
 	void DrawShieldBar();
+	void DrawArmorIndicators();
 	void DrawOverheatBar();
 	void DrawAliveCount();
 	void DrawKillFeed();
@@ -33,6 +34,8 @@ protected:
 	void DrawDBNOOverlay();
 	void DrawEnergyBar();
 	void DrawWeatherIndicator();
+	void DrawSupplyDropMarkers();
+	void DrawSupplyDropAnnouncement();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

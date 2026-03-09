@@ -7,6 +7,7 @@
 
 class AExoZoneSystem;
 class AExoDropPodManager;
+class AExoSupplyDropManager;
 class AExoCharacter;
 
 UCLASS()
@@ -65,4 +66,7 @@ private:
 
 	UPROPERTY()
 	AExoDropPodManager* DropPodManager = nullptr;
+
+	UPROPERTY()
+	AExoSupplyDropManager* SupplyDropManager = nullptr;
 };

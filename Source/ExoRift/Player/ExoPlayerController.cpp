@@ -6,6 +6,7 @@
 #include "Player/ExoAbilityComponent.h"
 #include "Core/ExoGameSettings.h"
 #include "UI/ExoPingSystem.h"
+#include "UI/ExoCommsWheel.h"
 #include "UI/ExoSettingsMenu.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
@@ -43,6 +44,7 @@ AExoPlayerController::AExoPlayerController()
 	LOAD_IA(MenuDownAction, "/Game/Input/Actions/IA_MenuDown");
 	LOAD_IA(MenuLeftAction, "/Game/Input/Actions/IA_MenuLeft");
 	LOAD_IA(MenuRightAction, "/Game/Input/Actions/IA_MenuRight");
+	LOAD_IA(CommsAction, "/Game/Input/Actions/IA_Comms");
 }
 
 #undef LOAD_IA
@@ -109,6 +111,12 @@ void AExoPlayerController::SetupInputComponent()
 		EIC->BindAction(Ability2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
 	if (Ability3Action)
 		EIC->BindAction(Ability3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
+
+	if (CommsAction)
+	{
+		EIC->BindAction(CommsAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCommsOpen);
+		EIC->BindAction(CommsAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCommsClose);
+	}
 
 	// Menu / settings bindings — always active
 	if (PauseAction)
@@ -186,6 +194,13 @@ void AExoPlayerController::HandleLook(const FInputActionValue& Value)
 {
 	if (FExoSettingsMenu::bIsOpen) return;
 	FVector2D Input = Value.Get<FVector2D>();
+
+	if (FExoCommsWheel::bIsOpen)
+	{
+		FExoCommsWheel::UpdateMouse(Input);
+		return;
+	}
+
 	AddYawInput(Input.X);
 	AddPitchInput(Input.Y);
 }
@@ -391,6 +406,19 @@ void AExoPlayerController::HandleAbility3()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::ShieldBubble);
+}
+
+// --- Comms Wheel ---
+
+void AExoPlayerController::HandleCommsOpen()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	FExoCommsWheel::Open();
+}
+
+void AExoPlayerController::HandleCommsClose()
+{
+	FExoCommsWheel::Close(GetWorld());
 }
 
 // --- Settings Menu ---

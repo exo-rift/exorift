@@ -31,6 +31,10 @@ public:
 	UPROPERTY(Replicated)
 	int32 CurrentZoneStage = 0;
 
+	/** Broadcast announcement text (e.g., supply drop incoming). */
+	FString SupplyDropAnnouncement;
+	float AnnouncementTimer = 0.f;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:

@@ -7,6 +7,7 @@
 class UCameraComponent;
 class AExoWeaponBase;
 class UExoShieldComponent;
+class UExoArmorComponent;
 class UExoInteractionComponent;
 class UExoAbilityComponent;
 class UExoKillStreakComponent;
@@ -40,6 +41,7 @@ public:
 	float GetMaxHealth() const { return MaxHealth; }
 	bool IsAlive() const { return Health > 0.f || bIsDBNO; }
 	UExoShieldComponent* GetShieldComponent() const { return ShieldComp; }
+	UExoArmorComponent* GetArmorComponent() const { return ArmorComp; }
 
 	// DBNO (Down But Not Out)
 	bool IsDBNO() const { return bIsDBNO; }
@@ -86,6 +88,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Shield")
 	UExoShieldComponent* ShieldComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Armor")
+	UExoArmorComponent* ArmorComp;
 
 	UPROPERTY(VisibleAnywhere, Category = "Interaction")
 	UExoInteractionComponent* InteractionComp;

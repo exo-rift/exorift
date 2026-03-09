@@ -1,5 +1,6 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoCharacter.h"
+#include "Player/ExoArmorComponent.h"
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
 #include "Visual/ExoPostProcess.h"
@@ -195,6 +196,12 @@ void AExoWeaponBase::FireShot()
 				{
 					FinalDamage *= HeadshotMultiplier;
 					bHeadshot = true;
+
+					// Helmet reduces headshot bonus damage
+					if (HitChar->GetArmorComponent())
+					{
+						FinalDamage *= HitChar->GetArmorComponent()->GetHeadshotReduction();
+					}
 				}
 			}
 

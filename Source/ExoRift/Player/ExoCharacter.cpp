@@ -1,5 +1,6 @@
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
+#include "Player/ExoArmorComponent.h"
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoAbilityComponent.h"
 #include "Player/ExoKillStreakComponent.h"
@@ -40,6 +41,9 @@ AExoCharacter::AExoCharacter()
 
 	// Shield
 	ShieldComp = CreateDefaultSubobject<UExoShieldComponent>(TEXT("ShieldComp"));
+
+	// Armor
+	ArmorComp = CreateDefaultSubobject<UExoArmorComponent>(TEXT("ArmorComp"));
 
 	// Interaction
 	InteractionComp = CreateDefaultSubobject<UExoInteractionComponent>(TEXT("InteractionComp"));
@@ -116,12 +120,9 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 		return ActualDamage;
 	}
 
-	// Shield absorbs first
-	if (ShieldComp && ShieldComp->HasShield())
-	{
-		ActualDamage = ShieldComp->AbsorbDamage(ActualDamage);
-	}
-
+	// Armor vest absorbs body damage, then shield absorbs remainder
+	if (ArmorComp) ActualDamage = ArmorComp->AbsorbBodyDamage(ActualDamage);
+	if (ShieldComp && ShieldComp->HasShield()) ActualDamage = ShieldComp->AbsorbDamage(ActualDamage);
 	Health = FMath::Clamp(Health - ActualDamage, 0.f, MaxHealth);
 
 	if (IsLocallyControlled())
