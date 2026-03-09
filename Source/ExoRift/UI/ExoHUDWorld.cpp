@@ -166,21 +166,44 @@ void AExoHUD::DrawSupplyDropAnnouncement()
 	if (!GS || GS->AnnouncementTimer <= 0.f) return;
 
 	GS->AnnouncementTimer -= GetWorld()->GetDeltaSeconds();
+	float T = GS->AnnouncementTimer;
 
-	float Alpha = FMath::Clamp(GS->AnnouncementTimer / 1.5f, 0.f, 1.f);
-	FLinearColor AnnColor(1.f, 0.85f, 0.15f, Alpha);
+	// Fade: full alpha for first 2s, then fade out
+	float Alpha = FMath::Clamp(T / 1.5f, 0.f, 1.f);
+	// Scale-in effect: starts slightly larger
+	float ScaleIn = FMath::Clamp(1.f - (T - 3.f) * 2.f, 0.f, 1.f);
+	ScaleIn = FMath::Max(ScaleIn, 0.f);
 
 	FString AnnText = GS->SupplyDropAnnouncement;
 	float TW, TH;
 	GetTextSize(AnnText, TW, TH, HUDFont, 1.3f);
-	float X = (Canvas->SizeX - TW) * 0.5f;
-	float Y = Canvas->SizeY * 0.2f;
+	float PanelW = TW + 50.f;
+	float PanelH = TH + 18.f;
+	float X = (Canvas->SizeX - PanelW) * 0.5f;
+	float Y = Canvas->SizeY * 0.18f;
 
-	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Alpha), X - 15.f, Y - 5.f, TW + 30.f, TH + 10.f);
-	DrawText(AnnText, AnnColor, X, Y, HUDFont, 1.3f);
+	// Panel background
+	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.7f * Alpha), X, Y, PanelW, PanelH);
 
-	if (GS->AnnouncementTimer <= 0.f)
-	{
-		GS->SupplyDropAnnouncement.Empty();
-	}
+	// Top and bottom accent bars (yellow-gold)
+	FLinearColor AccCol(1.f, 0.8f, 0.1f, 0.6f * Alpha);
+	DrawRect(AccCol, X, Y, PanelW, 2.f);
+	DrawRect(FLinearColor(AccCol.R, AccCol.G, AccCol.B, 0.3f * Alpha),
+		X, Y + PanelH - 1.f, PanelW, 1.f);
+
+	// Diamond icon before text
+	float DX = X + 15.f;
+	float DY = Y + PanelH * 0.5f;
+	float DS = 5.f;
+	FLinearColor DiamCol(1.f, 0.85f, 0.15f, Alpha);
+	DrawLine(DX, DY - DS, DX + DS, DY, DiamCol, 1.5f);
+	DrawLine(DX + DS, DY, DX, DY + DS, DiamCol, 1.5f);
+	DrawLine(DX, DY + DS, DX - DS, DY, DiamCol, 1.5f);
+	DrawLine(DX - DS, DY, DX, DY - DS, DiamCol, 1.5f);
+
+	// Main text
+	DrawText(AnnText, FLinearColor(1.f, 0.88f, 0.2f, Alpha),
+		X + (PanelW - TW) * 0.5f, Y + (PanelH - TH) * 0.5f, HUDFont, 1.3f);
+
+	if (T <= 0.f) GS->SupplyDropAnnouncement.Empty();
 }

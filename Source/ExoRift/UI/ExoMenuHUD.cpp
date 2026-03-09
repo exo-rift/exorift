@@ -51,7 +51,9 @@ void AExoMenuHUD::DrawHUD()
 
 	// Background visuals
 	FExoMenuBackground::DrawBackground(this, Canvas, Time);
+	FExoMenuBackground::DrawHexGrid(this, Canvas, Time);
 	FExoMenuBackground::DrawScanLines(this, Canvas, Time);
+	FExoMenuBackground::DrawParticles(this, Canvas, Time);
 	FExoMenuBackground::DrawTitle(this, Canvas, MenuFont, Time);
 
 	switch (MenuState)

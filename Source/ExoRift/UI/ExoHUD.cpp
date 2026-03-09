@@ -213,12 +213,38 @@ FVector2D AExoHUD::GetScreenCenter() const
 void AExoHUD::DrawProgressBar(float X, float Y, float Width, float Height,
 	float Pct, FLinearColor FillColor, FLinearColor BgColor)
 {
-	DrawRect(BgColor, X, Y, Width, Height);
-	DrawRect(FillColor, X + 1.f, Y + 1.f, (Width - 2.f) * FMath::Clamp(Pct, 0.f, 1.f), Height - 2.f);
+	float ClampPct = FMath::Clamp(Pct, 0.f, 1.f);
 
-	FLinearColor BorderColor(0.3f, 0.35f, 0.4f, 0.6f);
-	DrawLine(X, Y, X + Width, Y, BorderColor);
-	DrawLine(X, Y + Height, X + Width, Y + Height, BorderColor);
-	DrawLine(X, Y, X, Y + Height, BorderColor);
-	DrawLine(X + Width, Y, X + Width, Y + Height, BorderColor);
+	// Background
+	DrawRect(BgColor, X, Y, Width, Height);
+
+	// Fill bar
+	float FillW = (Width - 2.f) * ClampPct;
+	if (FillW > 0.f)
+	{
+		DrawRect(FillColor, X + 1.f, Y + 1.f, FillW, Height - 2.f);
+
+		// Bright edge highlight at the fill tip
+		if (ClampPct < 0.98f && FillW > 2.f)
+		{
+			FLinearColor EdgeCol = FillColor;
+			EdgeCol.A = FMath::Min(EdgeCol.A + 0.3f, 1.f);
+			DrawRect(EdgeCol, X + FillW - 1.f, Y + 1.f, 2.f, Height - 2.f);
+		}
+	}
+
+	// Border with subtle glow at fill level
+	FLinearColor BorderCol(0.25f, 0.3f, 0.38f, 0.5f);
+	DrawLine(X, Y, X + Width, Y, BorderCol);
+	DrawLine(X, Y + Height, X + Width, Y + Height, BorderCol);
+	DrawLine(X, Y, X, Y + Height, BorderCol);
+	DrawLine(X + Width, Y, X + Width, Y + Height, BorderCol);
+
+	// Corner bracket accents (small)
+	float BL = FMath::Min(6.f, Width * 0.05f);
+	FLinearColor AccCol(FillColor.R, FillColor.G, FillColor.B, 0.35f);
+	DrawLine(X, Y, X + BL, Y, AccCol);
+	DrawLine(X, Y, X, Y + BL, AccCol);
+	DrawLine(X + Width, Y + Height, X + Width - BL, Y + Height, AccCol);
+	DrawLine(X + Width, Y + Height, X + Width, Y + Height - BL, AccCol);
 }

@@ -26,10 +26,16 @@ private:
 	UStaticMeshComponent* FireballMesh;
 
 	UPROPERTY()
+	UStaticMeshComponent* InnerFlashMesh;
+
+	UPROPERTY()
 	UStaticMeshComponent* ShockwaveRing;
 
 	UPROPERTY()
 	UPointLightComponent* ExplosionLight;
+
+	UPROPERTY()
+	UPointLightComponent* FlashLight;
 
 	// Debris chunks
 	UPROPERTY()
@@ -38,7 +44,7 @@ private:
 	TArray<FVector> DebrisVelocities;
 
 	float Age = 0.f;
-	float Lifetime = 0.6f;
+	float Lifetime = 0.8f;
 	float ExpRadius = 500.f;
 	float BaseIntensity = 0.f;
 };

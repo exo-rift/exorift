@@ -162,9 +162,29 @@ void AExoHUD::DrawInteractionPrompt()
 
 	float TextW, TextH;
 	GetTextSize(Prompt, TextW, TextH, HUDFont, 0.9f);
-	float X = (Canvas->SizeX - TextW) * 0.5f;
+	float PanelW = TextW + 40.f;
+	float PanelH = TextH + 16.f;
+	float X = (Canvas->SizeX - PanelW) * 0.5f;
 	float Y = Canvas->SizeY * 0.6f;
+	float Time = GetWorld()->GetTimeSeconds();
 
-	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.5f), X - 10.f, Y - 4.f, TextW + 20.f, TextH + 8.f);
-	DrawText(Prompt, ColorWhite, X, Y, HUDFont, 0.9f);
+	// Panel background
+	DrawRect(FLinearColor(0.02f, 0.03f, 0.06f, 0.75f), X, Y, PanelW, PanelH);
+
+	// Top accent line (pulsing cyan)
+	float Pulse = 0.5f + 0.3f * FMath::Sin(Time * 3.f);
+	FLinearColor AccentCol(0.f, 0.6f, 1.f, 0.6f * Pulse);
+	DrawRect(AccentCol, X, Y, PanelW, 2.f);
+
+	// Corner brackets
+	float BLen = 10.f;
+	FLinearColor BCol(0.f, 0.7f, 1.f, 0.4f);
+	DrawLine(X, Y, X + BLen, Y, BCol);
+	DrawLine(X, Y, X, Y + BLen, BCol);
+	DrawLine(X + PanelW, Y, X + PanelW - BLen, Y, BCol);
+	DrawLine(X + PanelW, Y, X + PanelW, Y + BLen, BCol);
+
+	// Prompt text
+	DrawText(Prompt, FLinearColor(0.8f, 0.9f, 1.f, 0.95f),
+		X + (PanelW - TextW) * 0.5f, Y + (PanelH - TextH) * 0.5f, HUDFont, 0.9f);
 }

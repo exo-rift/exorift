@@ -66,6 +66,74 @@ void FExoMenuBackground::DrawScanLines(AHUD* HUD, UCanvas* Canvas, float Time)
 }
 
 // ---------------------------------------------------------------------------
+// Floating particles — small dots drifting upward
+// ---------------------------------------------------------------------------
+
+void FExoMenuBackground::DrawParticles(AHUD* HUD, UCanvas* Canvas, float Time)
+{
+	if (!HUD || !Canvas) return;
+
+	const float W = Canvas->SizeX;
+	const float H = Canvas->SizeY;
+	constexpr int32 NumParticles = 40;
+
+	for (int32 i = 0; i < NumParticles; i++)
+	{
+		// Deterministic seed per particle
+		float Seed = i * 137.508f;
+		float X = FMath::Fmod(Seed * 7.31f, W);
+		float BaseY = FMath::Fmod(Seed * 11.71f, H);
+		float Speed = 12.f + (i % 5) * 6.f;
+		float Y = FMath::Fmod(BaseY - Time * Speed + H * 10.f, H);
+
+		float Alpha = 0.08f + 0.06f * FMath::Sin(Time * 0.5f + Seed * 0.1f);
+		float Size = 1.f + (i % 3);
+
+		FLinearColor Col(0.1f, 0.5f, 0.9f, Alpha);
+		HUD->DrawRect(Col, X, Y, Size, Size);
+
+		// Trailing fade
+		HUD->DrawRect(FLinearColor(0.05f, 0.3f, 0.6f, Alpha * 0.3f),
+			X, Y + Size, Size * 0.8f, Size * 3.f);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Hex grid — subtle tech pattern
+// ---------------------------------------------------------------------------
+
+void FExoMenuBackground::DrawHexGrid(AHUD* HUD, UCanvas* Canvas, float Time)
+{
+	if (!HUD || !Canvas) return;
+
+	const float W = Canvas->SizeX;
+	const float H = Canvas->SizeY;
+	const float GridSize = 60.f;
+	const float RowH = GridSize * 0.866f; // sqrt(3)/2
+
+	float Alpha = 0.025f + 0.01f * FMath::Sin(Time * 0.3f);
+	FLinearColor LineCol(0.1f, 0.4f, 0.7f, Alpha);
+
+	float OffsetY = FMath::Fmod(Time * 5.f, RowH * 2.f);
+
+	for (float Y = -RowH + OffsetY; Y < H + RowH; Y += RowH)
+	{
+		int32 Row = FMath::FloorToInt((Y - OffsetY + RowH) / RowH);
+		float XOff = (Row % 2 == 0) ? 0.f : GridSize * 0.5f;
+
+		for (float X = -GridSize + XOff; X < W + GridSize; X += GridSize)
+		{
+			// Draw a small cross at each grid point (simplified hex node)
+			float CX = X;
+			float CY = Y;
+			float Arm = 6.f;
+			HUD->DrawLine(CX - Arm, CY, CX + Arm, CY, LineCol, 0.5f);
+			HUD->DrawLine(CX, CY - Arm, CX, CY + Arm, LineCol, 0.5f);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Title — "EXORIFT" + accent lines + "BATTLE ROYALE"
 // ---------------------------------------------------------------------------
 

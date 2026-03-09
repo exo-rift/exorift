@@ -28,6 +28,10 @@ private:
 	void DrawLogo(AHUD* HUD, UCanvas* Canvas, UFont* Font);
 	void DrawProgressBar(AHUD* HUD, UCanvas* Canvas);
 	void DrawTip(AHUD* HUD, UCanvas* Canvas, UFont* Font);
+	void DrawScanLines(AHUD* HUD, UCanvas* Canvas);
+	void DrawCornerBrackets(AHUD* HUD, UCanvas* Canvas);
+	void DrawHexOverlay(AHUD* HUD, UCanvas* Canvas);
+	void DrawLoadingSpinner(AHUD* HUD, UCanvas* Canvas);
 
 	float ElapsedTime = 0.f;
 	int32 TipIndex = 0;
