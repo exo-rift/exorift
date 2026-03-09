@@ -19,12 +19,14 @@ public:
 protected:
 	void DrawCrosshair();
 	void DrawHealthBar();
+	void DrawShieldBar();
 	void DrawOverheatBar();
 	void DrawAliveCount();
 	void DrawKillFeed();
 	void DrawMatchPhase();
 	void DrawZoneWarning();
 	void DrawKillCount();
+	void DrawWeaponIndicator();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;
@@ -40,6 +42,7 @@ protected:
 	static const FLinearColor ColorZoneWarning;
 	static const FLinearColor ColorBgDark;
 	static const FLinearColor ColorWhite;
+	static const FLinearColor ColorShieldBlue;
 
 	float CrosshairSpread = 0.f;
 	bool bShowZoneWarning = false;

@@ -1,6 +1,9 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoCharacter.h"
 #include "UI/ExoDamageNumbers.h"
+#include "UI/ExoHitMarker.h"
+#include "Visual/ExoPostProcess.h"
+#include "Core/ExoAudioManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -62,6 +65,13 @@ void AExoWeaponBase::FireShot()
 	// Increase spread
 	CurrentSpread = FMath::Min(CurrentSpread + SpreadPerShot, MaxSpread);
 
+	// Fire sound
+	UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld());
+	if (Audio)
+	{
+		Audio->PlayWeaponFireSound(nullptr, GetActorLocation());
+	}
+
 	// Apply recoil to owner
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (OwnerPawn)
@@ -104,14 +114,43 @@ void AExoWeaponBase::FireShot()
 				}
 			}
 
+			// Check if this will be a kill
+			bool bWillKill = HitChar && HitChar->GetHealth() <= FinalDamage;
+
 			FDamageEvent DamageEvent;
 			HitActor->TakeDamage(FinalDamage, DamageEvent, InstigatorController, this);
+
+			// Hit marker feedback (only for the shooter)
+			if (HitChar && OwnerPawn && OwnerPawn->IsLocallyControlled())
+			{
+				FExoHitMarker::AddHitMarker(bWillKill, bHeadshot);
+
+				// Kill post-process flash
+				if (bWillKill)
+				{
+					AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+					if (PP) PP->TriggerKillEffect();
+				}
+
+				// Audio feedback
+				if (Audio)
+				{
+					if (bWillKill) Audio->PlayKillSound();
+					else Audio->PlayHitMarkerSound(bHeadshot);
+				}
+			}
 
 			// Spawn damage number
 			AExoDamageNumbers* DmgNums = AExoDamageNumbers::Get(GetWorld());
 			if (DmgNums)
 			{
 				DmgNums->SpawnDamageNumber(Hit.ImpactPoint, FinalDamage, bHeadshot);
+			}
+
+			// Impact sound
+			if (Audio)
+			{
+				Audio->PlayImpactSound(Hit.ImpactPoint, HitChar != nullptr);
 			}
 		}
 	}

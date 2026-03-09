@@ -1,18 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ExoMinimap.generated.h"
 
 class AHUD;
 class UCanvas;
 class UFont;
 class AExoZoneSystem;
 
-USTRUCT()
 struct FMinimapConfig
 {
-	GENERATED_BODY()
-
 	float ScreenX = 20.f;
 	float ScreenY = 20.f;
 	float Size = 200.f;

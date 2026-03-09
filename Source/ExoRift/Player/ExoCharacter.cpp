@@ -1,4 +1,5 @@
 #include "Player/ExoCharacter.h"
+#include "Player/ExoShieldComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -6,6 +7,8 @@
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
 #include "Core/ExoGameMode.h"
+#include "Visual/ExoPostProcess.h"
+#include "UI/ExoHitMarker.h"
 #include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
 #include "ExoRift.h"
@@ -30,6 +33,9 @@ AExoCharacter::AExoCharacter()
 	FPArms->bCastDynamicShadow = false;
 	FPArms->CastShadow = false;
 
+	// Shield
+	ShieldComp = CreateDefaultSubobject<UExoShieldComponent>(TEXT("ShieldComp"));
+
 	// Third person mesh (hidden from owner)
 	GetMesh()->SetOwnerNoSee(true);
 
@@ -49,6 +55,18 @@ void AExoCharacter::BeginPlay()
 void AExoCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Update post-process low health effect
+	if (IsLocallyControlled())
+	{
+		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+		if (PP)
+		{
+			PP->SetLowHealthEffect(Health / MaxHealth);
+		}
+
+		FExoHitMarker::Tick(DeltaTime);
+	}
 }
 
 float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -57,7 +75,33 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 	if (bIsDead) return 0.f;
 
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// Shield absorbs first
+	if (ShieldComp && ShieldComp->HasShield())
+	{
+		ActualDamage = ShieldComp->AbsorbDamage(ActualDamage);
+	}
+
 	Health = FMath::Clamp(Health - ActualDamage, 0.f, MaxHealth);
+
+	// Visual feedback for the damaged player
+	if (IsLocallyControlled())
+	{
+		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+		if (PP)
+		{
+			PP->TriggerDamageFlash(FMath::Clamp(DamageAmount / 30.f, 0.2f, 1.f));
+		}
+
+		// Damage direction indicator
+		if (DamageCauser && DamageCauser != this)
+		{
+			FVector DmgDir = DamageCauser->GetActorLocation() - GetActorLocation();
+			FRotator DmgRot = DmgDir.Rotation();
+			float RelativeAngle = (DmgRot.Yaw - GetControlRotation().Yaw);
+			FExoHitMarker::AddDamageIndicator(RelativeAngle);
+		}
+	}
 
 	if (Health <= 0.f)
 	{
@@ -66,7 +110,7 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 		{
 			WeaponName = Weapon->GetWeaponName();
 		}
-		else if (DamageCauser && DamageCauser->IsA<AExoCharacter>())
+		else if (!Cast<AExoWeaponBase>(DamageCauser))
 		{
 			WeaponName = TEXT("Zone");
 		}
@@ -188,7 +232,15 @@ void AExoCharacter::SpawnDefaultWeapons()
 
 void AExoCharacter::OnRep_Health()
 {
-	// Client-side health change feedback (flash, sound, etc.)
+	// Client-side: trigger post-process on health change
+	if (IsLocallyControlled())
+	{
+		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+		if (PP)
+		{
+			PP->SetLowHealthEffect(Health / MaxHealth);
+		}
+	}
 }
 
 void AExoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

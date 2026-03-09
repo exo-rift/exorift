@@ -6,6 +6,7 @@
 
 class UCameraComponent;
 class AExoWeaponBase;
+class UExoShieldComponent;
 
 UCLASS()
 class EXORIFT_API AExoCharacter : public ACharacter
@@ -27,10 +28,11 @@ public:
 	void EquipWeapon(AExoWeaponBase* Weapon);
 	AExoWeaponBase* GetCurrentWeapon() const { return CurrentWeapon; }
 
-	// Health
+	// Health & Shield
 	float GetHealth() const { return Health; }
 	float GetMaxHealth() const { return MaxHealth; }
 	bool IsAlive() const { return Health > 0.f; }
+	UExoShieldComponent* GetShieldComponent() const { return ShieldComp; }
 
 	// Camera
 	UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
@@ -48,6 +50,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Mesh")
 	USkeletalMeshComponent* FPArms;
+
+	UPROPERTY(VisibleAnywhere, Category = "Shield")
+	UExoShieldComponent* ShieldComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 	float MaxHealth = 100.f;
