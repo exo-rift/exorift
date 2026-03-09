@@ -1,6 +1,8 @@
 #include "Map/ExoZoneVisualizer.h"
 #include "Map/ExoZoneSystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
 
@@ -8,7 +10,6 @@ AExoZoneVisualizer::AExoZoneVisualizer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Use a cylinder mesh scaled to represent the zone boundary
 	ZoneWallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ZoneWallMesh"));
 	RootComponent = ZoneWallMesh;
 
@@ -23,11 +24,28 @@ AExoZoneVisualizer::AExoZoneVisualizer()
 	ZoneWallMesh->CastShadow = false;
 }
 
+void AExoZoneVisualizer::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Create emissive translucent zone wall material
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFind.Succeeded() && ZoneWallMesh)
+	{
+		ZoneMaterial = UMaterialInstanceDynamic::Create(MatFind.Object, this);
+		ZoneMaterial->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(ZoneColor.R, ZoneColor.G, ZoneColor.B, ZoneColor.A));
+		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(ZoneColor.R * 2.f, ZoneColor.G * 2.f, ZoneColor.B * 2.f));
+		ZoneWallMesh->SetMaterial(0, ZoneMaterial);
+	}
+}
+
 void AExoZoneVisualizer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Find zone system once
 	if (!ZoneSystem)
 	{
 		for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
@@ -48,30 +66,28 @@ void AExoZoneVisualizer::UpdateZoneWall()
 	float Radius = ZoneSystem->GetCurrentRadius();
 	FVector2D Center = ZoneSystem->GetCurrentCenter();
 
-	// Only update when radius changes significantly
 	if (FMath::Abs(Radius - CachedRadius) < 10.f) return;
 	CachedRadius = Radius;
 
-	// Scale the cylinder to match zone radius
-	// UE cylinder mesh is 100 units radius, 100 units height by default
-	float RadiusScale = Radius / 50.f; // SM_Cylinder has 50 unit radius
+	float RadiusScale = Radius / 50.f;
 	float HeightScale = WallHeight / 100.f;
 
 	SetActorLocation(FVector(Center.X, Center.Y, WallHeight * 0.5f));
 	ZoneWallMesh->SetWorldScale3D(FVector(RadiusScale, RadiusScale, HeightScale));
 
-	// Update material opacity scroll
+	// Update material emissive pulse
 	if (ZoneMaterial)
 	{
 		float Time = GetWorld()->GetTimeSeconds();
-		ZoneMaterial->SetScalarParameterValue(TEXT("ScrollSpeed"), Time * 0.5f);
+		float Pulse = 1.f + 0.5f * FMath::Abs(FMath::Sin(Time * 0.8f));
+		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(ZoneColor.R * Pulse, ZoneColor.G * Pulse, ZoneColor.B * Pulse));
 	}
 }
 
 void AExoZoneVisualizer::GenerateCircleMesh(float Radius, FVector2D Center, float InWallHeight,
 	TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector2D>& UVs)
 {
-	// Generate a vertical circle wall mesh
 	float AngleStep = 2.f * PI / CircleSegments;
 
 	for (int32 i = 0; i <= CircleSegments; i++)
@@ -80,11 +96,9 @@ void AExoZoneVisualizer::GenerateCircleMesh(float Radius, FVector2D Center, floa
 		float X = Center.X + FMath::Cos(Angle) * Radius;
 		float Y = Center.Y + FMath::Sin(Angle) * Radius;
 
-		// Bottom vertex
 		Vertices.Add(FVector(X, Y, 0.f));
 		UVs.Add(FVector2D(static_cast<float>(i) / CircleSegments, 0.f));
 
-		// Top vertex
 		Vertices.Add(FVector(X, Y, InWallHeight));
 		UVs.Add(FVector2D(static_cast<float>(i) / CircleSegments, 1.f));
 

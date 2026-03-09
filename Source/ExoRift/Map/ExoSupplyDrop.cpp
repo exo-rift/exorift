@@ -126,9 +126,27 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	float Time = GetWorld()->GetTimeSeconds();
+
 	if (CurrentState == ESupplyDropState::Falling)
 	{
 		TickFalling(DeltaTime);
+
+		// Pulsing beacon during descent
+		if (BeaconLight)
+		{
+			float Pulse = 0.6f + 0.4f * FMath::Abs(FMath::Sin(Time * 2.f));
+			BeaconLight->SetIntensity(BeaconIntensity * 0.3f * Pulse);
+		}
+	}
+	else if (CurrentState == ESupplyDropState::Landed)
+	{
+		// Pulsing beacon on ground — attracts players
+		if (BeaconLight)
+		{
+			float Pulse = 0.7f + 0.3f * FMath::Abs(FMath::Sin(Time * 1.5f));
+			BeaconLight->SetIntensity(BeaconIntensity * Pulse);
+		}
 	}
 
 	// Animate lid opening
@@ -137,16 +155,15 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 		LidOpenAlpha = FMath::FInterpTo(LidOpenAlpha, 1.f, DeltaTime, 3.f);
 		if (CrateLid)
 		{
-			// Hinge the lid open
 			float LidAngle = LidOpenAlpha * -120.f;
 			CrateLid->SetRelativeRotation(FRotator(0.f, 0.f, LidAngle));
 			CrateLid->SetRelativeLocation(FVector(0.f, -30.f * LidOpenAlpha, 35.f + 20.f * LidOpenAlpha));
 		}
 
-		// Glow from inside when opened
 		if (CrateGlow)
 		{
-			CrateGlow->SetIntensity(LidOpenAlpha * 15000.f);
+			float GlowPulse = 1.f + 0.2f * FMath::Sin(Time * 4.f);
+			CrateGlow->SetIntensity(LidOpenAlpha * 15000.f * GlowPulse);
 		}
 	}
 }

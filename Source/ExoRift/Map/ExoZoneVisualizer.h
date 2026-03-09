@@ -15,6 +15,7 @@ class EXORIFT_API AExoZoneVisualizer : public AActor
 public:
 	AExoZoneVisualizer();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 protected:
