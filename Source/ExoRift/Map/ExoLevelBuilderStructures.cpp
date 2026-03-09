@@ -241,15 +241,63 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 		BackStrip->SetMaterial(0, StripMat2);
 	}
 
+	// Side wall emissive strips (window line effect)
+	UStaticMeshComponent* LeftStrip = SpawnStaticMesh(
+		Center + Rot.RotateVector(FVector(-HalfX - 1.f, 0.f, StripZ)),
+		FVector(0.02f, Size.Y / 100.f * 0.7f, 0.12f), Rot, CubeMesh, StripCol);
+	if (LeftStrip && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* LSM = Cast<UMaterialInstanceDynamic>(
+			LeftStrip->GetMaterial(0));
+		if (LSM) LSM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.08f, 0.35f, 0.9f));
+	}
+	UStaticMeshComponent* RightStrip = SpawnStaticMesh(
+		Center + Rot.RotateVector(FVector(HalfX + 1.f, 0.f, StripZ)),
+		FVector(0.02f, Size.Y / 100.f * 0.7f, 0.12f), Rot, CubeMesh, StripCol);
+	if (RightStrip && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* RSM = Cast<UMaterialInstanceDynamic>(
+			RightStrip->GetMaterial(0));
+		if (RSM) RSM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.08f, 0.35f, 0.9f));
+	}
+
+	// Doorway light (warm amber glow at entrance)
+	UPointLightComponent* DoorLight = NewObject<UPointLightComponent>(this);
+	DoorLight->SetupAttachment(RootComponent);
+	DoorLight->SetWorldLocation(
+		Center + Rot.RotateVector(FVector(0.f, HalfY + 50.f, Size.Z - 300.f)));
+	DoorLight->SetIntensity(2500.f);
+	DoorLight->SetAttenuationRadius(800.f);
+	DoorLight->SetLightColor(FLinearColor(0.8f, 0.6f, 0.3f));
+	DoorLight->CastShadows = false;
+	DoorLight->RegisterComponent();
+
 	// Interior light
 	UPointLightComponent* IntLight = NewObject<UPointLightComponent>(this);
 	IntLight->SetupAttachment(RootComponent);
 	IntLight->SetWorldLocation(Center + FVector(0.f, 0.f, Size.Z - 100.f));
-	IntLight->SetIntensity(1500.f);
-	IntLight->SetAttenuationRadius(FMath::Max(Size.X, Size.Y) * 0.5f);
+	IntLight->SetIntensity(2000.f);
+	IntLight->SetAttenuationRadius(FMath::Max(Size.X, Size.Y) * 0.6f);
 	IntLight->SetLightColor(FLinearColor(0.5f, 0.6f, 0.8f));
 	IntLight->CastShadows = false;
 	IntLight->RegisterComponent();
+
+	// Rooftop equipment (AC unit / vent box on larger buildings)
+	if (Size.X > 3000.f && Size.Y > 3000.f)
+	{
+		FVector VentPos = Center + FVector(
+			FMath::RandRange(-HalfX * 0.3f, HalfX * 0.3f),
+			FMath::RandRange(-HalfY * 0.3f, HalfY * 0.3f),
+			Size.Z + 60.f);
+		SpawnStaticMesh(VentPos, FVector(1.5f, 1.f, 0.6f), Rot, CubeMesh,
+			FLinearColor(0.08f, 0.08f, 0.1f));
+		// Vent grille
+		SpawnStaticMesh(VentPos + FVector(0.f, 0.f, 35.f),
+			FVector(1.3f, 0.8f, 0.05f), Rot, CubeMesh,
+			FLinearColor(0.06f, 0.06f, 0.07f));
+	}
 }
 
 void AExoLevelBuilder::SpawnTower(const FVector& Base, float Radius, float Height)
@@ -274,6 +322,32 @@ void AExoLevelBuilder::SpawnTower(const FVector& Base, float Radius, float Heigh
 	SpawnStaticMesh(Base + FVector(-RailR, 0.f, Height + 50.f),
 		FVector(0.1f, RailR * 2.f / 100.f, 0.5f), FRotator::ZeroRotator, CubeMesh,
 		FLinearColor(0.12f, 0.12f, 0.14f));
+
+	// Beacon light at tower top (red warning light)
+	UPointLightComponent* Beacon = NewObject<UPointLightComponent>(this);
+	Beacon->SetupAttachment(RootComponent);
+	Beacon->SetWorldLocation(Base + FVector(0.f, 0.f, Height + 100.f));
+	Beacon->SetIntensity(5000.f);
+	Beacon->SetAttenuationRadius(Height * 0.8f);
+	Beacon->SetLightColor(FLinearColor(1.f, 0.15f, 0.05f));
+	Beacon->CastShadows = false;
+	Beacon->RegisterComponent();
+
+	// Beacon bulb (small emissive sphere)
+	UStaticMeshComponent* Bulb = SpawnStaticMesh(
+		Base + FVector(0.f, 0.f, Height + 80.f),
+		FVector(0.25f, 0.25f, 0.25f), FRotator::ZeroRotator, SphereMesh,
+		FLinearColor(1.f, 0.2f, 0.1f));
+	if (Bulb && BaseMaterial)
+	{
+		UMaterialInstanceDynamic* BulbMat = Cast<UMaterialInstanceDynamic>(
+			Bulb->GetMaterial(0));
+		if (BulbMat)
+		{
+			BulbMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(5.f, 0.5f, 0.2f));
+		}
+	}
 }
 
 void AExoLevelBuilder::SpawnWall(const FVector& Start, const FVector& End,
