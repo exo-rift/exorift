@@ -48,5 +48,8 @@ public:
 
 	void ResetStats();
 
+	/** Copies PlayerName from customization subsystem into DisplayName. */
+	void InitDisplayNameFromCustomization(UWorld* World);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

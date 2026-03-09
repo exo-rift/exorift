@@ -12,6 +12,7 @@
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoMapConfig.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoCareerStats.h"
 #include "UI/ExoHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
@@ -177,6 +178,19 @@ void AExoGameMode::TransitionToPhase(EBRMatchPhase NewPhase)
 			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 			{
 				bWon ? Audio->PlayVictoryStinger() : Audio->PlayDefeatStinger();
+			}
+			// Record career stats for the local player
+			if (LocalPC)
+			{
+				if (AExoPlayerState* PS = LocalPC->GetPlayerState<AExoPlayerState>())
+				{
+					if (UExoCareerStats* Career = UExoCareerStats::Get(GetWorld()))
+					{
+						AExoGameState* GS = GetGameState<AExoGameState>();
+						Career->RecordMatch(PS->Kills, PS->Deaths, PS->DamageDealt,
+							PS->Placement, TotalPlayers, GS ? GS->MatchElapsedTime : 0.f);
+					}
+				}
 			}
 		}
 		break;

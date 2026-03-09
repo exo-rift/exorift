@@ -5,8 +5,10 @@
 #include "Player/ExoAbilityComponent.h"
 #include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoInventoryComponent.h"
+#include "Player/ExoEmoteComponent.h"
 #include "Player/ExoPlayerController.h"
 #include "Weapons/ExoGrenadeComponent.h"
+#include "Weapons/ExoTrapComponent.h"
 #include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -61,6 +63,12 @@ AExoCharacter::AExoCharacter()
 	// Grenades
 	GrenadeComp = CreateDefaultSubobject<UExoGrenadeComponent>(TEXT("GrenadeComp"));
 
+	// Emotes
+	EmoteComp = CreateDefaultSubobject<UExoEmoteComponent>(TEXT("EmoteComp"));
+
+	// Traps
+	TrapComp = CreateDefaultSubobject<UExoTrapComponent>(TEXT("TrapComp"));
+
 	// Third person mesh (hidden from owner)
 	GetMesh()->SetOwnerNoSee(true);
 
@@ -90,6 +98,7 @@ void AExoCharacter::Tick(float DeltaTime)
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
 	TickFootsteps(DeltaTime);
+	if (EmoteComp) EmoteComp->TickEmote(DeltaTime);
 
 	// Update post-process low health effect
 	if (IsLocallyControlled())
@@ -144,6 +153,9 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 
 	// If executor takes damage, cancel the execution
 	if (bIsExecuting) CancelExecution();
+
+	// Cancel any active emote on damage
+	if (EmoteComp && EmoteComp->IsEmoting()) EmoteComp->CancelEmote();
 
 	if (Health <= 0.f) EnterDBNO();
 

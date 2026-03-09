@@ -3,7 +3,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 
-static void DrawFilledRect(UCanvas* Canvas, float X, float Y, float W, float H, const FLinearColor& Color)
+static void ScoreboardDrawRect(UCanvas* Canvas, float X, float Y, float W, float H, const FLinearColor& Color)
 {
 	Canvas->SetDrawColor(
 		FMath::Clamp((int32)(Color.R * 255), 0, 255),
@@ -26,14 +26,14 @@ void FExoScoreboard::Draw(UCanvas* Canvas, UFont* Font, const TArray<AExoPlayerS
 	float PanelY = (ScreenH - PanelH) * 0.5f;
 
 	// Background
-	DrawFilledRect(Canvas, PanelX, PanelY, PanelW, PanelH, FLinearColor(0.02f, 0.02f, 0.06f, 0.85f));
+	ScoreboardDrawRect(Canvas, PanelX, PanelY, PanelW, PanelH, FLinearColor(0.02f, 0.02f, 0.06f, 0.85f));
 
 	// Border
 	FLinearColor BorderColor(0.0f, 0.6f, 1.0f, 0.6f);
-	DrawFilledRect(Canvas, PanelX, PanelY, PanelW, 2.f, BorderColor);
-	DrawFilledRect(Canvas, PanelX, PanelY + PanelH - 2.f, PanelW, 2.f, BorderColor);
-	DrawFilledRect(Canvas, PanelX, PanelY, 2.f, PanelH, BorderColor);
-	DrawFilledRect(Canvas, PanelX + PanelW - 2.f, PanelY, 2.f, PanelH, BorderColor);
+	ScoreboardDrawRect(Canvas, PanelX, PanelY, PanelW, 2.f, BorderColor);
+	ScoreboardDrawRect(Canvas, PanelX, PanelY + PanelH - 2.f, PanelW, 2.f, BorderColor);
+	ScoreboardDrawRect(Canvas, PanelX, PanelY, 2.f, PanelH, BorderColor);
+	ScoreboardDrawRect(Canvas, PanelX + PanelW - 2.f, PanelY, 2.f, PanelH, BorderColor);
 
 	float CurY = PanelY + Padding;
 
@@ -52,7 +52,7 @@ void FExoScoreboard::Draw(UCanvas* Canvas, UFont* Font, const TArray<AExoPlayerS
 	CurY += HeaderHeight;
 
 	// Separator
-	DrawFilledRect(Canvas, PanelX + Padding, CurY - 4.f, PanelW - Padding * 2.f, 1.f,
+	ScoreboardDrawRect(Canvas, PanelX + Padding, CurY - 4.f, PanelW - Padding * 2.f, 1.f,
 		FLinearColor(0.3f, 0.3f, 0.4f, 0.8f));
 
 	// Player rows
@@ -84,11 +84,11 @@ void FExoScoreboard::DrawPlayerRow(UCanvas* Canvas, UFont* Font, AExoPlayerState
 
 	// Highlight local player
 	if (bIsLocalPlayer)
-		DrawFilledRect(Canvas, X - 4.f, Y, Width + 8.f, RowHeight - 2.f, FLinearColor(0.0f, 0.4f, 0.8f, 0.2f));
+		ScoreboardDrawRect(Canvas, X - 4.f, Y, Width + 8.f, RowHeight - 2.f, FLinearColor(0.0f, 0.4f, 0.8f, 0.2f));
 
 	// Alternating row tint
 	if (Rank % 2 == 0)
-		DrawFilledRect(Canvas, X - 4.f, Y, Width + 8.f, RowHeight - 2.f, FLinearColor(0.1f, 0.1f, 0.15f, 0.15f));
+		ScoreboardDrawRect(Canvas, X - 4.f, Y, Width + 8.f, RowHeight - 2.f, FLinearColor(0.1f, 0.1f, 0.15f, 0.15f));
 
 	// Color based on alive
 	if (PS->bIsAlive) Canvas->SetDrawColor(220, 220, 230, 255);

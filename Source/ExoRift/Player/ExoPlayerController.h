@@ -57,6 +57,13 @@ protected:
 	void HandleMenuLeft();
 	void HandleMenuRight();
 
+	// Emote slots (1-4)
+	void HandleEmote1();
+	void HandleEmote2();
+	void HandleEmote3();
+	void HandleEmote4();
+	void PlayEmoteSlot(int32 SlotIndex);
+
 	// Comms wheel
 	void HandleCommsOpen();
 	void HandleCommsClose();
@@ -132,6 +139,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* CommsAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Emote1Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Emote2Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Emote3Action;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* Emote4Action;
 
 private:
 	void SetupEnhancedInput();

@@ -2,6 +2,8 @@
 #include "UI/ExoMenuBackground.h"
 #include "UI/ExoSettingsMenu.h"
 #include "Map/ExoMapConfig.h"
+#include "Core/ExoMatchmakingManager.h"
+#include "Core/ExoCareerStats.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,7 +46,10 @@ void AExoMenuHUD::DrawHUD()
 
 	float Time = GetWorld()->GetTimeSeconds();
 
-	// Background visuals (extracted to FExoMenuBackground for file-size)
+	// Tick matchmaking
+	TickMatchmaking(GetWorld()->GetDeltaSeconds());
+
+	// Background visuals
 	FExoMenuBackground::DrawBackground(this, Canvas, Time);
 	FExoMenuBackground::DrawScanLines(this, Canvas, Time);
 	FExoMenuBackground::DrawTitle(this, Canvas, MenuFont, Time);
@@ -53,6 +58,7 @@ void AExoMenuHUD::DrawHUD()
 	{
 	case EMenuState::Main:
 		DrawMainMenu();
+		DrawCareerStats();
 		break;
 	case EMenuState::Settings:
 		DrawSettingsScreen();
@@ -64,6 +70,7 @@ void AExoMenuHUD::DrawHUD()
 
 	DrawVersionText();
 	DrawBottomTips();
+	if (bSearching) DrawMatchmakingOverlay();
 }
 
 // ---------------------------------------------------------------------------
@@ -305,6 +312,15 @@ void AExoMenuHUD::SelectCurrent()
 
 void AExoMenuHUD::GoBack()
 {
+	// Cancel matchmaking search
+	if (bSearching)
+	{
+		if (UExoMatchmakingManager* MM = UExoMatchmakingManager::Get(GetWorld()))
+			MM->CancelSearch();
+		bSearching = false;
+		return;
+	}
+
 	if (MenuState == EMenuState::Settings)
 	{
 		FExoSettingsMenu::bIsOpen = false;
@@ -331,13 +347,12 @@ void AExoMenuHUD::HandleMainSelect()
 {
 	switch (SelectedIndex)
 	{
-	case 0: // PLAY
+	case 0: // PLAY — start matchmaking
 	{
-		UWorld* World = GetWorld();
-		if (World)
+		if (UExoMatchmakingManager* MM = UExoMatchmakingManager::Get(GetWorld()))
 		{
-			UGameplayStatics::OpenLevel(World,
-				*UExoMapConfig::GetBRMapPath());
+			MM->StartSearching();
+			bSearching = true;
 		}
 		break;
 	}
@@ -363,4 +378,101 @@ void AExoMenuHUD::HandleMainSelect()
 	default:
 		break;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Matchmaking
+// ---------------------------------------------------------------------------
+
+void AExoMenuHUD::TickMatchmaking(float DeltaTime)
+{
+	if (!bSearching) return;
+	UExoMatchmakingManager* MM = UExoMatchmakingManager::Get(GetWorld());
+	if (!MM) return;
+	MM->Tick(DeltaTime);
+
+	if (MM->GetState() == EMatchmakingState::Idle)
+		bSearching = false;
+}
+
+void AExoMenuHUD::DrawMatchmakingOverlay()
+{
+	UExoMatchmakingManager* MM = UExoMatchmakingManager::Get(GetWorld());
+	if (!MM) return;
+
+	const float W = Canvas->SizeX;
+	const float H = Canvas->SizeY;
+	const float Time = GetWorld()->GetTimeSeconds();
+
+	// Dim overlay
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.6f), 0, 0, W, H);
+
+	float CenterY = H * 0.4f;
+
+	if (MM->GetState() == EMatchmakingState::Searching)
+	{
+		// Animated "SEARCHING..." text
+		int32 Dots = ((int32)(Time * 2.f) % 4);
+		FString Searching = TEXT("SEARCHING");
+		for (int32 i = 0; i < Dots; i++) Searching += TEXT(".");
+		DrawCenteredText(Searching, CenterY, 1.5f, ColorCyan);
+
+		// Info line
+		FString Info = FString::Printf(TEXT("Region: %s  |  Ping: %dms  |  Players: %d/25"),
+			*MM->GetRegion(), MM->GetPing(), MM->GetPlayersFound());
+		DrawCenteredText(Info, CenterY + 50.f, 0.9f, ColorWhite);
+
+		// Progress bar
+		float BarW = 300.f;
+		float BarH = 6.f;
+		float BarX = (W - BarW) * 0.5f;
+		float BarY = CenterY + 90.f;
+		float Progress = FMath::Clamp(MM->GetPlayersFound() / 25.f, 0.f, 1.f);
+		DrawRect(FLinearColor(0.1f, 0.1f, 0.15f, 0.8f), BarX, BarY, BarW, BarH);
+		DrawRect(ColorCyan, BarX, BarY, BarW * Progress, BarH);
+
+		// Cancel hint
+		DrawCenteredText(TEXT("Press ESC to cancel"), CenterY + 130.f, 0.8f, ColorDimWhite);
+	}
+	else if (MM->GetState() == EMatchmakingState::Found)
+	{
+		DrawCenteredText(TEXT("MATCH FOUND!"), CenterY, 1.8f, ColorCyanBright);
+		DrawCenteredText(TEXT("Loading..."), CenterY + 55.f, 1.0f, ColorWhite);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Career stats panel — bottom-left corner
+// ---------------------------------------------------------------------------
+
+void AExoMenuHUD::DrawCareerStats()
+{
+	UExoCareerStats* Stats = UExoCareerStats::Get(GetWorld());
+	if (!Stats || Stats->GetTotalMatches() == 0) return;
+
+	const float Padding = 15.f;
+	const float X = 20.f;
+	float Y = Canvas->SizeY - 170.f;
+
+	DrawRect(FLinearColor(0.01f, 0.01f, 0.04f, 0.7f), X, Y, 260.f, 150.f);
+
+	Y += Padding;
+	DrawText(TEXT("CAREER STATS"), ColorCyan, X + Padding, Y, MenuFont, 0.85f);
+	Y += 24.f;
+
+	FLinearColor StatColor(0.7f, 0.72f, 0.78f, 0.9f);
+	auto DrawStat = [&](const FString& Label, const FString& Value)
+	{
+		DrawText(Label, StatColor, X + Padding, Y, MenuFont, 0.7f);
+		float VW, VH;
+		GetTextSize(Value, VW, VH, MenuFont, 0.7f);
+		DrawText(Value, ColorWhite, X + 245.f - VW, Y, MenuFont, 0.7f);
+		Y += 20.f;
+	};
+
+	DrawStat(TEXT("Matches"), FString::Printf(TEXT("%d"), Stats->GetTotalMatches()));
+	DrawStat(TEXT("Wins"), FString::Printf(TEXT("%d (%.0f%%)"), Stats->GetTotalWins(), Stats->GetWinRate()));
+	DrawStat(TEXT("K/D"), FString::Printf(TEXT("%.2f"), Stats->GetKDRatio()));
+	DrawStat(TEXT("Avg Kills"), FString::Printf(TEXT("%.1f"), Stats->GetAverageKillsPerMatch()));
+	DrawStat(TEXT("Best Place"), FString::Printf(TEXT("#%d"), Stats->GetBestPlacement()));
 }

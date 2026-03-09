@@ -39,6 +39,8 @@ protected:
 	void DrawCreditsScreen();
 	void DrawVersionText();
 	void DrawBottomTips();
+	void DrawMatchmakingOverlay();
+	void DrawCareerStats();
 
 	// Helpers
 	void DrawCenteredText(const FString& Text, float Y, float Scale,
@@ -48,6 +50,9 @@ protected:
 
 private:
 	void HandleMainSelect();
+	void TickMatchmaking(float DeltaTime);
+
+	bool bSearching = false;
 
 	EMenuState MenuState = EMenuState::Main;
 	int32 SelectedIndex = 0;

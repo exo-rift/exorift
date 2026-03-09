@@ -4,7 +4,10 @@
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Player/ExoAbilityComponent.h"
+#include "Player/ExoEmoteComponent.h"
+#include "Player/ExoPlayerCustomization.h"
 #include "Core/ExoGameSettings.h"
+#include "Core/ExoPlayerState.h"
 #include "Core/ExoGameState.h"
 #include "Core/ExoGameMode.h"
 #include "Core/ExoTypes.h"
@@ -49,6 +52,10 @@ AExoPlayerController::AExoPlayerController()
 	LOAD_IA(MenuRightAction, "/Game/Input/Actions/IA_MenuRight");
 	LOAD_IA(CommsAction, "/Game/Input/Actions/IA_Comms");
 	LOAD_IA(GrenadeAction, "/Game/Input/Actions/IA_Grenade");
+	LOAD_IA(Emote1Action, "/Game/Input/Actions/IA_Emote1");
+	LOAD_IA(Emote2Action, "/Game/Input/Actions/IA_Emote2");
+	LOAD_IA(Emote3Action, "/Game/Input/Actions/IA_Emote3");
+	LOAD_IA(Emote4Action, "/Game/Input/Actions/IA_Emote4");
 }
 
 #undef LOAD_IA
@@ -67,6 +74,12 @@ void AExoPlayerController::OnPossess(APawn* InPawn)
 	if (UExoGameSettings* Settings = UExoGameSettings::Get(GetWorld()))
 	{
 		Settings->ApplySettings(GetWorld());
+	}
+
+	// Copy custom player name into PlayerState
+	if (AExoPlayerState* PS = GetPlayerState<AExoPlayerState>())
+	{
+		PS->InitDisplayNameFromCustomization(GetWorld());
 	}
 }
 
@@ -124,6 +137,16 @@ void AExoPlayerController::SetupInputComponent()
 		EIC->BindAction(CommsAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCommsOpen);
 		EIC->BindAction(CommsAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCommsClose);
 	}
+
+	// Emote bindings
+	if (Emote1Action)
+		EIC->BindAction(Emote1Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote1);
+	if (Emote2Action)
+		EIC->BindAction(Emote2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote2);
+	if (Emote3Action)
+		EIC->BindAction(Emote3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote3);
+	if (Emote4Action)
+		EIC->BindAction(Emote4Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote4);
 
 	// Menu / settings bindings — always active
 	if (PauseAction)
@@ -371,6 +394,27 @@ void AExoPlayerController::HandleAbility3()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::ShieldBubble);
+}
+
+// --- Emotes ---
+
+void AExoPlayerController::HandleEmote1() { PlayEmoteSlot(0); }
+void AExoPlayerController::HandleEmote2() { PlayEmoteSlot(1); }
+void AExoPlayerController::HandleEmote3() { PlayEmoteSlot(2); }
+void AExoPlayerController::HandleEmote4() { PlayEmoteSlot(3); }
+
+void AExoPlayerController::PlayEmoteSlot(int32 SlotIndex)
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C || !C->CanPerformActions()) return;
+	UExoEmoteComponent* EC = C->GetEmoteComponent();
+	if (!EC) return;
+
+	// Look up which emote is equipped in this slot
+	UExoPlayerCustomization* Cust = UExoPlayerCustomization::Get(GetWorld());
+	int32 EmoteIndex = Cust ? Cust->EmoteLoadout[FMath::Clamp(SlotIndex, 0, 3)] : SlotIndex;
+	EC->PlayEmote(EmoteIndex);
 }
 
 // --- Comms Wheel ---

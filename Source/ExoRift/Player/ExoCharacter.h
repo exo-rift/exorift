@@ -13,6 +13,8 @@ class UExoAbilityComponent;
 class UExoKillStreakComponent;
 class UExoInventoryComponent;
 class UExoGrenadeComponent;
+class UExoEmoteComponent;
+class UExoTrapComponent;
 
 UCLASS()
 class EXORIFT_API AExoCharacter : public ACharacter
@@ -78,6 +80,12 @@ public:
 	UExoGrenadeComponent* GetGrenadeComponent() const { return GrenadeComp; }
 	void ThrowGrenade();
 
+	// Emotes
+	UExoEmoteComponent* GetEmoteComponent() const { return EmoteComp; }
+
+	// Traps
+	UExoTrapComponent* GetTrapComponent() const { return TrapComp; }
+
 	// Sprint
 	void StartSprint();
 	void StopSprint();
@@ -127,6 +135,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Grenades")
 	UExoGrenadeComponent* GrenadeComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Emotes")
+	UExoEmoteComponent* EmoteComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Traps")
+	UExoTrapComponent* TrapComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 	float MaxHealth = 100.f;

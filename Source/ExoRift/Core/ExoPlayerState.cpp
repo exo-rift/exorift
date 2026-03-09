@@ -1,4 +1,5 @@
 #include "Core/ExoPlayerState.h"
+#include "Player/ExoPlayerCustomization.h"
 #include "Net/UnrealNetwork.h"
 
 AExoPlayerState::AExoPlayerState()
@@ -20,6 +21,17 @@ void AExoPlayerState::ResetStats()
 	LongestKillDistance = 0.f;
 	ShotsFired = 0;
 	ShotsHit = 0;
+}
+
+void AExoPlayerState::InitDisplayNameFromCustomization(UWorld* World)
+{
+	if (UExoPlayerCustomization* Cust = UExoPlayerCustomization::Get(World))
+	{
+		if (!Cust->PlayerName.IsEmpty())
+		{
+			DisplayName = Cust->PlayerName;
+		}
+	}
 }
 
 void AExoPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
