@@ -48,6 +48,7 @@ AExoPlayerController::AExoPlayerController()
 	LOAD_IA(MenuLeftAction, "/Game/Input/Actions/IA_MenuLeft");
 	LOAD_IA(MenuRightAction, "/Game/Input/Actions/IA_MenuRight");
 	LOAD_IA(CommsAction, "/Game/Input/Actions/IA_Comms");
+	LOAD_IA(GrenadeAction, "/Game/Input/Actions/IA_Grenade");
 }
 
 #undef LOAD_IA
@@ -114,6 +115,9 @@ void AExoPlayerController::SetupInputComponent()
 		EIC->BindAction(Ability2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
 	if (Ability3Action)
 		EIC->BindAction(Ability3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
+
+	if (GrenadeAction)
+		EIC->BindAction(GrenadeAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleGrenade);
 
 	if (CommsAction)
 	{
@@ -336,6 +340,14 @@ void AExoPlayerController::HandlePing()
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 	FExoPingSystem::AddPing(bHit ? Hit.ImpactPoint : End, TEXT("Enemy Here"),
 		FLinearColor(1.f, 0.4f, 0.1f, 1.f));
+}
+
+// --- Grenade ---
+
+void AExoPlayerController::HandleGrenade()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->ThrowGrenade();
 }
 
 // --- Abilities ---

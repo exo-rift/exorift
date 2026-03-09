@@ -51,6 +51,24 @@ void AExoHUD::DrawHUD()
 	Super::DrawHUD();
 	if (!Canvas) return;
 
+	float DeltaTime = GetWorld()->GetDeltaSeconds();
+
+	// Loading screen takes priority over everything
+	if (bShowLoadingScreen)
+	{
+		LoadingScreen.Tick(DeltaTime);
+		LoadingScreen.Draw(this, Canvas, HUDFont);
+		return;
+	}
+
+	// Death cam overlay — show when local player is dead (not DBNO)
+	if (DeathCam.IsActive())
+	{
+		DeathCam.Tick(DeltaTime);
+		DeathCam.Draw(this, Canvas, HUDFont);
+		return;
+	}
+
 	// Check if match is over — show summary instead
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (GS && GS->MatchPhase == EBRMatchPhase::EndGame)
@@ -836,6 +854,23 @@ void AExoHUD::DrawZoneTimer()
 
 	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, TW + 10.f, TH + 6.f);
 	DrawText(ZoneText, ZoneColor, X, Y, HUDFont, 0.75f);
+}
+
+void AExoHUD::ShowDeathScreen(const FString& KillerName, const FString& WeaponName,
+	int32 Placement, int32 TotalPlayers)
+{
+	DeathCam.Init(KillerName, WeaponName, Placement, TotalPlayers);
+}
+
+void AExoHUD::ShowLoadingScreen()
+{
+	bShowLoadingScreen = true;
+	LoadingScreen.Activate();
+}
+
+void AExoHUD::HideLoadingScreen()
+{
+	bShowLoadingScreen = false;
 }
 
 FVector2D AExoHUD::GetScreenCenter() const

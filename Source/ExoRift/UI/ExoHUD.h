@@ -4,6 +4,8 @@
 #include "GameFramework/HUD.h"
 #include "Core/ExoTypes.h"
 #include "UI/ExoMinimap.h"
+#include "UI/ExoDeathCam.h"
+#include "UI/ExoLoadingScreen.h"
 #include "ExoHUD.generated.h"
 
 UCLASS()
@@ -15,6 +17,14 @@ public:
 	AExoHUD();
 
 	virtual void DrawHUD() override;
+
+	// Death screen
+	void ShowDeathScreen(const FString& KillerName, const FString& WeaponName,
+		int32 Placement, int32 TotalPlayers);
+
+	// Loading screen
+	void ShowLoadingScreen();
+	void HideLoadingScreen();
 
 protected:
 	void DrawCrosshair();
@@ -65,4 +75,11 @@ protected:
 	UFont* HUDFont;
 
 	FMinimapConfig MinimapConfig;
+
+	// Death cam overlay
+	FExoDeathCam DeathCam;
+
+	// Loading screen
+	FExoLoadingScreen LoadingScreen;
+	bool bShowLoadingScreen = false;
 };

@@ -20,7 +20,16 @@ enum class EWeaponType : uint8
 	Pistol,
 	GrenadeLauncher,
 	Sniper,
-	Shotgun
+	Shotgun,
+	SMG
+};
+
+UENUM(BlueprintType)
+enum class EGrenadeType : uint8
+{
+	Frag,
+	EMP,
+	Smoke
 };
 
 UENUM(BlueprintType)

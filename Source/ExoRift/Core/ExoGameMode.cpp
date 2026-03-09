@@ -114,6 +114,7 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 	{
 		PS->bIsAlive = false;
 		PS->Placement = AliveCount + 1;
+		PS->Deaths++;
 	}
 	if (Killer && Killer != EliminatedPlayer)
 	{
@@ -319,7 +320,7 @@ void AExoGameMode::RestartMatch()
 		AlivePlayers.AddUnique(PC);
 		if (AExoPlayerState* PS = PC->GetPlayerState<AExoPlayerState>())
 		{
-			PS->Kills = 0; PS->Placement = 0; PS->bIsAlive = true;
+			PS->ResetStats();
 		}
 		// Respawn if dead or spectating
 		APawn* Pawn = PC->GetPawn();

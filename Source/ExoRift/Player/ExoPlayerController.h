@@ -42,6 +42,9 @@ protected:
 	void HandleDropWeapon();
 	void HandlePing();
 
+	// Grenade input handler
+	void HandleGrenade();
+
 	// Ability input handlers
 	void HandleAbility1();
 	void HandleAbility2();
@@ -123,6 +126,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* MenuRightAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* GrenadeAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* CommsAction;

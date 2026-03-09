@@ -4,12 +4,16 @@
 #include "Components/ActorComponent.h"
 #include "ExoAbilityComponent.generated.h"
 
+class AExoDecoyActor;
+
 UENUM(BlueprintType)
 enum class EExoAbilityType : uint8
 {
 	Dash,
 	AreaScan,
-	ShieldBubble
+	ShieldBubble,
+	GrappleHook,
+	Decoy
 };
 
 USTRUCT(BlueprintType)
@@ -53,6 +57,9 @@ public:
 	// Scanned enemies from AreaScan
 	const TArray<AActor*>& GetScannedEnemies() const { return ScannedEnemies; }
 
+	// Grapple state queries
+	bool IsGrappling() const { return bIsGrappling; }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnAbilityUsed OnAbilityUsed;
 
@@ -63,7 +70,10 @@ protected:
 	void ExecuteDash();
 	void ExecuteAreaScan();
 	void ExecuteShieldBubble();
+	void ExecuteGrapple();
+	void ExecuteDecoy();
 	void TickAreaScan(float DeltaTime);
+	void TickGrapple(float DeltaTime);
 
 	UPROPERTY()
 	TArray<FExoAbility> Abilities;
@@ -73,8 +83,17 @@ protected:
 
 	float ScanTimeRemaining = 0.f;
 
+	// Grapple state
+	bool bIsGrappling = false;
+	FVector GrappleTarget = FVector::ZeroVector;
+	FVector GrappleStartLocation = FVector::ZeroVector;
+	float GrappleTimer = 0.f;
+
 	static constexpr float DashImpulse = 2000.f;
 	static constexpr float ScanRadius = 5000.f;
 	static constexpr float ScanDuration = 3.f;
 	static constexpr float ShieldRestoreAmount = 50.f;
+	static constexpr float GrappleRange = 3000.f;
+	static constexpr float GrappleDuration = 0.5f;
+	static constexpr float DecoyLifetime = 10.f;
 };

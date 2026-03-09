@@ -6,6 +6,7 @@
 #include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Player/ExoPlayerController.h"
+#include "Weapons/ExoGrenadeComponent.h"
 #include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -56,6 +57,9 @@ AExoCharacter::AExoCharacter()
 
 	// Inventory
 	InventoryComp = CreateDefaultSubobject<UExoInventoryComponent>(TEXT("InventoryComp"));
+
+	// Grenades
+	GrenadeComp = CreateDefaultSubobject<UExoGrenadeComponent>(TEXT("GrenadeComp"));
 
 	// Third person mesh (hidden from owner)
 	GetMesh()->SetOwnerNoSee(true);
@@ -173,6 +177,16 @@ void AExoCharacter::EquipWeapon(AExoWeaponBase* Weapon)
 {
 	if (!Weapon || !InventoryComp) return;
 	InventoryComp->AddWeapon(Weapon);
+}
+
+void AExoCharacter::ThrowGrenade()
+{
+	if (!GrenadeComp || !CanPerformActions()) return;
+	if (!FirstPersonCamera) return;
+
+	FVector Origin = FirstPersonCamera->GetComponentLocation();
+	FRotator Direction = FirstPersonCamera->GetComponentRotation();
+	GrenadeComp->ThrowGrenade(Origin, Direction);
 }
 
 void AExoCharacter::StartSprint()
