@@ -4,10 +4,7 @@
 #include "GameFramework/PlayerController.h"
 #include "ExoPlayerController.generated.h"
 
-class UInputMappingContext;
-class UInputAction;
 class AExoSpectatorPawn;
-class UExoGameSettings;
 struct FInputActionValue;
 
 UCLASS()
@@ -26,135 +23,59 @@ protected:
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* InPawn) override;
 
-	// Character input handlers
+	// Movement
 	void HandleMove(const FInputActionValue& Value);
 	void HandleLook(const FInputActionValue& Value);
 	void HandleJump();
 	void HandleJumpReleased();
-	void HandleFire();
-	void HandleFireReleased();
-	void HandleSwapWeapon();
 	void HandleSprint();
 	void HandleSprintReleased();
 	void HandleCrouch();
 	void HandleCrouchReleased();
-	void HandleInteract();
+
+	// Combat
+	void HandleFire();
+	void HandleFireReleased();
+	void HandleSwapWeapon();
 	void HandleDropWeapon();
+	void HandleGrenade();
+	void HandleMelee();
+	void HandleScrollWeapon(const FInputActionValue& Value);
+
+	// Interaction
+	void HandleInteract();
 	void HandlePing();
 
-	// Grenade input handler
-	void HandleGrenade();
-
-	// Ability input handlers
+	// Abilities
 	void HandleAbility1();
 	void HandleAbility2();
 	void HandleAbility3();
 
-	// Settings menu input handlers
+	// Menu
 	void HandlePause();
 	void HandleMenuUp();
 	void HandleMenuDown();
 	void HandleMenuLeft();
 	void HandleMenuRight();
 
-	// Emote slots (1-4)
+	// Social
 	void HandleEmote1();
 	void HandleEmote2();
 	void HandleEmote3();
 	void HandleEmote4();
 	void PlayEmoteSlot(int32 SlotIndex);
-
-	// Comms wheel
 	void HandleCommsOpen();
 	void HandleCommsClose();
 
-	// Spectator cycling
+	// Spectator
 	void HandleSpectateNext();
 	void HandleSpectatePrev();
 
-	// Endgame actions (only active during EndGame phase)
+	// Endgame
 	void HandleRestartMatch();
 	void HandleReturnToMenu();
 
-	// Input assets
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputMappingContext* DefaultMappingContext;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* MoveAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* LookAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* JumpAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* FireAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* SwapWeaponAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* SprintAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* InteractAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* CrouchAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* DropWeaponAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* PingAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Ability1Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Ability2Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Ability3Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* PauseAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* MenuUpAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* MenuDownAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* MenuLeftAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* MenuRightAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* GrenadeAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* CommsAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Emote1Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Emote2Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Emote3Action;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* Emote4Action;
-
 private:
 	void SetupEnhancedInput();
-
-	/** True once OnCharacterDied has been called — prevents double-transition. */
 	bool bIsSpectating = false;
 };

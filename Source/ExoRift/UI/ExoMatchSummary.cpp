@@ -193,8 +193,8 @@ void FExoMatchSummary::DrawCountdownAndOptions(AHUD* HUD, UCanvas* Canvas, UFont
 	FLinearColor OptColor(0.3f, 0.8f, 1.f, 0.9f);
 	FLinearColor KeyColor(1.f, 0.85f, 0.2f, 1.f);
 
-	// "PLAY AGAIN (R)"
-	FString PlayAgain = TEXT("[R]  PLAY AGAIN");
+	// "PLAY AGAIN (Enter)"
+	FString PlayAgain = TEXT("[ENTER]  PLAY AGAIN");
 	float PAW, PAH;
 	HUD->GetTextSize(PlayAgain, PAW, PAH, Font, 1.f);
 	float PAX = Canvas->SizeX * 0.35f;
@@ -203,8 +203,8 @@ void FExoMatchSummary::DrawCountdownAndOptions(AHUD* HUD, UCanvas* Canvas, UFont
 		PAX - 10.f, OptY - 5.f, PAW + 20.f, PAH + 10.f);
 	HUD->DrawText(PlayAgain, OptColor, PAX, OptY, Font, 1.f);
 
-	// "MAIN MENU (M)"
-	FString MainMenu = TEXT("[M]  MAIN MENU");
+	// "MAIN MENU (Backspace)"
+	FString MainMenu = TEXT("[BKSP]  MAIN MENU");
 	float MMW, MMH;
 	HUD->GetTextSize(MainMenu, MMW, MMH, Font, 1.f);
 	float MMX = Canvas->SizeX * 0.55f;

@@ -6,6 +6,7 @@
 #include "Player/ExoAbilityComponent.h"
 #include "Player/ExoEmoteComponent.h"
 #include "Player/ExoPlayerCustomization.h"
+#include "Core/ExoInputSetup.h"
 #include "Core/ExoGameSettings.h"
 #include "Core/ExoPlayerState.h"
 #include "Core/ExoGameState.h"
@@ -17,48 +18,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
-#include "InputAction.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
 
-// Helper macro to reduce constructor boilerplate
-#define LOAD_IA(VarName, Path) \
-	{ static ConstructorHelpers::FObjectFinder<UInputAction> F(TEXT(Path)); \
-	  if (F.Succeeded()) VarName = F.Object; }
-
-AExoPlayerController::AExoPlayerController()
-{
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMCFinder(
-		TEXT("/Game/Input/IMC_Default"));
-	if (IMCFinder.Succeeded()) DefaultMappingContext = IMCFinder.Object;
-
-	LOAD_IA(MoveAction, "/Game/Input/Actions/IA_Move");
-	LOAD_IA(LookAction, "/Game/Input/Actions/IA_Look");
-	LOAD_IA(JumpAction, "/Game/Input/Actions/IA_Jump");
-	LOAD_IA(FireAction, "/Game/Variant_Shooter/Input/Actions/IA_Shoot");
-	LOAD_IA(SwapWeaponAction, "/Game/Variant_Shooter/Input/Actions/IA_SwapWeapon");
-	LOAD_IA(InteractAction, "/Game/Input/Actions/IA_Interact");
-	LOAD_IA(DropWeaponAction, "/Game/Input/Actions/IA_Drop");
-	LOAD_IA(CrouchAction, "/Game/Input/Actions/IA_Crouch");
-	LOAD_IA(PingAction, "/Game/Input/Actions/IA_Ping");
-	LOAD_IA(Ability1Action, "/Game/Input/Actions/IA_Ability1");
-	LOAD_IA(Ability2Action, "/Game/Input/Actions/IA_Ability2");
-	LOAD_IA(Ability3Action, "/Game/Input/Actions/IA_Ability3");
-	LOAD_IA(PauseAction, "/Game/Input/Actions/IA_Pause");
-	LOAD_IA(MenuUpAction, "/Game/Input/Actions/IA_MenuUp");
-	LOAD_IA(MenuDownAction, "/Game/Input/Actions/IA_MenuDown");
-	LOAD_IA(MenuLeftAction, "/Game/Input/Actions/IA_MenuLeft");
-	LOAD_IA(MenuRightAction, "/Game/Input/Actions/IA_MenuRight");
-	LOAD_IA(CommsAction, "/Game/Input/Actions/IA_Comms");
-	LOAD_IA(GrenadeAction, "/Game/Input/Actions/IA_Grenade");
-	LOAD_IA(Emote1Action, "/Game/Input/Actions/IA_Emote1");
-	LOAD_IA(Emote2Action, "/Game/Input/Actions/IA_Emote2");
-	LOAD_IA(Emote3Action, "/Game/Input/Actions/IA_Emote3");
-	LOAD_IA(Emote4Action, "/Game/Input/Actions/IA_Emote4");
-}
-
-#undef LOAD_IA
+AExoPlayerController::AExoPlayerController() {}
 
 void AExoPlayerController::BeginPlay()
 {
@@ -70,108 +33,78 @@ void AExoPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	SetupEnhancedInput();
 
-	// Apply saved settings (sensitivity + FOV) to the new pawn
 	if (UExoGameSettings* Settings = UExoGameSettings::Get(GetWorld()))
-	{
 		Settings->ApplySettings(GetWorld());
-	}
-
-	// Copy custom player name into PlayerState
 	if (AExoPlayerState* PS = GetPlayerState<AExoPlayerState>())
-	{
 		PS->InitDisplayNameFromCustomization(GetWorld());
-	}
 }
 
 void AExoPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent);
 	if (!EIC) return;
 
-	if (MoveAction)
-		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AExoPlayerController::HandleMove);
-	if (LookAction)
-		EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &AExoPlayerController::HandleLook);
-	if (JumpAction)
-	{
-		EIC->BindAction(JumpAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleJump);
-		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleJumpReleased);
-	}
-	if (FireAction)
-	{
-		EIC->BindAction(FireAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleFire);
-		EIC->BindAction(FireAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleFireReleased);
-	}
-	if (SwapWeaponAction)
-		EIC->BindAction(SwapWeaponAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleSwapWeapon);
-	if (SprintAction)
-	{
-		EIC->BindAction(SprintAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleSprint);
-		EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleSprintReleased);
-	}
-	if (InteractAction)
-		EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleInteract);
-	if (DropWeaponAction)
-		EIC->BindAction(DropWeaponAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleDropWeapon);
-	if (CrouchAction)
-	{
-		EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCrouch);
-		EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCrouchReleased);
-	}
-	if (PingAction)
-		EIC->BindAction(PingAction, ETriggerEvent::Started, this, &AExoPlayerController::HandlePing);
-	if (Ability1Action)
-		EIC->BindAction(Ability1Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility1);
-	if (Ability2Action)
-		EIC->BindAction(Ability2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
-	if (Ability3Action)
-		EIC->BindAction(Ability3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
+	FExoInputSetup& In = FExoInputSetup::Get();
 
-	if (GrenadeAction)
-		EIC->BindAction(GrenadeAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleGrenade);
+	// Axis actions (Triggered fires every frame while active)
+	EIC->BindAction(In.Move, ETriggerEvent::Triggered, this, &AExoPlayerController::HandleMove);
+	EIC->BindAction(In.Look, ETriggerEvent::Triggered, this, &AExoPlayerController::HandleLook);
+	EIC->BindAction(In.ScrollWeapon, ETriggerEvent::Triggered, this, &AExoPlayerController::HandleScrollWeapon);
 
-	if (CommsAction)
-	{
-		EIC->BindAction(CommsAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleCommsOpen);
-		EIC->BindAction(CommsAction, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCommsClose);
-	}
+	// Press/release pairs
+	EIC->BindAction(In.Jump, ETriggerEvent::Started, this, &AExoPlayerController::HandleJump);
+	EIC->BindAction(In.Jump, ETriggerEvent::Completed, this, &AExoPlayerController::HandleJumpReleased);
+	EIC->BindAction(In.Fire, ETriggerEvent::Started, this, &AExoPlayerController::HandleFire);
+	EIC->BindAction(In.Fire, ETriggerEvent::Completed, this, &AExoPlayerController::HandleFireReleased);
+	EIC->BindAction(In.Sprint, ETriggerEvent::Started, this, &AExoPlayerController::HandleSprint);
+	EIC->BindAction(In.Sprint, ETriggerEvent::Completed, this, &AExoPlayerController::HandleSprintReleased);
+	EIC->BindAction(In.Crouch, ETriggerEvent::Started, this, &AExoPlayerController::HandleCrouch);
+	EIC->BindAction(In.Crouch, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCrouchReleased);
+	EIC->BindAction(In.Comms, ETriggerEvent::Started, this, &AExoPlayerController::HandleCommsOpen);
+	EIC->BindAction(In.Comms, ETriggerEvent::Completed, this, &AExoPlayerController::HandleCommsClose);
 
-	// Emote bindings
-	if (Emote1Action)
-		EIC->BindAction(Emote1Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote1);
-	if (Emote2Action)
-		EIC->BindAction(Emote2Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote2);
-	if (Emote3Action)
-		EIC->BindAction(Emote3Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote3);
-	if (Emote4Action)
-		EIC->BindAction(Emote4Action, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote4);
+	// Single-press actions
+	EIC->BindAction(In.SwapWeapon, ETriggerEvent::Started, this, &AExoPlayerController::HandleSwapWeapon);
+	EIC->BindAction(In.Interact, ETriggerEvent::Started, this, &AExoPlayerController::HandleInteract);
+	EIC->BindAction(In.DropWeapon, ETriggerEvent::Started, this, &AExoPlayerController::HandleDropWeapon);
+	EIC->BindAction(In.Ping, ETriggerEvent::Started, this, &AExoPlayerController::HandlePing);
+	EIC->BindAction(In.Grenade, ETriggerEvent::Started, this, &AExoPlayerController::HandleGrenade);
+	EIC->BindAction(In.Melee, ETriggerEvent::Started, this, &AExoPlayerController::HandleMelee);
+	EIC->BindAction(In.Ability1, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility1);
+	EIC->BindAction(In.Ability2, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
+	EIC->BindAction(In.Ability3, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
 
-	// Menu / settings bindings — always active
-	if (PauseAction)
-		EIC->BindAction(PauseAction, ETriggerEvent::Started, this, &AExoPlayerController::HandlePause);
-	if (MenuUpAction)
-		EIC->BindAction(MenuUpAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuUp);
-	if (MenuDownAction)
-		EIC->BindAction(MenuDownAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuDown);
-	if (MenuLeftAction)
-		EIC->BindAction(MenuLeftAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuLeft);
-	if (MenuRightAction)
-		EIC->BindAction(MenuRightAction, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuRight);
+	// Emotes
+	EIC->BindAction(In.Emote1, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote1);
+	EIC->BindAction(In.Emote2, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote2);
+	EIC->BindAction(In.Emote3, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote3);
+	EIC->BindAction(In.Emote4, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote4);
+
+	// Menu navigation
+	EIC->BindAction(In.Pause, ETriggerEvent::Started, this, &AExoPlayerController::HandlePause);
+	EIC->BindAction(In.MenuUp, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuUp);
+	EIC->BindAction(In.MenuDown, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuDown);
+	EIC->BindAction(In.MenuLeft, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuLeft);
+	EIC->BindAction(In.MenuRight, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuRight);
+
+	// Endgame
+	EIC->BindAction(In.Restart, ETriggerEvent::Started, this, &AExoPlayerController::HandleRestartMatch);
+	EIC->BindAction(In.ReturnToMenu, ETriggerEvent::Started, this, &AExoPlayerController::HandleReturnToMenu);
 }
 
 void AExoPlayerController::SetupEnhancedInput()
 {
 	UEnhancedInputLocalPlayerSubsystem* Subsystem =
 		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
-	if (Subsystem && DefaultMappingContext)
+	if (Subsystem)
 	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		Subsystem->ClearAllMappings();
+		Subsystem->AddMappingContext(FExoInputSetup::Get().MappingContext, 0);
 	}
 }
 
-// --- Death → Spectator transition ---
+// --- Death -> Spectator ---
 
 void AExoPlayerController::OnCharacterDied(AController* Killer)
 {
@@ -184,26 +117,21 @@ void AExoPlayerController::OnCharacterDied(AController* Killer)
 	FVector DeathLoc = DeadPawn->GetActorLocation();
 	FRotator DeathRot = DeadPawn->GetActorRotation();
 
-	// Spawn spectator pawn at death location
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	AExoSpectatorPawn* Spectator = GetWorld()->SpawnActor<AExoSpectatorPawn>(
 		AExoSpectatorPawn::StaticClass(), DeathLoc, DeathRot, SpawnParams);
-
 	if (!Spectator) return;
 
-	// Release the dead character and possess the spectator
 	UnPossess();
 	Possess(Spectator);
 
-	// Start the death camera sequence
 	AActor* KillerPawn = Killer ? Killer->GetPawn() : nullptr;
 	Spectator->StartDeathCam(KillerPawn, DeathLoc);
-
-	UE_LOG(LogExoRift, Log, TEXT("PlayerController transitioned to spectator"));
+	UE_LOG(LogExoRift, Log, TEXT("Transitioned to spectator"));
 }
 
-// --- Movement / Camera ---
+// --- Movement ---
 
 void AExoPlayerController::HandleMove(const FInputActionValue& Value)
 {
@@ -211,12 +139,9 @@ void AExoPlayerController::HandleMove(const FInputActionValue& Value)
 	FVector2D Input = Value.Get<FVector2D>();
 	if (APawn* P = GetPawn())
 	{
-		FRotator Rot = GetControlRotation();
-		FRotator YawRot(0.f, Rot.Yaw, 0.f);
-		FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-		FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-		P->AddMovementInput(Forward, Input.Y);
-		P->AddMovementInput(Right, Input.X);
+		FRotator YawRot(0.f, GetControlRotation().Yaw, 0.f);
+		P->AddMovementInput(FRotationMatrix(YawRot).GetUnitAxis(EAxis::X), Input.Y);
+		P->AddMovementInput(FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y), Input.X);
 	}
 }
 
@@ -224,13 +149,7 @@ void AExoPlayerController::HandleLook(const FInputActionValue& Value)
 {
 	if (FExoSettingsMenu::bIsOpen) return;
 	FVector2D Input = Value.Get<FVector2D>();
-
-	if (FExoCommsWheel::bIsOpen)
-	{
-		FExoCommsWheel::UpdateMouse(Input);
-		return;
-	}
-
+	if (FExoCommsWheel::bIsOpen) { FExoCommsWheel::UpdateMouse(Input); return; }
 	AddYawInput(Input.X);
 	AddPitchInput(Input.Y);
 }
@@ -238,64 +157,15 @@ void AExoPlayerController::HandleLook(const FInputActionValue& Value)
 void AExoPlayerController::HandleJump()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	AExoCharacter* ExoC = Cast<AExoCharacter>(GetPawn());
-	if (!ExoC) return;
-
-	if (ExoC->GetCharacterMovement()->IsFalling())
-	{
-		// In the air — attempt mantle
-		ExoC->TryMantle();
-	}
-	else
-	{
-		ExoC->Jump();
-	}
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C) return;
+	C->GetCharacterMovement()->IsFalling() ? C->TryMantle() : C->Jump();
 }
 
 void AExoPlayerController::HandleJumpReleased()
 {
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn()))
-		C->StopJumping();
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopJumping();
 }
-
-// --- Fire (spectate-next in spectator mode) ---
-
-void AExoPlayerController::HandleFire()
-{
-	if (FExoSettingsMenu::bIsOpen) return;
-	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectateNext(); return; }
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StartFire();
-}
-
-void AExoPlayerController::HandleFireReleased()
-{
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopFire();
-}
-
-// --- Swap weapon (spectate-prev in spectator mode) ---
-
-void AExoPlayerController::HandleSwapWeapon()
-{
-	if (FExoSettingsMenu::bIsOpen) return;
-	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectatePrev(); return; }
-	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->SwapWeapon();
-}
-
-// --- Spectator cycling ---
-
-void AExoPlayerController::HandleSpectateNext()
-{
-	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-		Spec->CycleSpectateTarget(1);
-}
-
-void AExoPlayerController::HandleSpectatePrev()
-{
-	if (AExoSpectatorPawn* Spec = Cast<AExoSpectatorPawn>(GetPawn()))
-		Spec->CycleSpectateTarget(-1);
-}
-
-// --- Sprint ---
 
 void AExoPlayerController::HandleSprint()
 {
@@ -307,8 +177,6 @@ void AExoPlayerController::HandleSprintReleased()
 {
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopSprint();
 }
-
-// --- Crouch / Slide ---
 
 void AExoPlayerController::HandleCrouch()
 {
@@ -325,52 +193,82 @@ void AExoPlayerController::HandleCrouchReleased()
 	C->IsSliding() ? C->StopSlide() : C->UnCrouch();
 }
 
-// --- Interaction ---
+// --- Combat ---
 
-void AExoPlayerController::HandleInteract()
+void AExoPlayerController::HandleFire()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
-	if (!ExoChar) return;
-	if (UExoInteractionComponent* IC = ExoChar->GetInteractionComponent()) IC->TryInteract();
+	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectateNext(); return; }
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StartFire();
 }
 
-// --- Drop weapon ---
+void AExoPlayerController::HandleFireReleased()
+{
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopFire();
+}
+
+void AExoPlayerController::HandleSwapWeapon()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	if (Cast<AExoSpectatorPawn>(GetPawn())) { HandleSpectatePrev(); return; }
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->SwapWeapon();
+}
 
 void AExoPlayerController::HandleDropWeapon()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
-	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
-	if (!ExoChar) return;
-	if (UExoInventoryComponent* Inv = ExoChar->GetInventoryComponent())
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C) return;
+	if (auto* Inv = C->GetInventoryComponent())
 		Inv->DropWeapon(Inv->GetCurrentSlotIndex());
 }
-
-// --- Ping ---
-
-void AExoPlayerController::HandlePing()
-{
-	if (FExoSettingsMenu::bIsOpen) return;
-	AExoCharacter* ExoChar = Cast<AExoCharacter>(GetPawn());
-	if (!ExoChar) return;
-	UCameraComponent* Cam = ExoChar->GetFirstPersonCamera();
-	if (!Cam) return;
-	FVector Start = Cam->GetComponentLocation();
-	FVector End = Start + Cam->GetForwardVector() * 50000.f;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(ExoChar);
-	FHitResult Hit;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-	FExoPingSystem::AddPing(bHit ? Hit.ImpactPoint : End, TEXT("Enemy Here"),
-		FLinearColor(1.f, 0.4f, 0.1f, 1.f));
-}
-
-// --- Grenade ---
 
 void AExoPlayerController::HandleGrenade()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->ThrowGrenade();
+}
+
+void AExoPlayerController::HandleMelee()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetInventoryComponent()) C->GetInventoryComponent()->SwitchToMelee();
+}
+
+void AExoPlayerController::HandleScrollWeapon(const FInputActionValue& Value)
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C || !C->GetInventoryComponent()) return;
+	float Dir = Value.Get<float>();
+	C->GetInventoryComponent()->CycleWeapon(Dir > 0.f ? 1 : -1);
+}
+
+// --- Interaction ---
+
+void AExoPlayerController::HandleInteract()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C) if (auto* IC = C->GetInteractionComponent()) IC->TryInteract();
+}
+
+void AExoPlayerController::HandlePing()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (!C) return;
+	UCameraComponent* Cam = C->GetFirstPersonCamera();
+	if (!Cam) return;
+	FVector Start = Cam->GetComponentLocation();
+	FVector End = Start + Cam->GetForwardVector() * 50000.f;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(C);
+	FHitResult Hit;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+	FExoPingSystem::AddPing(bHit ? Hit.ImpactPoint : End, TEXT("Enemy Here"),
+		FLinearColor(1.f, 0.4f, 0.1f, 1.f));
 }
 
 // --- Abilities ---
@@ -396,7 +294,7 @@ void AExoPlayerController::HandleAbility3()
 	if (C && C->GetAbilityComponent()) C->GetAbilityComponent()->UseAbility(EExoAbilityType::ShieldBubble);
 }
 
-// --- Emotes ---
+// --- Social ---
 
 void AExoPlayerController::HandleEmote1() { PlayEmoteSlot(0); }
 void AExoPlayerController::HandleEmote2() { PlayEmoteSlot(1); }
@@ -410,14 +308,10 @@ void AExoPlayerController::PlayEmoteSlot(int32 SlotIndex)
 	if (!C || !C->CanPerformActions()) return;
 	UExoEmoteComponent* EC = C->GetEmoteComponent();
 	if (!EC) return;
-
-	// Look up which emote is equipped in this slot
 	UExoPlayerCustomization* Cust = UExoPlayerCustomization::Get(GetWorld());
 	int32 EmoteIndex = Cust ? Cust->EmoteLoadout[FMath::Clamp(SlotIndex, 0, 3)] : SlotIndex;
 	EC->PlayEmote(EmoteIndex);
 }
-
-// --- Comms Wheel ---
 
 void AExoPlayerController::HandleCommsOpen()
 {
@@ -427,12 +321,24 @@ void AExoPlayerController::HandleCommsOpen()
 
 void AExoPlayerController::HandleCommsClose() { FExoCommsWheel::Close(GetWorld()); }
 
-// --- Settings Menu ---
+// --- Spectator ---
 
-void AExoPlayerController::HandlePause()  { FExoSettingsMenu::ToggleMenu(); }
-void AExoPlayerController::HandleMenuUp() { FExoSettingsMenu::NavigateUp(); }
-void AExoPlayerController::HandleMenuDown() { FExoSettingsMenu::NavigateDown(); }
-void AExoPlayerController::HandleMenuLeft() { FExoSettingsMenu::AdjustValue(-1.f); }
+void AExoPlayerController::HandleSpectateNext()
+{
+	if (auto* S = Cast<AExoSpectatorPawn>(GetPawn())) S->CycleSpectateTarget(1);
+}
+
+void AExoPlayerController::HandleSpectatePrev()
+{
+	if (auto* S = Cast<AExoSpectatorPawn>(GetPawn())) S->CycleSpectateTarget(-1);
+}
+
+// --- Menu ---
+
+void AExoPlayerController::HandlePause()     { FExoSettingsMenu::ToggleMenu(); }
+void AExoPlayerController::HandleMenuUp()    { FExoSettingsMenu::NavigateUp(); }
+void AExoPlayerController::HandleMenuDown()  { FExoSettingsMenu::NavigateDown(); }
+void AExoPlayerController::HandleMenuLeft()  { FExoSettingsMenu::AdjustValue(-1.f); }
 void AExoPlayerController::HandleMenuRight() { FExoSettingsMenu::AdjustValue(1.f); }
 
 // --- Endgame ---
@@ -441,12 +347,12 @@ void AExoPlayerController::HandleRestartMatch()
 {
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (!GS || GS->MatchPhase != EBRMatchPhase::EndGame) return;
-	if (AExoGameMode* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->RestartMatch();
+	if (auto* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->RestartMatch();
 }
 
 void AExoPlayerController::HandleReturnToMenu()
 {
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (!GS || GS->MatchPhase != EBRMatchPhase::EndGame) return;
-	if (AExoGameMode* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->ReturnToMainMenu();
+	if (auto* GM = Cast<AExoGameMode>(GetWorld()->GetAuthGameMode())) GM->ReturnToMainMenu();
 }

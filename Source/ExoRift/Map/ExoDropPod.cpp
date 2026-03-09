@@ -88,7 +88,7 @@ void AExoDropPod::OnLanded()
 
 	UE_LOG(LogExoRift, Log, TEXT("Drop pod landed at %s"), *GetActorLocation().ToString());
 
-	// Spawn character at landing position and possess
+	// Place or spawn character at landing position
 	if (Passenger)
 	{
 		FVector SpawnLoc = GetActorLocation() + FVector(200.f, 0.f, 100.f);
@@ -96,8 +96,13 @@ void AExoDropPod::OnLanded()
 
 		if (Passenger->GetPawn())
 		{
-			// Already has a pawn, just teleport it
 			Passenger->GetPawn()->SetActorLocation(SpawnLoc);
+		}
+		else
+		{
+			AExoCharacter* NewChar = GetWorld()->SpawnActor<AExoCharacter>(
+				AExoCharacter::StaticClass(), SpawnLoc, SpawnRot);
+			if (NewChar) Passenger->Possess(NewChar);
 		}
 	}
 

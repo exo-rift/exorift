@@ -82,12 +82,15 @@ EWeaponRarity AExoLootSpawner::PickWeightedRarity() const
 
 EWeaponType AExoLootSpawner::PickRandomWeaponType()
 {
-	int32 Roll = FMath::RandRange(0, 2);
+	int32 Roll = FMath::RandRange(0, 5);
 	switch (Roll)
 	{
 	case 0: return EWeaponType::Rifle;
 	case 1: return EWeaponType::Pistol;
-	case 2: return EWeaponType::GrenadeLauncher;
+	case 2: return EWeaponType::Shotgun;
+	case 3: return EWeaponType::SMG;
+	case 4: return EWeaponType::Sniper;
+	case 5: return EWeaponType::GrenadeLauncher;
 	default: return EWeaponType::Rifle;
 	}
 }

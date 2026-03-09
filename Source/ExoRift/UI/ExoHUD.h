@@ -6,6 +6,9 @@
 #include "UI/ExoMinimap.h"
 #include "UI/ExoDeathCam.h"
 #include "UI/ExoLoadingScreen.h"
+#include "UI/ExoScoreboard.h"
+#include "UI/ExoCompass.h"
+#include "UI/ExoNotificationSystem.h"
 #include "ExoHUD.generated.h"
 
 UCLASS()
@@ -82,4 +85,16 @@ protected:
 	// Loading screen
 	FExoLoadingScreen LoadingScreen;
 	bool bShowLoadingScreen = false;
+
+	// Scoreboard (TAB held)
+	FExoScoreboard Scoreboard;
+
+	// Compass bar (top of screen)
+	FExoCompass Compass;
+
+	// Toast notifications
+	FExoNotificationSystem Notifications;
+
+public:
+	FExoNotificationSystem& GetNotifications() { return Notifications; }
 };

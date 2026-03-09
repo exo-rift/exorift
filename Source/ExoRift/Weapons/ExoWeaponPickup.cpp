@@ -3,6 +3,9 @@
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
 #include "Weapons/ExoWeaponGrenadeLauncher.h"
+#include "Weapons/ExoWeaponSniper.h"
+#include "Weapons/ExoWeaponShotgun.h"
+#include "Weapons/ExoWeaponSMG.h"
 #include "Player/ExoCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -115,6 +118,10 @@ FString AExoWeaponPickup::GetWeaponDisplayName() const
 	case EWeaponType::Rifle:           return TEXT("Rifle");
 	case EWeaponType::Pistol:          return TEXT("Pistol");
 	case EWeaponType::GrenadeLauncher: return TEXT("Grenade Launcher");
+	case EWeaponType::Sniper:          return TEXT("Sniper");
+	case EWeaponType::Shotgun:         return TEXT("Shotgun");
+	case EWeaponType::SMG:             return TEXT("SMG");
+	case EWeaponType::Melee:           return TEXT("Plasma Blade");
 	default:                           return TEXT("Weapon");
 	}
 }
@@ -126,9 +133,13 @@ void AExoWeaponPickup::SpawnWeaponForPlayer(AExoCharacter* Character)
 	TSubclassOf<AExoWeaponBase> WeaponClass;
 	switch (WeaponType)
 	{
-	case EWeaponType::Rifle: WeaponClass = AExoWeaponRifle::StaticClass(); break;
-	case EWeaponType::Pistol: WeaponClass = AExoWeaponPistol::StaticClass(); break;
+	case EWeaponType::Rifle:           WeaponClass = AExoWeaponRifle::StaticClass(); break;
+	case EWeaponType::Pistol:          WeaponClass = AExoWeaponPistol::StaticClass(); break;
 	case EWeaponType::GrenadeLauncher: WeaponClass = AExoWeaponGrenadeLauncher::StaticClass(); break;
+	case EWeaponType::Sniper:          WeaponClass = AExoWeaponSniper::StaticClass(); break;
+	case EWeaponType::Shotgun:         WeaponClass = AExoWeaponShotgun::StaticClass(); break;
+	case EWeaponType::SMG:             WeaponClass = AExoWeaponSMG::StaticClass(); break;
+	default: break;
 	}
 
 	if (WeaponClass)

@@ -14,10 +14,19 @@
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoCareerStats.h"
 #include "UI/ExoHUD.h"
+#include "UI/ExoNotificationSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
+
+static void PushNotification(UWorld* World, const FString& Msg, FLinearColor Color = FLinearColor::White)
+{
+	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	if (!PC) return;
+	AExoHUD* HUD = Cast<AExoHUD>(PC->GetHUD());
+	if (HUD) HUD->GetNotifications().AddNotification(Msg, Color, 5.f);
+}
 
 AExoGameMode::AExoGameMode()
 {
@@ -133,6 +142,14 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 		GS->AddKillFeedEntry(Entry);
 		GS->AliveCount = AliveCount;
 	}
+	// Milestone notifications
+	if (AliveCount == 10 || AliveCount == 5 || AliveCount == 3 || AliveCount == 2)
+	{
+		PushNotification(GetWorld(),
+			FString::Printf(TEXT("%d players remaining"), AliveCount),
+			FLinearColor(1.f, 0.7f, 0.2f, 1.f));
+	}
+
 	CheckWinCondition();
 }
 
@@ -142,6 +159,9 @@ void AExoGameMode::StartMatch()
 	for (AController* PC : AlivePlayers)
 		if (AExoCharacter* C = Cast<AExoCharacter>(PC->GetPawn())) SetWarmupInvulnerability(C, false);
 	SpawnBots();
+	PushNotification(GetWorld(),
+		FString::Printf(TEXT("Match started — %d players"), AliveCount),
+		FLinearColor(0.2f, 0.9f, 0.4f, 1.f));
 	TransitionToPhase(EBRMatchPhase::DropPhase);
 }
 

@@ -9,6 +9,7 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Core/ExoGameState.h"
 #include "Core/ExoPlayerState.h"
+#include "GameFramework/PlayerState.h"
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSupplyDrop.h"
@@ -95,6 +96,17 @@ void AExoHUD::DrawHUD()
 	DrawAbilities();
 	DrawInteractionPrompt();
 
+	// Compass bar at top of screen
+	{
+		float PlayerYaw = GetOwningPawn() ? GetOwningPawn()->GetControlRotation().Yaw : 0.f;
+		Compass.Tick(DeltaTime);
+		Compass.Draw(Canvas, HUDFont, PlayerYaw);
+	}
+
+	// Toast notifications (right side)
+	Notifications.Tick(DeltaTime);
+	Notifications.Draw(Canvas, HUDFont);
+
 	// Ping indicators
 	{
 		AExoCharacter* PingChar = Cast<AExoCharacter>(GetOwningPawn());
@@ -130,6 +142,27 @@ void AExoHUD::DrawHUD()
 	if (FExoCommsWheel::bIsOpen)
 	{
 		FExoCommsWheel::Draw(this, Canvas, HUDFont);
+	}
+
+	// Scoreboard overlay (TAB held)
+	if (GetOwningPlayerController() && GetOwningPlayerController()->IsInputKeyDown(EKeys::Tab))
+	{
+		AExoGameState* ScoreGS = GetWorld()->GetGameState<AExoGameState>();
+		if (ScoreGS)
+		{
+			TArray<AExoPlayerState*> SortedPlayers;
+			for (APlayerState* PS : ScoreGS->PlayerArray)
+			{
+				if (AExoPlayerState* ExoPS = Cast<AExoPlayerState>(PS))
+					SortedPlayers.Add(ExoPS);
+			}
+			SortedPlayers.Sort([](const AExoPlayerState& A, const AExoPlayerState& B)
+			{
+				return A.Kills > B.Kills;
+			});
+			Scoreboard.Draw(Canvas, HUDFont, SortedPlayers,
+				ScoreGS->MatchElapsedTime, ScoreGS->AliveCount, ScoreGS->TotalPlayers);
+		}
 	}
 
 	// Settings menu overlay — drawn last so it covers everything
@@ -588,7 +621,7 @@ void AExoHUD::DrawAbilities()
 	};
 	const FLinearColor Grey(0.3f, 0.3f, 0.35f, 0.7f);
 
-	for (int32 i = 0; i < Abilities.Num(); ++i)
+	for (int32 i = 0; i < FMath::Min(Abilities.Num(), 3); ++i)
 	{
 		const FExoAbility& Ab = Abilities[i];
 		float X = StartX + i * (SlotW + SlotGap);
