@@ -38,8 +38,12 @@ public:
 	// Health & Shield
 	float GetHealth() const { return Health; }
 	float GetMaxHealth() const { return MaxHealth; }
-	bool IsAlive() const { return Health > 0.f; }
+	bool IsAlive() const { return Health > 0.f || bIsDBNO; }
 	UExoShieldComponent* GetShieldComponent() const { return ShieldComp; }
+
+	// DBNO (Down But Not Out)
+	bool IsDBNO() const { return bIsDBNO; }
+	float GetDBNOHealth() const { return DBNOHealthRemaining; }
 
 	// Camera
 	UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
@@ -70,6 +74,8 @@ public:
 	bool IsSprinting() const { return bIsSprinting; }
 
 protected:
+	void EnterDBNO();
+	void TickDBNO(float DeltaTime);
 	void Die(AController* Killer, const FString& WeaponName);
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
@@ -104,6 +110,26 @@ protected:
 
 	bool bIsSprinting = false;
 	bool bIsDead = false;
+
+	// DBNO state
+	bool bIsDBNO = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float DBNOHealth = 100.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float DBNOBleedRate = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "DBNO")
+	float ReviveTime = 5.f;
+
+	float DBNOHealthRemaining = 0.f;
+	float DBNOWalkSpeed = 100.f;
+
+	// Tracks last damage dealer for DBNO bleed-out attribution
+	UPROPERTY()
+	AController* LastDamageInstigator = nullptr;
+	FString LastDamageWeaponName;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	float SprintSpeedMultiplier = 1.5f;

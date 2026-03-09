@@ -12,6 +12,9 @@ AExoWeaponGrenadeLauncher::AExoWeaponGrenadeLauncher()
 	HeatPerShot = 0.35f;
 	CooldownRate = 0.12f;
 	OverheatCooldownRate = 0.06f;
+	MaxEnergy = 30.f;
+	CurrentEnergy = 30.f;
+	EnergyPerShot = 10.f;
 	ProjectileClass = AExoProjectile::StaticClass();
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> LauncherMesh(
@@ -24,6 +27,10 @@ AExoWeaponGrenadeLauncher::AExoWeaponGrenadeLauncher()
 
 void AExoWeaponGrenadeLauncher::FireShot()
 {
+	if (CurrentEnergy < EnergyPerShot) return;
+	CurrentEnergy = FMath::Max(CurrentEnergy - EnergyPerShot, 0.f);
+	OnEnergyChanged.Broadcast(CurrentEnergy);
+
 	AddHeat(HeatPerShot);
 
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());

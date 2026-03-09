@@ -30,6 +30,9 @@ protected:
 	void DrawInteractionPrompt();
 	void DrawKillStreak();
 	void DrawAbilities();
+	void DrawDBNOOverlay();
+	void DrawEnergyBar();
+	void DrawWeatherIndicator();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

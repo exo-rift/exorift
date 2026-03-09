@@ -15,6 +15,7 @@
 #include "UI/ExoMatchSummary.h"
 #include "Player/ExoKillStreakComponent.h"
 #include "Player/ExoAbilityComponent.h"
+#include "Visual/ExoWeatherSystem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
@@ -57,13 +58,16 @@ void AExoHUD::DrawHUD()
 	DrawHealthBar();
 	DrawShieldBar();
 	DrawOverheatBar();
+	DrawEnergyBar();
 	DrawWeaponIndicator();
+	DrawDBNOOverlay();
 	DrawAliveCount();
 	DrawKillFeed();
 	DrawMatchPhase();
 	DrawZoneWarning();
 	DrawKillCount();
 	DrawKillStreak();
+	DrawWeatherIndicator();
 	DrawAbilities();
 	DrawInteractionPrompt();
 
@@ -465,6 +469,32 @@ void AExoHUD::DrawKillStreak()
 	DrawText(StreakText, C, X, Y, HUDFont, 1.f);
 }
 
+void AExoHUD::DrawWeatherIndicator()
+{
+	AExoWeatherSystem* Weather = AExoWeatherSystem::Get(GetWorld());
+	if (!Weather) return;
+
+	// Position: top-left, below kill streak area (Y ~292)
+	float X = 30.f;
+	float Y = 294.f;
+
+	FString Label;
+	FLinearColor Col = ColorWhite;
+	switch (Weather->GetCurrentWeather())
+	{
+	case EExoWeatherState::Clear:    Label = TEXT("CLEAR");    Col = FLinearColor(0.7f, 0.9f, 1.f, 0.8f); break;
+	case EExoWeatherState::Overcast: Label = TEXT("OVERCAST"); Col = FLinearColor(0.6f, 0.6f, 0.65f, 0.8f); break;
+	case EExoWeatherState::Rain:     Label = TEXT("RAIN");     Col = FLinearColor(0.3f, 0.5f, 0.9f, 0.9f); break;
+	case EExoWeatherState::Storm:    Label = TEXT("STORM");    Col = FLinearColor(1.f, 0.4f, 0.2f, 0.9f); break;
+	case EExoWeatherState::Fog:      Label = TEXT("FOG");      Col = FLinearColor(0.7f, 0.7f, 0.75f, 0.9f); break;
+	}
+
+	float TW, TH;
+	GetTextSize(Label, TW, TH, HUDFont, 0.85f);
+	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, TW + 10.f, TH + 6.f);
+	DrawText(Label, Col, X, Y, HUDFont, 0.85f);
+}
+
 void AExoHUD::DrawAbilities()
 {
 	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
@@ -509,6 +539,50 @@ void AExoHUD::DrawAbilities()
 			DrawRect(GlowCol, X + 1.f, Y + 1.f, SlotW - 2.f, SlotH - 2.f);
 		}
 	}
+}
+
+void AExoHUD::DrawDBNOOverlay()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char || !Char->IsDBNO()) return;
+	float Pct = Char->GetDBNOHealth() / 100.f;
+	float P = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 3.f));
+	// Red vignette intensifying as DBNO health drops
+	FLinearColor VC(1.f, 0.f, 0.f, 0.15f + (1.f - Pct) * 0.25f + P * 0.05f);
+	float E = 120.f + (1.f - Pct) * 80.f;
+	DrawRect(VC, 0.f, 0.f, E, Canvas->SizeY); DrawRect(VC, Canvas->SizeX - E, 0.f, E, Canvas->SizeY);
+	DrawRect(VC, 0.f, 0.f, Canvas->SizeX, E * 0.5f); DrawRect(VC, 0.f, Canvas->SizeY - E * 0.5f, Canvas->SizeX, E * 0.5f);
+	// Pulsing downed text
+	FString DT = TEXT("DOWNED  —  BLEEDING OUT");
+	float TW, TH; GetTextSize(DT, TW, TH, HUDFont, 1.4f);
+	float X = (Canvas->SizeX - TW) * 0.5f, Y = Canvas->SizeY * 0.35f;
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X - 15.f, Y - 5.f, TW + 30.f, TH + 10.f);
+	DrawText(DT, FLinearColor(1.f, 0.15f, 0.15f, 0.6f + P * 0.4f), X, Y, HUDFont, 1.4f);
+	// DBNO blood bar over health bar position
+	FLinearColor BC = FMath::Lerp(FLinearColor(0.5f, 0.f, 0.f, 0.9f), FLinearColor(0.9f, 0.1f, 0.1f, 0.9f), P * 0.5f);
+	DrawProgressBar(30.f, Canvas->SizeY - 60.f, 250.f, 20.f, Pct, BC, ColorBgDark);
+	DrawText(FString::Printf(TEXT("DBNO %d"), FMath::CeilToInt(Char->GetDBNOHealth())),
+		FLinearColor(1.f, 0.3f, 0.3f, 1.f), 290.f, Canvas->SizeY - 59.f, HUDFont, 0.9f);
+}
+
+void AExoHUD::DrawEnergyBar()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char || !Char->GetCurrentWeapon()) return;
+	AExoWeaponBase* W = Char->GetCurrentWeapon();
+	float Pct = W->GetEnergyPercent();
+	bool bLow = Pct < 0.2f;
+	FLinearColor EC(0.3f, 0.9f, 0.4f, 0.9f);
+	if (bLow)
+	{
+		float F = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 5.f));
+		EC = FMath::Lerp(FLinearColor(0.9f, 0.2f, 0.1f, 0.9f), FLinearColor(1.f, 0.6f, 0.1f, 1.f), F);
+	}
+	float BarW = 300.f, X = (Canvas->SizeX - BarW) * 0.5f, Y = Canvas->SizeY - 70.f;
+	DrawProgressBar(X, Y, BarW, 10.f, Pct, EC, ColorBgDark);
+	FString EL = FString::Printf(TEXT("ENERGY: %d/%d"), FMath::CeilToInt(W->GetCurrentEnergy()), FMath::CeilToInt(W->GetMaxEnergy()));
+	float TW, TH; GetTextSize(EL, TW, TH, HUDFont, 0.7f);
+	DrawText(EL, bLow ? EC : ColorWhite, X + (BarW - TW) * 0.5f, Y - TH - 2.f, HUDFont, 0.7f);
 }
 
 void AExoHUD::DrawFPS()

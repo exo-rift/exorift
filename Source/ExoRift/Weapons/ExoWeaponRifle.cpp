@@ -21,6 +21,9 @@ AExoWeaponRifle::AExoWeaponRifle()
 	FalloffStartRange = 15000.f;
 	FalloffEndRange = 40000.f;
 	MinDamageMultiplier = 0.4f;
+	MaxEnergy = 200.f;
+	CurrentEnergy = 200.f;
+	EnergyPerShot = 1.f;
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RifleMesh(
 		TEXT("/Game/Weapons/Rifle/SKM_Rifle"));

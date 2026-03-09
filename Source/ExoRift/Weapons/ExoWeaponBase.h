@@ -8,6 +8,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHeatChanged, float, NewHeat);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnOverheated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCooledDown);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnergyChanged, float, NewEnergy);
 
 UCLASS(Abstract)
 class EXORIFT_API AExoWeaponBase : public AActor
@@ -36,6 +37,12 @@ public:
 	bool IsOverheated() const { return bIsOverheated; }
 	EWeaponType GetWeaponType() const { return WeaponType; }
 
+	// Energy accessors
+	float GetCurrentEnergy() const { return CurrentEnergy; }
+	float GetMaxEnergy() const { return MaxEnergy; }
+	float GetEnergyPercent() const { return MaxEnergy > 0.f ? CurrentEnergy / MaxEnergy : 0.f; }
+	void AddEnergy(float Amount);
+
 	UPROPERTY(BlueprintAssignable)
 	FOnHeatChanged OnHeatChanged;
 
@@ -44,6 +51,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnCooledDown OnCooledDown;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnEnergyChanged OnEnergyChanged;
 
 protected:
 	virtual void FireShot();
@@ -59,6 +69,15 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	EWeaponType WeaponType = EWeaponType::Rifle;
+
+	// Energy cell system
+	UPROPERTY(EditDefaultsOnly, Category = "Energy")
+	float MaxEnergy = 100.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Energy")
+	float EnergyPerShot = 1.f;
+
+	float CurrentEnergy = 100.f;
 
 	// Overheat system
 	UPROPERTY(EditDefaultsOnly, Category = "Heat")

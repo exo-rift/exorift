@@ -69,7 +69,7 @@ void AExoWeaponBase::Tick(float DeltaTime)
 	}
 
 	// Auto-fire handling
-	if (bWantsToFire && !bIsOverheated)
+	if (bWantsToFire && !bIsOverheated && CurrentEnergy >= EnergyPerShot)
 	{
 		float FireInterval = 1.f / FireRate;
 		if (TimeSinceLastShot >= FireInterval)
@@ -97,6 +97,10 @@ void AExoWeaponBase::StopFire()
 
 void AExoWeaponBase::FireShot()
 {
+	if (CurrentEnergy < EnergyPerShot) return;
+	CurrentEnergy = FMath::Max(CurrentEnergy - EnergyPerShot, 0.f);
+	OnEnergyChanged.Broadcast(CurrentEnergy);
+
 	AddHeat(HeatPerShot);
 
 	// Increase spread
@@ -275,6 +279,13 @@ void AExoWeaponBase::TickCooldown(float DeltaTime)
 	{
 		OnHeatChanged.Broadcast(CurrentHeat);
 	}
+}
+
+void AExoWeaponBase::AddEnergy(float Amount)
+{
+	float OldEnergy = CurrentEnergy;
+	CurrentEnergy = FMath::Clamp(CurrentEnergy + Amount, 0.f, MaxEnergy);
+	if (CurrentEnergy != OldEnergy) OnEnergyChanged.Broadcast(CurrentEnergy);
 }
 
 FHitResult AExoWeaponBase::DoLineTrace(float Range) const

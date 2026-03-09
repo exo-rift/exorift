@@ -77,6 +77,7 @@ void AExoCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	TickDBNO(DeltaTime);
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
 	TickFootsteps(DeltaTime);
@@ -102,6 +103,19 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
+	// Track last damage source for DBNO bleed-out attribution
+	LastDamageInstigator = EventInstigator;
+	if (AExoWeaponBase* W = Cast<AExoWeaponBase>(DamageCauser)) LastDamageWeaponName = W->GetWeaponName();
+	else LastDamageWeaponName = TEXT("Zone");
+
+	// If already DBNO, damage goes to DBNO health
+	if (bIsDBNO)
+	{
+		DBNOHealthRemaining = FMath::Max(DBNOHealthRemaining - ActualDamage, 0.f);
+		if (DBNOHealthRemaining <= 0.f) Die(EventInstigator, LastDamageWeaponName);
+		return ActualDamage;
+	}
+
 	// Shield absorbs first
 	if (ShieldComp && ShieldComp->HasShield())
 	{
@@ -122,13 +136,7 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 		}
 	}
 
-	if (Health <= 0.f)
-	{
-		FString WName = TEXT("Unknown");
-		if (AExoWeaponBase* W = Cast<AExoWeaponBase>(DamageCauser)) WName = W->GetWeaponName();
-		else WName = TEXT("Zone");
-		Die(EventInstigator, WName);
-	}
+	if (Health <= 0.f) EnterDBNO();
 
 	return ActualDamage;
 }
@@ -136,7 +144,7 @@ float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 void AExoCharacter::StartFire()
 {
 	AExoWeaponBase* Weapon = GetCurrentWeapon();
-	if (Weapon && !bIsDead && !bIsSliding && !bIsMantling) Weapon->StartFire();
+	if (Weapon && !bIsDead && !bIsDBNO && !bIsSliding && !bIsMantling) Weapon->StartFire();
 }
 
 void AExoCharacter::StopFire()
@@ -152,7 +160,7 @@ AExoWeaponBase* AExoCharacter::GetCurrentWeapon() const
 
 void AExoCharacter::SwapWeapon()
 {
-	if (bIsDead || !InventoryComp) return;
+	if (bIsDead || bIsDBNO || !InventoryComp) return;
 	InventoryComp->CycleWeapon(1);
 }
 
@@ -164,7 +172,7 @@ void AExoCharacter::EquipWeapon(AExoWeaponBase* Weapon)
 
 void AExoCharacter::StartSprint()
 {
-	if (!bIsDead)
+	if (!bIsDead && !bIsDBNO)
 	{
 		bIsSprinting = true;
 		GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed * SprintSpeedMultiplier;
@@ -176,6 +184,29 @@ void AExoCharacter::StopSprint()
 {
 	bIsSprinting = false;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
+}
+
+void AExoCharacter::EnterDBNO()
+{
+	if (bIsDBNO || bIsDead) return;
+	bIsDBNO = true;
+	DBNOHealthRemaining = DBNOHealth;
+	StopFire();
+	StopSprint();
+	if (bIsSliding) StopSlide();
+	GetCharacterMovement()->MaxWalkSpeed = DBNOWalkSpeed;
+	UE_LOG(LogExoRift, Log, TEXT("%s is DBNO"), *GetName());
+}
+
+void AExoCharacter::TickDBNO(float DeltaTime)
+{
+	if (!bIsDBNO || bIsDead) return;
+	DBNOHealthRemaining -= DBNOBleedRate * DeltaTime;
+	if (DBNOHealthRemaining <= 0.f)
+	{
+		DBNOHealthRemaining = 0.f;
+		Die(LastDamageInstigator, LastDamageWeaponName);
+	}
 }
 
 void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
@@ -210,7 +241,7 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 
 void AExoCharacter::StartSlide()
 {
-	if (bIsSliding || bIsDead || bIsMantling) return;
+	if (bIsSliding || bIsDead || bIsDBNO || bIsMantling) return;
 	if (!GetCharacterMovement()->IsMovingOnGround()) return;
 
 	bIsSliding = true;
@@ -265,7 +296,7 @@ void AExoCharacter::TickSlide(float DeltaTime)
 
 void AExoCharacter::TryMantle()
 {
-	if (bIsMantling || bIsSliding || bIsDead) return;
+	if (bIsMantling || bIsSliding || bIsDead || bIsDBNO) return;
 	if (GetCharacterMovement()->IsMovingOnGround()) return; // Only while airborne
 
 	FVector EyeLocation;

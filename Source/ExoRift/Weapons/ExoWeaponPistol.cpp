@@ -21,6 +21,9 @@ AExoWeaponPistol::AExoWeaponPistol()
 	FalloffStartRange = 8000.f;
 	FalloffEndRange = 20000.f;
 	MinDamageMultiplier = 0.3f;
+	MaxEnergy = 80.f;
+	CurrentEnergy = 80.f;
+	EnergyPerShot = 2.f;
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PistolMesh(
 		TEXT("/Game/Weapons/Pistol/SKM_Pistol"));

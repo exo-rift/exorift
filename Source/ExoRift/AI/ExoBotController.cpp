@@ -2,6 +2,7 @@
 #include "AI/ExoBotCharacter.h"
 #include "Player/ExoCharacter.h"
 #include "Map/ExoZoneSystem.h"
+#include "Visual/ExoWeatherSystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -205,6 +206,15 @@ void AExoBotController::FindTarget()
 	APawn* BotPawn = GetPawn();
 	if (!BotPawn) return;
 
+	// Weather reduces effective sight range
+	float VisibilityMult = 1.f;
+	AExoWeatherSystem* Weather = AExoWeatherSystem::Get(GetWorld());
+	if (Weather)
+	{
+		VisibilityMult = Weather->GetVisibilityMultiplier();
+	}
+	float EffectiveSight = SightRadius * VisibilityMult;
+
 	TArray<AActor*> PerceivedActors;
 	AIPerception->GetCurrentlyPerceivedActors(nullptr, PerceivedActors);
 
@@ -215,6 +225,8 @@ void AExoBotController::FindTarget()
 		if (!OtherChar || !OtherChar->IsAlive() || OtherChar == BotPawn) continue;
 
 		float Dist = FVector::Dist(BotPawn->GetActorLocation(), OtherChar->GetActorLocation());
+		if (Dist > EffectiveSight) continue; // Weather limits detection range
+
 		if (Dist < BestDist)
 		{
 			BestDist = Dist;
