@@ -105,6 +105,11 @@ void FExoHitMarker::DrawHitMarkers(AHUD* HUD, UCanvas* Canvas)
 	}
 }
 
+bool FExoHitMarker::HasRecentHit()
+{
+	return HitMarkers.Num() > 0;
+}
+
 void FExoHitMarker::DrawDamageIndicators(AHUD* HUD, UCanvas* Canvas)
 {
 	float CX = Canvas->SizeX * 0.5f;

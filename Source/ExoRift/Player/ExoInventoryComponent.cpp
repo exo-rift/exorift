@@ -6,6 +6,7 @@
 #include "Weapons/ExoWeaponShotgun.h"
 #include "Weapons/ExoWeaponMelee.h"
 #include "Weapons/ExoWeaponPickup.h"
+#include "UI/ExoPickupNotification.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
 
@@ -88,6 +89,14 @@ bool UExoInventoryComponent::AddWeapon(AExoWeaponBase* Weapon)
 	else
 	{
 		Weapon->SetActorHiddenInGame(true);
+	}
+
+	// Pickup notification for local player
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwner());
+	if (Char && Char->IsLocallyControlled())
+	{
+		FExoPickupNotification::ShowWeaponPickup(
+			Weapon->GetWeaponName(), AExoWeaponBase::GetRarityColor(Weapon->Rarity));
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("Inventory: added %s to slot %d"), *Weapon->GetWeaponName(), TargetSlot);

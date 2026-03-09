@@ -1,5 +1,6 @@
 // ExoHUDWeapons.cpp — Weapon HUD: crosshair, overheat bar, inventory slots
 #include "UI/ExoHUD.h"
+#include "UI/ExoHitMarker.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Weapons/ExoWeaponBase.h"
@@ -8,33 +9,68 @@
 void AExoHUD::DrawCrosshair()
 {
 	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	float Heat = 0.f;
+	bool bOverheated = false;
 	if (Char && Char->GetCurrentWeapon())
 	{
-		// Dynamic crosshair spread based on weapon state
+		Heat = Char->GetCurrentWeapon()->GetCurrentHeat();
+		bOverheated = Char->GetCurrentWeapon()->IsOverheated();
 		CrosshairSpread = FMath::FInterpTo(CrosshairSpread,
-			Char->GetCurrentWeapon()->GetCurrentHeat() * 15.f,
-			GetWorld()->GetDeltaSeconds(), 10.f);
+			Heat * 15.f, GetWorld()->GetDeltaSeconds(), 10.f);
 	}
 
 	FVector2D Center = GetScreenCenter();
-	float Size = 12.f + CrosshairSpread;
-	float Gap = 4.f + CrosshairSpread * 0.5f;
-	float Thickness = 2.f;
+	float Size = 10.f + CrosshairSpread;
+	float Gap = 5.f + CrosshairSpread * 0.5f;
 
-	FLinearColor CrossColor = ColorWhite;
-	CrossColor.A = 0.8f;
+	// Color shifts: white → orange → red with heat
+	FLinearColor CrossColor;
+	if (bOverheated)
+	{
+		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 6.f));
+		CrossColor = FMath::Lerp(FLinearColor(1.f, 0.2f, 0.1f, 0.9f),
+			FLinearColor(1.f, 0.5f, 0.2f, 0.9f), Pulse);
+	}
+	else if (Heat > 0.5f)
+	{
+		float T = (Heat - 0.5f) * 2.f;
+		CrossColor = FMath::Lerp(FLinearColor(0.9f, 0.9f, 0.95f, 0.85f),
+			FLinearColor(1.f, 0.5f, 0.15f, 0.9f), T);
+	}
+	else
+	{
+		CrossColor = FLinearColor(0.9f, 0.9f, 0.95f, 0.85f);
+	}
 
-	// Top
-	DrawLine(Center.X, Center.Y - Gap - Size, Center.X, Center.Y - Gap, CrossColor, Thickness);
-	// Bottom
-	DrawLine(Center.X, Center.Y + Gap, Center.X, Center.Y + Gap + Size, CrossColor, Thickness);
-	// Left
-	DrawLine(Center.X - Gap - Size, Center.Y, Center.X - Gap, Center.Y, CrossColor, Thickness);
-	// Right
-	DrawLine(Center.X + Gap, Center.Y, Center.X + Gap + Size, Center.Y, CrossColor, Thickness);
+	// Four arms with rounded caps
+	float T = 2.f;
+	DrawLine(Center.X, Center.Y - Gap - Size, Center.X, Center.Y - Gap, CrossColor, T);
+	DrawLine(Center.X, Center.Y + Gap, Center.X, Center.Y + Gap + Size, CrossColor, T);
+	DrawLine(Center.X - Gap - Size, Center.Y, Center.X - Gap, Center.Y, CrossColor, T);
+	DrawLine(Center.X + Gap, Center.Y, Center.X + Gap + Size, Center.Y, CrossColor, T);
 
-	// Center dot
-	DrawRect(ColorWhite, Center.X - 1.f, Center.Y - 1.f, 2.f, 2.f);
+	// Center dot — small bright square
+	float DotSize = FExoHitMarker::HasRecentHit() ? 2.5f : 1.5f;
+	FLinearColor DotColor = FExoHitMarker::HasRecentHit()
+		? FLinearColor(1.f, 0.3f, 0.15f, 1.f) : CrossColor;
+	DrawRect(DotColor, Center.X - DotSize, Center.Y - DotSize, DotSize * 2.f, DotSize * 2.f);
+
+	// Outer spread circle (thin) — shows weapon bloom
+	if (CrosshairSpread > 1.f)
+	{
+		float CircleR = Gap + Size + 4.f;
+		int32 Segments = 16;
+		FLinearColor CircColor = CrossColor;
+		CircColor.A *= 0.3f;
+		for (int32 i = 0; i < Segments; i++)
+		{
+			float A1 = (2.f * PI * i) / Segments;
+			float A2 = (2.f * PI * (i + 1)) / Segments;
+			DrawLine(Center.X + FMath::Cos(A1) * CircleR, Center.Y + FMath::Sin(A1) * CircleR,
+				Center.X + FMath::Cos(A2) * CircleR, Center.Y + FMath::Sin(A2) * CircleR,
+				CircColor, 1.f);
+		}
+	}
 }
 
 void AExoHUD::DrawOverheatBar()

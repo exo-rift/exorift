@@ -8,6 +8,7 @@
 #include "Visual/ExoWeaponViewModel.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
+#include "UI/ExoPickupNotification.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -254,11 +255,17 @@ void AExoWeaponBase::FireShot()
 			{
 				FExoHitMarker::AddHitMarker(bWillKill, bHeadshot);
 
-				// Kill post-process flash
+				// Kill effects
 				if (bWillKill)
 				{
 					AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
 					if (PP) PP->TriggerKillEffect();
+
+					// Elimination notification
+					AExoPlayerState* VictimPS = HitChar->GetController()
+						? HitChar->GetController()->GetPlayerState<AExoPlayerState>() : nullptr;
+					FString VictimName = VictimPS ? VictimPS->DisplayName : TEXT("Enemy");
+					FExoPickupNotification::ShowElimination(VictimName, bHeadshot);
 				}
 
 				// Audio feedback

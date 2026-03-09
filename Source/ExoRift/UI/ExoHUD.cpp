@@ -9,6 +9,7 @@
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
 #include "UI/ExoHitDirectionIndicator.h"
+#include "UI/ExoPickupNotification.h"
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoMatchSummary.h"
@@ -111,6 +112,10 @@ void AExoHUD::DrawHUD()
 	// Hit markers & damage indicators
 	FExoHitMarker::Draw(this, Canvas);
 	FExoHitDirectionIndicator::Draw(this, Canvas);
+
+	// Pickup & elimination notifications
+	FExoPickupNotification::Tick(DeltaTime);
+	FExoPickupNotification::Draw(this, Canvas, HUDFont);
 
 	// Floating damage numbers
 	AExoDamageNumbers* DmgNums = AExoDamageNumbers::Get(GetWorld());

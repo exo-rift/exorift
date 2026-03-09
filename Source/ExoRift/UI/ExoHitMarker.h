@@ -25,6 +25,7 @@ public:
 	static void AddDamageIndicator(float Angle);
 	static void Tick(float DeltaTime);
 	static void Draw(AHUD* HUD, UCanvas* Canvas);
+	static bool HasRecentHit();
 
 private:
 	static void DrawHitMarkers(AHUD* HUD, UCanvas* Canvas);
