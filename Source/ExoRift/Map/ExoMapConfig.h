@@ -15,7 +15,7 @@ class EXORIFT_API UExoMapConfig : public UObject
 public:
 	/** Display name shown in UI for the BR map. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Maps")
-	FString BRMapDisplayName = TEXT("First Light");
+	FString BRMapDisplayName = TEXT("Shattered Frontier");
 
 	/** Display name for the main menu map. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Maps")

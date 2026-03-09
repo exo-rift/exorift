@@ -103,6 +103,9 @@ void AExoHUD::DrawHUD()
 		FExoPingSystem::DrawPings(this, Canvas, HUDFont, ViewLoc);
 	}
 
+	// POI location name
+	DrawPOIIndicator();
+
 	// Supply drop world markers
 	DrawSupplyDropMarkers();
 	DrawSupplyDropAnnouncement();

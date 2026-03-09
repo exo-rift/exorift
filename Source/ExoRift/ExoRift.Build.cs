@@ -22,7 +22,8 @@ public class ExoRift : ModuleRules
 			"AIModule",
 			"GameplayTasks",
 			"NavigationSystem",
-			"UMG"
+			"UMG",
+			"ProceduralMeshComponent"
 		});
 	}
 }

@@ -6,6 +6,7 @@ class AHUD;
 class UCanvas;
 class UFont;
 class AExoZoneSystem;
+class AExoPOI;
 
 struct FMinimapConfig
 {
@@ -28,4 +29,6 @@ private:
 		const FMinimapConfig& Config);
 	static void DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config,
 		const FVector& CenterPos, AExoZoneSystem* Zone);
+	static void DrawPOIMarkers(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config,
+		const FVector& CenterPos);
 };

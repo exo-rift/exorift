@@ -1,10 +1,11 @@
-// ExoHUDWorld.cpp — World markers: weather, abilities, supply drops
+// ExoHUDWorld.cpp — World markers: weather, abilities, supply drops, POI indicators
 #include "UI/ExoHUD.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoAbilityComponent.h"
 #include "Core/ExoGameState.h"
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSupplyDrop.h"
+#include "Map/ExoPOI.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Engine/Canvas.h"
 #include "EngineUtils.h"
@@ -183,4 +184,38 @@ void AExoHUD::DrawSupplyDropAnnouncement()
 	{
 		GS->SupplyDropAnnouncement.Empty();
 	}
+}
+
+void AExoHUD::DrawPOIIndicator()
+{
+	APawn* Pawn = GetOwningPawn();
+	if (!Pawn) return;
+
+	FVector PlayerLoc = Pawn->GetActorLocation();
+	FString NearestName;
+	float NearestDist = BIG_NUMBER;
+
+	for (TActorIterator<AExoPOI> It(GetWorld()); It; ++It)
+	{
+		AExoPOI* POI = *It;
+		if (!POI) continue;
+
+		float Dist = FVector::Dist2D(PlayerLoc, POI->GetActorLocation());
+		if (Dist < POI->Radius && Dist < NearestDist)
+		{
+			NearestDist = Dist;
+			NearestName = POI->POIName;
+		}
+	}
+
+	if (NearestName.IsEmpty()) return;
+
+	// Draw location name below compass, centered
+	float TW, TH;
+	GetTextSize(NearestName, TW, TH, HUDFont, 0.9f);
+	float X = (Canvas->SizeX - TW) * 0.5f;
+	float Y = 55.f;
+
+	DrawRect(ColorBgDark, X - 8.f, Y - 3.f, TW + 16.f, TH + 6.f);
+	DrawText(NearestName, FLinearColor(0.9f, 0.85f, 0.6f, 0.9f), X, Y, HUDFont, 0.9f);
 }

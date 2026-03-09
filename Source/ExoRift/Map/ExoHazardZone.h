@@ -29,7 +29,6 @@ public:
 	void SetHazardEnabled(bool bEnable);
 	bool IsHazardEnabled() const { return bEnabled; }
 
-protected:
 	UPROPERTY(EditAnywhere, Category = "Hazard")
 	float HazardRadius = 5000.f;
 
@@ -42,6 +41,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Hazard")
 	EHazardType HazardType = EHazardType::Radiation;
 
+protected:
 	UPROPERTY(EditAnywhere, Category = "Hazard")
 	bool bEnabled = true;
 

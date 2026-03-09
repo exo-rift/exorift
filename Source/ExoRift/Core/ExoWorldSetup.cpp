@@ -3,6 +3,7 @@
 #include "Map/ExoZoneVisualizer.h"
 #include "Map/ExoLootSpawner.h"
 #include "Map/ExoSpawnPoint.h"
+#include "Map/ExoWorldBuilder.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Visual/ExoPostProcess.h"
 #include "UI/ExoDamageNumbers.h"
@@ -19,6 +20,26 @@ void UExoWorldSetup::OnWorldBeginPlay(UWorld& InWorld)
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoWorldSetup: ensuring BR systems exist..."));
 
+	// === Build the 3D world (terrain, buildings, POIs, lighting) ===
+	AExoWorldBuilder* WorldBuilder = nullptr;
+	for (TActorIterator<AExoWorldBuilder> It(World); It; ++It)
+	{
+		WorldBuilder = *It;
+		break;
+	}
+	if (!WorldBuilder)
+	{
+		FActorSpawnParameters Params;
+		WorldBuilder = World->SpawnActor<AExoWorldBuilder>(
+			AExoWorldBuilder::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);
+	}
+	if (WorldBuilder && !WorldBuilder->IsWorldBuilt())
+	{
+		WorldBuilder->BuildWorld();
+	}
+
+	// === Core BR systems ===
+
 	// Zone system — the shrinking circle
 	EnsureActorExists(World, AExoZoneSystem::StaticClass());
 
@@ -34,33 +55,11 @@ void UExoWorldSetup::OnWorldBeginPlay(UWorld& InWorld)
 	// Weather system
 	EnsureActorExists(World, AExoWeatherSystem::StaticClass());
 
-	// Loot spawner — scatters weapon pickups
+	// Loot spawner — scatters weapon pickups across the terrain
 	EnsureActorExists(World, AExoLootSpawner::StaticClass());
 
 	// Vehicle spawner
 	EnsureActorExists(World, AExoVehicleSpawner::StaticClass());
-
-	// Spawn points — create a ring of them if none exist
-	bool bHasSpawnPoints = false;
-	for (TActorIterator<AExoSpawnPoint> It(World); It; ++It)
-	{
-		bHasSpawnPoints = true;
-		break;
-	}
-
-	if (!bHasSpawnPoints)
-	{
-		UE_LOG(LogExoRift, Log, TEXT("ExoWorldSetup: creating default spawn points"));
-		const int32 NumSpawns = 25;
-		const float Radius = 5000.f;
-		for (int32 i = 0; i < NumSpawns; i++)
-		{
-			float Angle = (2.f * PI * i) / NumSpawns;
-			FVector Loc(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 300.f);
-			FActorSpawnParameters Params;
-			World->SpawnActor<AExoSpawnPoint>(AExoSpawnPoint::StaticClass(), Loc, FRotator::ZeroRotator, Params);
-		}
-	}
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoWorldSetup: all BR systems ready"));
 }

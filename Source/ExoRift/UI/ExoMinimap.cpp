@@ -3,6 +3,7 @@
 #include "Engine/Canvas.h"
 #include "Player/ExoCharacter.h"
 #include "Map/ExoZoneSystem.h"
+#include "Map/ExoPOI.h"
 #include "EngineUtils.h"
 
 void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
@@ -42,6 +43,9 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 	{
 		DrawZoneCircle(HUD, Canvas, Config, PlayerPos, Zone);
 	}
+
+	// Draw POI markers
+	DrawPOIMarkers(HUD, Canvas, Config, PlayerPos);
 
 	// Draw other players/bots as dots
 	for (TActorIterator<AExoCharacter> It(HUD->GetWorld()); It; ++It)
@@ -138,5 +142,34 @@ void FExoMinimap::DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfi
 		FVector2D P2(TargetMiniCenter.X + FMath::Cos(A2) * TargetRadius,
 			TargetMiniCenter.Y + FMath::Sin(A2) * TargetRadius);
 		HUD->DrawLine(P1.X, P1.Y, P2.X, P2.Y, TargetColor, 1.f);
+	}
+}
+
+void FExoMinimap::DrawPOIMarkers(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config,
+	const FVector& CenterPos)
+{
+	FLinearColor POIColor(0.9f, 0.8f, 0.3f, 0.7f);
+
+	for (TActorIterator<AExoPOI> It(HUD->GetWorld()); It; ++It)
+	{
+		AExoPOI* POI = *It;
+		if (!POI) continue;
+
+		FVector2D MinimapPos = WorldToMinimap(POI->GetActorLocation(), CenterPos, Config);
+
+		// Only draw if within minimap bounds
+		if (MinimapPos.X < Config.ScreenX || MinimapPos.X > Config.ScreenX + Config.Size) continue;
+		if (MinimapPos.Y < Config.ScreenY || MinimapPos.Y > Config.ScreenY + Config.Size) continue;
+
+		// Diamond marker
+		float MarkerSize = 3.f;
+		HUD->DrawLine(MinimapPos.X, MinimapPos.Y - MarkerSize,
+			MinimapPos.X + MarkerSize, MinimapPos.Y, POIColor, 1.5f);
+		HUD->DrawLine(MinimapPos.X + MarkerSize, MinimapPos.Y,
+			MinimapPos.X, MinimapPos.Y + MarkerSize, POIColor, 1.5f);
+		HUD->DrawLine(MinimapPos.X, MinimapPos.Y + MarkerSize,
+			MinimapPos.X - MarkerSize, MinimapPos.Y, POIColor, 1.5f);
+		HUD->DrawLine(MinimapPos.X - MarkerSize, MinimapPos.Y,
+			MinimapPos.X, MinimapPos.Y - MarkerSize, POIColor, 1.5f);
 	}
 }
