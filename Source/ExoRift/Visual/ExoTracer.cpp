@@ -9,7 +9,6 @@ AExoTracer::AExoTracer()
 	PrimaryActorTick.bCanEverTick = true;
 	InitialLifeSpan = 4.f;
 
-	// Cache meshes — cylinders give a proper beam look
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
 		TEXT("/Engine/BasicShapes/Cylinder"));
 	if (CylFinder.Succeeded()) CylinderMesh = CylFinder.Object;
@@ -18,7 +17,7 @@ AExoTracer::AExoTracer()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphereFinder.Succeeded()) SphereMesh = SphereFinder.Object;
 
-	// Core beam — thin bright center cylinder
+	// Core beam — bright center
 	BeamCore = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamCore"));
 	RootComponent = BeamCore;
 	if (CylinderMesh) BeamCore->SetStaticMesh(CylinderMesh);
@@ -26,7 +25,7 @@ AExoTracer::AExoTracer()
 	BeamCore->CastShadow = false;
 	BeamCore->SetGenerateOverlapEvents(false);
 
-	// Outer glow — wider softer cylinder
+	// Outer glow
 	BeamGlow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamGlow"));
 	BeamGlow->SetupAttachment(BeamCore);
 	if (CylinderMesh) BeamGlow->SetStaticMesh(CylinderMesh);
@@ -34,7 +33,7 @@ AExoTracer::AExoTracer()
 	BeamGlow->CastShadow = false;
 	BeamGlow->SetGenerateOverlapEvents(false);
 
-	// Trail — faint lingering beam that follows behind
+	// Trail — lingering wake
 	BeamTrail = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamTrail"));
 	BeamTrail->SetupAttachment(BeamCore);
 	if (CylinderMesh) BeamTrail->SetStaticMesh(CylinderMesh);
@@ -42,7 +41,7 @@ AExoTracer::AExoTracer()
 	BeamTrail->CastShadow = false;
 	BeamTrail->SetGenerateOverlapEvents(false);
 
-	// Head sphere — bright dot at leading edge
+	// Head sphere — bright leading dot
 	HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadMesh"));
 	HeadMesh->SetupAttachment(BeamCore);
 	if (SphereMesh) HeadMesh->SetStaticMesh(SphereMesh);
@@ -50,15 +49,23 @@ AExoTracer::AExoTracer()
 	HeadMesh->CastShadow = false;
 	HeadMesh->SetGenerateOverlapEvents(false);
 
-	// Head light — illuminates surroundings as bolt travels
+	// Head light — dynamic illumination at bolt front
 	HeadLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("HeadLight"));
 	HeadLight->SetupAttachment(BeamCore);
-	HeadLight->SetIntensity(15000.f);
-	HeadLight->SetAttenuationRadius(600.f);
+	HeadLight->SetIntensity(20000.f);
+	HeadLight->SetAttenuationRadius(800.f);
 	HeadLight->CastShadows = false;
+
+	// Tail light — subtle glow at beam wake
+	TailLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("TailLight"));
+	TailLight->SetupAttachment(BeamCore);
+	TailLight->SetIntensity(5000.f);
+	TailLight->SetAttenuationRadius(400.f);
+	TailLight->CastShadows = false;
 }
 
-void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHit)
+void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHit,
+	const FLinearColor& WeaponColor, EWeaponType WeaponType)
 {
 	StartPos = Start;
 	EndPos = End;
@@ -67,61 +74,100 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 
 	if (TotalDistance < 1.f) { Destroy(); return; }
 
-	// Cylinder default axis is Z — we need to rotate to face along direction
-	// Build rotation: cylinder Z maps to our travel direction
+	// Weapon-specific beam parameters
+	switch (WeaponType)
+	{
+	case EWeaponType::Rifle:
+		CoreRadius = 0.012f; GlowRadius = 0.035f; TrailRadius = 0.006f;
+		HeadScale = 0.15f; BeamLength = 1400.f; TravelSpeed = 140000.f;
+		LightIntensity = 22000.f; FadeTime = 0.15f;
+		break;
+	case EWeaponType::SMG:
+		CoreRadius = 0.008f; GlowRadius = 0.022f; TrailRadius = 0.004f;
+		HeadScale = 0.10f; BeamLength = 900.f; TravelSpeed = 160000.f;
+		LightIntensity = 16000.f; FadeTime = 0.10f;
+		break;
+	case EWeaponType::Pistol:
+		CoreRadius = 0.010f; GlowRadius = 0.028f; TrailRadius = 0.005f;
+		HeadScale = 0.12f; BeamLength = 1000.f; TravelSpeed = 130000.f;
+		LightIntensity = 18000.f; FadeTime = 0.12f;
+		break;
+	case EWeaponType::Shotgun:
+		CoreRadius = 0.016f; GlowRadius = 0.045f; TrailRadius = 0.008f;
+		HeadScale = 0.18f; BeamLength = 600.f; TravelSpeed = 100000.f;
+		LightIntensity = 25000.f; FadeTime = 0.08f;
+		break;
+	case EWeaponType::Sniper:
+		CoreRadius = 0.014f; GlowRadius = 0.040f; TrailRadius = 0.010f;
+		HeadScale = 0.20f; BeamLength = 2500.f; TravelSpeed = 200000.f;
+		LightIntensity = 30000.f; FadeTime = 0.25f;
+		break;
+	default:
+		CoreRadius = 0.012f; GlowRadius = 0.035f; TrailRadius = 0.006f;
+		HeadScale = 0.15f; BeamLength = 1200.f; TravelSpeed = 120000.f;
+		LightIntensity = 20000.f; FadeTime = 0.15f;
+		break;
+	}
+
+	// Orient beam along travel direction
 	FRotator BeamRot = Direction.Rotation();
-	BeamRot.Pitch += 90.f; // Cylinder points up by default, rotate to forward
+	BeamRot.Pitch += 90.f;
 	SetActorRotation(BeamRot);
 
-	// Sci-fi energy colors: bright cyan (normal) vs hot orange (hit confirmed)
-	CoreColor = bIsHit
-		? FLinearColor(15.f, 4.f, 0.5f, 1.f)
-		: FLinearColor(3.f, 10.f, 20.f, 1.f);
-	GlowColor = bIsHit
-		? FLinearColor(5.f, 1.5f, 0.3f, 1.f)
-		: FLinearColor(0.8f, 4.f, 10.f, 1.f);
+	// Hit confirmation uses brighter, hotter version of weapon color
+	float HitBoost = bIsHit ? 2.5f : 1.f;
+	CoreColor = FLinearColor(
+		WeaponColor.R * 5.f * HitBoost,
+		WeaponColor.G * 5.f * HitBoost,
+		WeaponColor.B * 5.f * HitBoost);
+	GlowColor = FLinearColor(
+		WeaponColor.R * 2.f,
+		WeaponColor.G * 2.f,
+		WeaponColor.B * 2.f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
 	if (!MatFinder.Succeeded()) return;
 
-	// Core material — bright hot center
+	// Core — white-hot center
 	CoreMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
 	CoreMat->SetVectorParameterValue(TEXT("BaseColor"), CoreColor);
 	CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), CoreColor);
 	BeamCore->SetMaterial(0, CoreMat);
 
-	// Glow material — wider, softer
+	// Glow — colored halo
 	GlowMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-	GlowMat->SetVectorParameterValue(TEXT("BaseColor"), GlowColor * 0.4f);
-	GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.4f);
+	GlowMat->SetVectorParameterValue(TEXT("BaseColor"), GlowColor * 0.5f);
+	GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.5f);
 	BeamGlow->SetMaterial(0, GlowMat);
 
-	// Trail material — very dim, lingers
+	// Trail — dim lingering wake
 	TrailMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-	TrailMat->SetVectorParameterValue(TEXT("BaseColor"), GlowColor * 0.15f);
-	TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.15f);
+	TrailMat->SetVectorParameterValue(TEXT("BaseColor"), GlowColor * 0.2f);
+	TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.2f);
 	BeamTrail->SetMaterial(0, TrailMat);
 
-	// Head — bright sphere with punchier emissive
+	// Head — bright leading sphere
 	HeadMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-	HeadMat->SetVectorParameterValue(TEXT("BaseColor"), CoreColor * 2.f);
-	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), CoreColor * 2.f);
+	HeadMat->SetVectorParameterValue(TEXT("BaseColor"), CoreColor * 1.5f);
+	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), CoreColor * 1.5f);
 	HeadMesh->SetMaterial(0, HeadMat);
-	HeadMesh->SetRelativeScale3D(FVector(0.1f));
+	HeadMesh->SetRelativeScale3D(FVector(HeadScale));
 
-	// Light color
-	FLinearColor LightColor = bIsHit
-		? FLinearColor(1.f, 0.4f, 0.1f)
-		: FLinearColor(0.3f, 0.7f, 1.f);
-	HeadLight->SetLightColor(LightColor);
+	// Lights use the weapon's base color
+	HeadLight->SetLightColor(WeaponColor);
+	HeadLight->SetIntensity(LightIntensity);
+	HeadLight->SetAttenuationRadius(600.f + LightIntensity * 0.02f);
+
+	TailLight->SetLightColor(WeaponColor);
+	TailLight->SetIntensity(LightIntensity * 0.3f);
 
 	SetActorLocation(StartPos);
 
-	// Start small — grows as it travels
-	BeamCore->SetRelativeScale3D(FVector(0.005f, 0.005f, 0.01f));
-	BeamGlow->SetRelativeScale3D(FVector(0.015f, 0.015f, 0.01f));
-	BeamTrail->SetRelativeScale3D(FVector(0.008f, 0.008f, 0.01f));
+	// Start at minimal size
+	BeamCore->SetRelativeScale3D(FVector(CoreRadius, CoreRadius, 0.01f));
+	BeamGlow->SetRelativeScale3D(FVector(GlowRadius, GlowRadius, 0.01f));
+	BeamTrail->SetRelativeScale3D(FVector(TrailRadius, TrailRadius, 0.01f));
 }
 
 void AExoTracer::Tick(float DeltaTime)
@@ -145,10 +191,7 @@ void AExoTracer::UpdateTraveling(float DeltaTime)
 		FadeAge = 0.f;
 	}
 
-	// Beam visible length: grows up to BeamLength, then stays constant
 	float VisibleLen = FMath::Min(TraveledDist, BeamLength);
-
-	// Head and tail positions
 	float TailDist = FMath::Max(TraveledDist - BeamLength, 0.f);
 	FVector HeadPos = StartPos + Direction * TraveledDist;
 	FVector TailPos = StartPos + Direction * TailDist;
@@ -156,31 +199,32 @@ void AExoTracer::UpdateTraveling(float DeltaTime)
 
 	SetActorLocation(BeamCenter);
 
-	// Cylinder default height is 100 units, scale Z for length
 	float LenScale = VisibleLen / 100.f;
 	float Time = GetWorld()->GetTimeSeconds();
-	float Flicker = 1.f + 0.08f * FMath::Sin(Time * 60.f);
 
-	// Core: thin bright cylinder
-	BeamCore->SetRelativeScale3D(FVector(0.006f * Flicker, 0.006f * Flicker, LenScale));
+	// Core: high-frequency flicker for energy feel
+	float Flicker = 1.f + 0.1f * FMath::Sin(Time * 80.f) + 0.06f * FMath::Sin(Time * 53.f);
+	BeamCore->SetRelativeScale3D(FVector(CoreRadius * Flicker, CoreRadius * Flicker, LenScale));
 
-	// Glow: wider, pulsing
-	float GlowPulse = 1.f + 0.12f * FMath::Sin(Time * 40.f);
-	BeamGlow->SetRelativeScale3D(FVector(0.018f * GlowPulse, 0.018f * GlowPulse, LenScale * 0.9f));
+	// Glow: slower organic pulse
+	float GlowPulse = 1.f + 0.15f * FMath::Sin(Time * 35.f);
+	BeamGlow->SetRelativeScale3D(FVector(
+		GlowRadius * GlowPulse, GlowRadius * GlowPulse, LenScale * 0.92f));
 
-	// Trail: thinner, extends further back
-	float TrailLen = FMath::Min(TraveledDist, BeamLength * 1.5f);
+	// Trail: extends further back for dramatic wake
+	float TrailLen = FMath::Min(TraveledDist, BeamLength * 1.8f);
 	float TrailLenScale = TrailLen / 100.f;
-	BeamTrail->SetRelativeScale3D(FVector(0.003f, 0.003f, TrailLenScale));
+	BeamTrail->SetRelativeScale3D(FVector(TrailRadius, TrailRadius, TrailLenScale));
 
-	// Head mesh at front of beam (in local Z space since cylinder is Z-aligned)
+	// Head at front of beam
 	HeadMesh->SetRelativeLocation(FVector(0.f, 0.f, VisibleLen * 0.5f));
 	HeadLight->SetRelativeLocation(FVector(0.f, 0.f, VisibleLen * 0.5f));
+	TailLight->SetRelativeLocation(FVector(0.f, 0.f, -VisibleLen * 0.4f));
 
-	// Head: pulsing glow
-	float HeadPulse = 0.1f + 0.03f * FMath::Sin(Time * 50.f);
+	// Pulsing head
+	float HeadPulse = HeadScale * (1.f + 0.2f * FMath::Sin(Time * 45.f));
 	HeadMesh->SetRelativeScale3D(FVector(HeadPulse));
-	HeadLight->SetIntensity(15000.f + 3000.f * FMath::Sin(Time * 35.f));
+	HeadLight->SetIntensity(LightIntensity * (1.f + 0.15f * FMath::Sin(Time * 30.f)));
 }
 
 void AExoTracer::UpdateFading(float DeltaTime)
@@ -189,29 +233,27 @@ void AExoTracer::UpdateFading(float DeltaTime)
 	float Alpha = 1.f - FMath::Clamp(FadeAge / FadeTime, 0.f, 1.f);
 	float AlphaSq = Alpha * Alpha;
 
-	// Light fades
-	HeadLight->SetIntensity(15000.f * AlphaSq);
+	HeadLight->SetIntensity(LightIntensity * AlphaSq);
+	TailLight->SetIntensity(LightIntensity * 0.3f * Alpha);
 
-	// Head shrinks
-	HeadMesh->SetRelativeScale3D(FVector(0.1f * Alpha));
+	HeadMesh->SetRelativeScale3D(FVector(HeadScale * Alpha));
 
-	// Core beam: shrink cross-section, maintain length
 	FVector CoreScale = BeamCore->GetRelativeScale3D();
-	BeamCore->SetRelativeScale3D(FVector(0.006f * Alpha, 0.006f * Alpha, CoreScale.Z));
+	BeamCore->SetRelativeScale3D(FVector(CoreRadius * Alpha, CoreRadius * Alpha, CoreScale.Z));
 
-	// Glow: fades faster
 	float GlowAlpha = AlphaSq;
-	BeamGlow->SetRelativeScale3D(FVector(0.018f * GlowAlpha, 0.018f * GlowAlpha, CoreScale.Z * 0.9f));
+	BeamGlow->SetRelativeScale3D(FVector(
+		GlowRadius * GlowAlpha, GlowRadius * GlowAlpha, CoreScale.Z * 0.92f));
 
-	// Trail: lingers longest — fades to nothing
+	// Trail lingers longest
 	float TrailAlpha = FMath::Clamp(Alpha * 1.5f, 0.f, 1.f);
 	FVector TrailScale = BeamTrail->GetRelativeScale3D();
-	BeamTrail->SetRelativeScale3D(FVector(0.003f * TrailAlpha, 0.003f * TrailAlpha, TrailScale.Z));
+	BeamTrail->SetRelativeScale3D(FVector(
+		TrailRadius * TrailAlpha, TrailRadius * TrailAlpha, TrailScale.Z));
 
-	// Update trail emissive to fade
 	if (TrailMat)
 	{
-		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.15f * TrailAlpha);
+		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.2f * TrailAlpha);
 	}
 
 	if (FadeAge >= FadeTime) Destroy();

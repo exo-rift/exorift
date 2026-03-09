@@ -111,7 +111,8 @@ void AExoWeaponShotgun::FireShot()
 	FVector MuzzleLoc = WeaponMesh
 		? WeaponMesh->GetSocketLocation(TEXT("Muzzle"))
 		: GetActorLocation();
-	FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc, GetActorRotation());
+	FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc,
+		GetActorRotation(), EWeaponType::Shotgun);
 }
 
 void AExoWeaponShotgun::FirePellet(
@@ -135,7 +136,8 @@ void AExoWeaponShotgun::FirePellet(
 		? WeaponMesh->GetSocketLocation(TEXT("Muzzle"))
 		: GetActorLocation();
 	FVector TraceEnd = Hit.bBlockingHit ? Hit.ImpactPoint : End;
-	FExoTracerManager::SpawnTracer(GetWorld(), MuzzleLoc, TraceEnd, Hit.bBlockingHit);
+	FExoTracerManager::SpawnTracer(GetWorld(), MuzzleLoc, TraceEnd,
+		Hit.bBlockingHit, EWeaponType::Shotgun);
 
 	if (!Hit.bBlockingHit) return;
 

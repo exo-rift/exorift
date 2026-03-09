@@ -4,7 +4,8 @@
 #include "Visual/ExoImpactEffect.h"
 #include "Visual/ExoExplosionEffect.h"
 
-void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const FVector& End, bool bIsHit)
+void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const FVector& End,
+	bool bIsHit, EWeaponType WeaponType)
 {
 	if (!World) return;
 
@@ -15,11 +16,12 @@ void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const F
 		FVector::ZeroVector, FRotator::ZeroRotator, Params);
 	if (Tracer)
 	{
-		Tracer->InitTracer(Start, End, bIsHit);
+		Tracer->InitTracer(Start, End, bIsHit, GetWeaponTracerColor(WeaponType), WeaponType);
 	}
 }
 
-void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location, const FRotator& Rotation)
+void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
+	const FRotator& Rotation, EWeaponType WeaponType)
 {
 	if (!World) return;
 
@@ -30,7 +32,7 @@ void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
 		Location, FRotator::ZeroRotator, Params);
 	if (Flash)
 	{
-		Flash->InitFlash(Rotation);
+		Flash->InitFlash(Rotation, GetWeaponTracerColor(WeaponType), WeaponType);
 	}
 }
 
@@ -62,5 +64,18 @@ void FExoTracerManager::SpawnExplosionEffect(UWorld* World, const FVector& Locat
 	if (Explosion)
 	{
 		Explosion->InitExplosion(Radius);
+	}
+}
+
+FLinearColor FExoTracerManager::GetWeaponTracerColor(EWeaponType Type)
+{
+	switch (Type)
+	{
+	case EWeaponType::Rifle:  return FLinearColor(0.3f, 0.7f, 1.f);   // Cyan-blue energy
+	case EWeaponType::SMG:    return FLinearColor(0.2f, 1.f, 0.4f);   // Green plasma
+	case EWeaponType::Pistol: return FLinearColor(1.f, 0.9f, 0.5f);   // Hot yellow arc
+	case EWeaponType::Shotgun: return FLinearColor(1.f, 0.35f, 0.1f); // Orange scatter
+	case EWeaponType::Sniper: return FLinearColor(0.7f, 0.2f, 1.f);   // Purple void
+	default:                  return FLinearColor(0.3f, 0.7f, 1.f);
 	}
 }

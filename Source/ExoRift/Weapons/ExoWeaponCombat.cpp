@@ -75,8 +75,10 @@ void AExoWeaponBase::FireShot()
 			}
 		}
 
-		FExoTracerManager::SpawnTracer(GetWorld(), MuzzleLoc, TraceEnd, Hit.bBlockingHit);
-		FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc, GetActorRotation());
+		FExoTracerManager::SpawnTracer(GetWorld(), MuzzleLoc, TraceEnd,
+			Hit.bBlockingHit, WeaponType);
+		FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc,
+			GetActorRotation(), WeaponType);
 	}
 
 	if (!Hit.bBlockingHit) return;

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Core/ExoTypes.h"
 #include "ExoTracer.generated.h"
 
 class UStaticMeshComponent;
@@ -10,8 +11,7 @@ class UMaterialInstanceDynamic;
 
 /**
  * Traveling energy tracer for hitscan weapons.
- * Three-layer beam: bright core cylinder, outer glow cylinder, and emissive head.
- * Leaves a fading trail behind the main bolt.
+ * Multi-layer beam with weapon-specific color and sizing.
  */
 UCLASS()
 class AExoTracer : public AActor
@@ -21,7 +21,8 @@ class AExoTracer : public AActor
 public:
 	AExoTracer();
 
-	void InitTracer(const FVector& Start, const FVector& End, bool bIsHit);
+	void InitTracer(const FVector& Start, const FVector& End, bool bIsHit,
+		const FLinearColor& WeaponColor, EWeaponType WeaponType);
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -45,6 +46,9 @@ private:
 	UPointLightComponent* HeadLight;
 
 	UPROPERTY()
+	UPointLightComponent* TailLight;
+
+	UPROPERTY()
 	UMaterialInstanceDynamic* CoreMat;
 
 	UPROPERTY()
@@ -62,17 +66,22 @@ private:
 	float TotalDistance = 0.f;
 	float TraveledDist = 0.f;
 
+	// Per-weapon sizing
 	float TravelSpeed = 120000.f;
 	float BeamLength = 1200.f;
+	float CoreRadius = 0.012f;
+	float GlowRadius = 0.035f;
+	float TrailRadius = 0.006f;
+	float HeadScale = 0.15f;
+	float LightIntensity = 20000.f;
 
 	float FadeAge = 0.f;
-	float FadeTime = 0.12f;
+	float FadeTime = 0.15f;
 	bool bReachedEnd = false;
 
 	FLinearColor CoreColor;
 	FLinearColor GlowColor;
 
-	// Cached meshes
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
 };
