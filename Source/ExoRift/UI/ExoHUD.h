@@ -31,6 +31,7 @@ public:
 
 protected:
 	void DrawCrosshair();
+	void DrawSniperScope(class AExoWeaponSniper* Sniper);
 	void DrawHealthBar();
 	void DrawShieldBar();
 	void DrawArmorIndicators();

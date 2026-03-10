@@ -4,6 +4,8 @@
 #include "Player/ExoCharacter.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Weapons/ExoWeaponBase.h"
+#include "Weapons/ExoWeaponSniper.h"
+#include "Weapons/ExoWeaponRifle.h"
 #include "Engine/Canvas.h"
 
 void AExoHUD::DrawCrosshair()
@@ -17,6 +19,20 @@ void AExoHUD::DrawCrosshair()
 		bOverheated = Char->GetCurrentWeapon()->IsOverheated();
 		CrosshairSpread = FMath::FInterpTo(CrosshairSpread,
 			Heat * 15.f, GetWorld()->GetDeltaSeconds(), 10.f);
+	}
+
+	// Sniper scope overlay — replaces normal crosshair
+	if (Char && Char->IsADS())
+	{
+		AExoWeaponSniper* Sniper = Cast<AExoWeaponSniper>(Char->GetCurrentWeapon());
+		if (Sniper && Sniper->IsScoped())
+		{
+			DrawSniperScope(Sniper);
+			return;
+		}
+
+		// ADS for non-sniper: tighten crosshair spread
+		CrosshairSpread *= 0.5f;
 	}
 
 	float Time = GetWorld()->GetTimeSeconds();
@@ -188,9 +204,17 @@ void AExoHUD::DrawOverheatBar()
 
 	DrawProgressBar(X, Y, BarW, BarH, HeatPct, HeatColor, ColorBgDark);
 
-	// Weapon name above bar
+	// Weapon name above bar + fire mode indicator
 	FString WeaponLabel = Weapon->GetWeaponName();
-	if (bOverheated) WeaponLabel += TEXT(" [OVERHEATED]");
+	if (bOverheated)
+	{
+		WeaponLabel += TEXT(" [OVERHEATED]");
+	}
+	else if (AExoWeaponRifle* Rifle = Cast<AExoWeaponRifle>(Weapon))
+	{
+		WeaponLabel += (Rifle->GetFireMode() == ERifleFireMode::Burst)
+			? TEXT(" [BURST]") : TEXT(" [AUTO]");
+	}
 	float TextW, TextH;
 	GetTextSize(WeaponLabel, TextW, TextH, HUDFont, 0.8f);
 	DrawText(WeaponLabel, ColorWhite, X + (BarW - TextW) * 0.5f, Y - TextH - 4.f, HUDFont, 0.8f);
@@ -258,4 +282,70 @@ void AExoHUD::DrawWeaponIndicator()
 			DrawLine(BaseX + SlotW, Y, BaseX + SlotW, Y + SlotH, Border);
 		}
 	}
+}
+
+void AExoHUD::DrawSniperScope(AExoWeaponSniper* Sniper)
+{
+	if (!Sniper || !Canvas) return;
+
+	FVector2D C(Canvas->SizeX * 0.5f, Canvas->SizeY * 0.5f);
+	float ScopeR = FMath::Min(Canvas->SizeX, Canvas->SizeY) * 0.4f;
+
+	// Black vignette bars (top/bottom/left/right outside scope circle)
+	FLinearColor Black(0.f, 0.f, 0.f, 0.92f);
+	DrawRect(Black, 0.f, 0.f, Canvas->SizeX, C.Y - ScopeR);
+	DrawRect(Black, 0.f, C.Y + ScopeR, Canvas->SizeX, Canvas->SizeY - C.Y - ScopeR);
+	DrawRect(Black, 0.f, C.Y - ScopeR, C.X - ScopeR, ScopeR * 2.f);
+	DrawRect(Black, C.X + ScopeR, C.Y - ScopeR, Canvas->SizeX - C.X - ScopeR, ScopeR * 2.f);
+
+	// Scope ring (circle approximated with line segments)
+	FLinearColor RingCol(0.3f, 0.5f, 0.7f, 0.6f);
+	int32 Segs = 48;
+	for (int32 i = 0; i < Segs; i++)
+	{
+		float A1 = (2.f * PI * i) / Segs;
+		float A2 = (2.f * PI * (i + 1)) / Segs;
+		DrawLine(C.X + FMath::Cos(A1) * ScopeR, C.Y + FMath::Sin(A1) * ScopeR,
+			C.X + FMath::Cos(A2) * ScopeR, C.Y + FMath::Sin(A2) * ScopeR, RingCol, 2.f);
+	}
+
+	// Crosshair lines (thin, precise)
+	FLinearColor CrossCol(0.5f, 0.8f, 1.f, 0.8f);
+	float LineLen = ScopeR * 0.6f;
+	float InnerGap = 8.f;
+
+	// Horizontal lines
+	DrawLine(C.X - LineLen, C.Y, C.X - InnerGap, C.Y, CrossCol, 1.f);
+	DrawLine(C.X + InnerGap, C.Y, C.X + LineLen, C.Y, CrossCol, 1.f);
+	// Vertical lines
+	DrawLine(C.X, C.Y - LineLen, C.X, C.Y - InnerGap, CrossCol, 1.f);
+	DrawLine(C.X, C.Y + InnerGap, C.X, C.Y + LineLen, CrossCol, 1.f);
+
+	// Rangefinder ticks along horizontal line
+	for (int32 t = 1; t <= 4; t++)
+	{
+		float TX = InnerGap + t * (LineLen - InnerGap) / 5.f;
+		float TickH = (t % 2 == 0) ? 6.f : 3.f;
+		FLinearColor TickC = CrossCol;
+		TickC.A *= 0.5f;
+		DrawLine(C.X + TX, C.Y - TickH, C.X + TX, C.Y + TickH, TickC, 1.f);
+		DrawLine(C.X - TX, C.Y - TickH, C.X - TX, C.Y + TickH, TickC, 1.f);
+	}
+
+	// Center dot
+	DrawRect(CrossCol, C.X - 1.f, C.Y - 1.f, 2.f, 2.f);
+
+	// Hold-breath indicator (bar below scope)
+	float BreathPct = 1.f - Sniper->GetScopeHoldProgress();
+	float BarW = 120.f;
+	float BarH = 4.f;
+	float BarX = C.X - BarW * 0.5f;
+	float BarY = C.Y + ScopeR + 10.f;
+
+	FLinearColor BreathCol = BreathPct > 0.3f
+		? FLinearColor(0.3f, 0.7f, 1.f, 0.7f)
+		: FLinearColor(1.f, 0.3f, 0.1f, 0.8f);
+
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), BarX, BarY, BarW, BarH);
+	DrawRect(BreathCol, BarX, BarY, BarW * BreathPct, BarH);
 }
