@@ -61,28 +61,28 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 {
 	SetActorRotation(FireDirection);
 
-	// Weapon-specific flash shape — large, bright energy bursts
+	// Weapon-specific flash shape — big, bright energy bursts
 	switch (WeaponType)
 	{
 	case EWeaponType::Shotgun:
-		CoreScale = 0.45f; CrossScale = 0.55f; FlareScale = 0.45f;
-		RingScale = 0.80f; Lifetime = 0.14f;
+		CoreScale = 0.80f; CrossScale = 0.90f; FlareScale = 0.75f;
+		RingScale = 1.3f; Lifetime = 0.16f;
 		break;
 	case EWeaponType::Sniper:
-		CoreScale = 0.60f; CrossScale = 0.25f; FlareScale = 0.18f;
-		RingScale = 0.55f; Lifetime = 0.16f;
+		CoreScale = 1.0f; CrossScale = 0.45f; FlareScale = 0.35f;
+		RingScale = 0.90f; Lifetime = 0.18f;
 		break;
 	case EWeaponType::SMG:
-		CoreScale = 0.30f; CrossScale = 0.25f; FlareScale = 0.18f;
-		RingScale = 0.40f; Lifetime = 0.08f;
+		CoreScale = 0.50f; CrossScale = 0.40f; FlareScale = 0.30f;
+		RingScale = 0.65f; Lifetime = 0.09f;
 		break;
 	case EWeaponType::Pistol:
-		CoreScale = 0.38f; CrossScale = 0.32f; FlareScale = 0.25f;
-		RingScale = 0.50f; Lifetime = 0.10f;
+		CoreScale = 0.60f; CrossScale = 0.50f; FlareScale = 0.40f;
+		RingScale = 0.80f; Lifetime = 0.12f;
 		break;
 	default: // Rifle
-		CoreScale = 0.45f; CrossScale = 0.38f; FlareScale = 0.30f;
-		RingScale = 0.60f; Lifetime = 0.11f;
+		CoreScale = 0.70f; CrossScale = 0.60f; FlareScale = 0.50f;
+		RingScale = 0.95f; Lifetime = 0.13f;
 		break;
 	}
 
@@ -91,19 +91,19 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	FlashFlare->SetRelativeScale3D(FVector(0.04f, 0.03f, FlareScale));
 	FlashRing->SetRelativeScale3D(FVector(RingScale * 0.3f, RingScale * 0.3f, 0.005f));
 
-	// Blazing emissive energy burst (boosted for bloom)
+	// Blazing emissive energy burst (cranked for massive bloom)
 	FLinearColor HotCenter(
-		WeaponColor.R * 35.f + 20.f,
-		WeaponColor.G * 35.f + 20.f,
-		WeaponColor.B * 35.f + 20.f);
+		WeaponColor.R * 70.f + 40.f,
+		WeaponColor.G * 70.f + 40.f,
+		WeaponColor.B * 70.f + 40.f);
 	FLinearColor FlareColor(
-		WeaponColor.R * 50.f,
-		WeaponColor.G * 50.f,
-		WeaponColor.B * 50.f);
+		WeaponColor.R * 90.f,
+		WeaponColor.G * 90.f,
+		WeaponColor.B * 90.f);
 	FLinearColor RingColor(
-		WeaponColor.R * 25.f,
-		WeaponColor.G * 25.f,
-		WeaponColor.B * 25.f);
+		WeaponColor.R * 45.f,
+		WeaponColor.G * 45.f,
+		WeaponColor.B * 45.f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
@@ -124,12 +124,12 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	}
 
 	FlashLight->SetLightColor(WeaponColor);
-	FlashLight->SetIntensity(140000.f);
-	FlashLight->SetAttenuationRadius(2000.f);
+	FlashLight->SetIntensity(250000.f);
+	FlashLight->SetAttenuationRadius(3000.f);
 	BaseIntensity = FlashLight->Intensity;
 
 	BounceLight->SetLightColor(WeaponColor);
-	BounceLight->SetIntensity(50000.f);
+	BounceLight->SetIntensity(80000.f);
 }
 
 void AExoMuzzleFlash::Tick(float DeltaTime)

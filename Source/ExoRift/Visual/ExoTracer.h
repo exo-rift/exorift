@@ -51,8 +51,8 @@ private:
 	UPROPERTY()
 	UPointLightComponent* TailLight;
 
-	// Trailing sparks — small cubes that scatter behind the bolt
-	static constexpr int32 NUM_SPARKS = 4;
+	// Trailing sparks — glowing energy fragments that scatter behind the bolt
+	static constexpr int32 NUM_SPARKS = 8;
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> SparkMeshes;
 	TArray<FVector> SparkOffsets;

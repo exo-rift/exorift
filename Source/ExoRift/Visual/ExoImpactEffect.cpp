@@ -1,3 +1,4 @@
+// ExoImpactEffect.cpp — Dramatic energy impact burst with shockwave ring
 #include "Visual/ExoImpactEffect.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -7,38 +8,41 @@
 AExoImpactEffect::AExoImpactEffect()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	InitialLifeSpan = 0.4f;
+	InitialLifeSpan = 0.8f;
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
+		TEXT("/Engine/BasicShapes/Cube"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
+		TEXT("/Engine/BasicShapes/Cylinder"));
 
 	CoreMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CoreMesh"));
 	RootComponent = CoreMesh;
 	CoreMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CoreMesh->CastShadow = false;
 	CoreMesh->SetGenerateOverlapEvents(false);
-	CoreMesh->SetWorldScale3D(FVector(0.2f));
+	CoreMesh->SetWorldScale3D(FVector(0.5f));
+	if (SphereFinder.Succeeded()) CoreMesh->SetStaticMesh(SphereFinder.Object);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
-		TEXT("/Engine/BasicShapes/Sphere"));
-	if (SphereFinder.Succeeded())
-	{
-		CoreMesh->SetStaticMesh(SphereFinder.Object);
-	}
-
-	// Dust puff — expanding translucent sphere
 	DustPuff = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DustPuff"));
 	DustPuff->SetupAttachment(CoreMesh);
 	DustPuff->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DustPuff->CastShadow = false;
 	DustPuff->SetGenerateOverlapEvents(false);
-	if (SphereFinder.Succeeded())
-	{
-		DustPuff->SetStaticMesh(SphereFinder.Object);
-	}
-	DustPuff->SetWorldScale3D(FVector(0.05f));
+	DustPuff->SetWorldScale3D(FVector(0.1f));
+	if (SphereFinder.Succeeded()) DustPuff->SetStaticMesh(SphereFinder.Object);
 
-	// Spark shards
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
-		TEXT("/Engine/BasicShapes/Cube"));
-	for (int32 i = 0; i < NUM_SPARKS; i++)
+	// Expanding shockwave ring
+	ShockwaveRing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShockwaveRing"));
+	ShockwaveRing->SetupAttachment(CoreMesh);
+	ShockwaveRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShockwaveRing->CastShadow = false;
+	ShockwaveRing->SetGenerateOverlapEvents(false);
+	if (CylFinder.Succeeded()) ShockwaveRing->SetStaticMesh(CylFinder.Object);
+
+	// Spark shards — more for dramatic scatter
+	for (int32 i = 0; i < IMPACT_NUM_SPARKS; i++)
 	{
 		FName Name = *FString::Printf(TEXT("Spark_%d"), i);
 		UStaticMeshComponent* Spark = CreateDefaultSubobject<UStaticMeshComponent>(Name);
@@ -52,67 +56,76 @@ AExoImpactEffect::AExoImpactEffect()
 
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(CoreMesh);
-	FlashLight->SetIntensity(50000.f);
-	FlashLight->SetAttenuationRadius(1000.f);
+	FlashLight->SetIntensity(120000.f);
+	FlashLight->SetAttenuationRadius(1800.f);
 	FlashLight->CastShadows = false;
 }
 
-void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
+void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter)
 {
-	// Color scheme: red/orange for characters, bright cyan-white for surfaces (bloom boosted)
+	HitNorm = InHitNormal;
+
 	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(35.f, 8.f, 2.f, 1.f)
-		: FLinearColor(18.f, 30.f, 45.f, 1.f);
+		? FLinearColor(60.f, 12.f, 3.f, 1.f)
+		: FLinearColor(30.f, 50.f, 75.f, 1.f);
 
 	FLinearColor LightColor = bHitCharacter
 		? FLinearColor(1.f, 0.3f, 0.1f)
 		: FLinearColor(0.5f, 0.8f, 1.f);
 
 	FLinearColor DustColor = bHitCharacter
-		? FLinearColor(0.5f, 0.08f, 0.03f, 1.f)
-		: FLinearColor(0.2f, 0.2f, 0.25f, 1.f);
+		? FLinearColor(0.6f, 0.1f, 0.04f, 1.f)
+		: FLinearColor(0.25f, 0.25f, 0.3f, 1.f);
+
+	FLinearColor RingColor = bHitCharacter
+		? FLinearColor(40.f, 8.f, 2.f, 1.f)
+		: FLinearColor(20.f, 35.f, 55.f, 1.f);
 
 	FlashLight->SetLightColor(LightColor);
+	FlashLight->SetIntensity(180000.f);
 	BaseIntensity = FlashLight->Intensity;
 
-	// Apply core material
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFinder.Succeeded())
+	if (!MatFinder.Succeeded()) return;
+
+	auto MakeMat = [&](const FLinearColor& Col) -> UMaterialInstanceDynamic*
 	{
-		UMaterialInstanceDynamic* CoreMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		CoreMat->SetVectorParameterValue(TEXT("BaseColor"), SparkColor);
-		CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor);
-		CoreMesh->SetMaterial(0, CoreMat);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		M->SetVectorParameterValue(TEXT("BaseColor"), Col);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
+		return M;
+	};
 
-		UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
-		DustPuff->SetMaterial(0, DustMat);
+	CoreMesh->SetMaterial(0, MakeMat(SparkColor * 2.f));
 
-		for (auto* Spark : SparkMeshes)
-		{
-			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-			SM->SetVectorParameterValue(TEXT("BaseColor"), SparkColor);
-			SM->SetVectorParameterValue(TEXT("EmissiveColor"), SparkColor * 1.5f);
-			Spark->SetMaterial(0, SM);
-		}
-	}
+	UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(
+		MatFinder.Object, this);
+	DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
+	DustPuff->SetMaterial(0, DustMat);
+
+	// Shockwave ring aligned to hit normal
+	ShockwaveRing->SetMaterial(0, MakeMat(RingColor));
+	FRotator RingRot = InHitNormal.Rotation();
+	RingRot.Pitch += 90.f;
+	ShockwaveRing->SetRelativeRotation(RingRot);
+	ShockwaveRing->SetWorldScale3D(FVector(0.1f, 0.1f, 0.003f));
 
 	// Build tangent frame from hit normal
 	FVector Tangent, Bitangent;
-	HitNormal.FindBestAxisVectors(Tangent, Bitangent);
+	InHitNormal.FindBestAxisVectors(Tangent, Bitangent);
 
-	// Random spark velocities in hemisphere above surface
 	SparkVelocities.SetNum(SparkMeshes.Num());
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
-		FVector Vel = HitNormal * FMath::RandRange(350.f, 800.f);
-		Vel += Tangent * FMath::RandRange(-350.f, 350.f);
-		Vel += Bitangent * FMath::RandRange(-350.f, 350.f);
+		FVector Vel = InHitNormal * FMath::RandRange(400.f, 1200.f);
+		Vel += Tangent * FMath::RandRange(-500.f, 500.f);
+		Vel += Bitangent * FMath::RandRange(-500.f, 500.f);
 		SparkVelocities[i] = Vel;
 
-		float S = FMath::RandRange(0.04f, 0.09f);
-		SparkMeshes[i]->SetWorldScale3D(FVector(S * 4.f, S, S));
+		float S = FMath::RandRange(0.06f, 0.14f);
+		SparkMeshes[i]->SetWorldScale3D(FVector(S * 5.f, S, S));
+		SparkMeshes[i]->SetMaterial(0, MakeMat(SparkColor * FMath::RandRange(0.6f, 1.2f)));
 	}
 }
 
@@ -124,44 +137,41 @@ void AExoImpactEffect::Tick(float DeltaTime)
 	float T = FMath::Clamp(Age / Lifetime, 0.f, 1.f);
 	float Alpha = 1.f - T;
 
-	// Flash light: very sharp falloff
-	if (FlashLight)
-	{
-		FlashLight->SetIntensity(BaseIntensity * Alpha * Alpha * Alpha);
-	}
+	// Flash light: sharp cubic falloff
+	FlashLight->SetIntensity(BaseIntensity * Alpha * Alpha * Alpha);
 
-	// Core: rapid expand then shrink
-	if (CoreMesh)
-	{
-		float CorePhase = FMath::Clamp(Age / (Lifetime * 0.3f), 0.f, 1.f);
-		float S = 0.2f * (1.f - CorePhase * CorePhase);
-		// Flicker for energy-burst feel
-		S *= 1.f + 0.3f * FMath::Sin(Age * 80.f);
-		CoreMesh->SetWorldScale3D(FVector(FMath::Max(S, 0.001f)));
-	}
+	// Core: rapid expand then shrink with energy flicker
+	float CorePhase = FMath::Clamp(Age / (Lifetime * 0.25f), 0.f, 1.f);
+	float S = 0.5f * (1.f - CorePhase * CorePhase);
+	S *= 1.f + 0.35f * FMath::Sin(Age * 90.f);
+	CoreMesh->SetWorldScale3D(FVector(FMath::Max(S, 0.001f)));
 
-	// Dust puff: expand outward and fade
-	if (DustPuff)
-	{
-		float PuffScale = FMath::Lerp(0.08f, 0.5f, FMath::Sqrt(T));
-		DustPuff->SetWorldScale3D(FVector(PuffScale));
-		DustPuff->SetRelativeLocation(FVector(0.f, 0.f, Age * 40.f));
-	}
+	// Dust puff: expand outward and drift up
+	float PuffScale = FMath::Lerp(0.15f, 1.0f, FMath::Sqrt(T));
+	DustPuff->SetWorldScale3D(FVector(PuffScale));
+	DustPuff->SetRelativeLocation(HitNorm * Age * 60.f);
 
-	// Sparks: fly outward with gravity
+	// Shockwave ring: expand rapidly, flatten and fade
+	float RingExpand = FMath::Lerp(0.1f, 2.5f, FMath::Sqrt(T));
+	float RingThick = 0.003f * FMath::Max(Alpha * 2.f, 0.01f);
+	ShockwaveRing->SetWorldScale3D(FVector(RingExpand, RingExpand, RingThick));
+
+	// Sparks: fly outward with gravity, tumbling
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
 		if (!SparkMeshes[i]) continue;
 		FVector Pos = SparkVelocities[i] * Age;
-		Pos.Z -= 400.f * Age * Age;
+		Pos.Z -= 500.f * Age * Age;
 		SparkMeshes[i]->SetRelativeLocation(Pos);
 
-		// Elongate sparks along velocity for streak effect
-		float S = 0.04f * Alpha;
-		float Stretch = FMath::Min(SparkVelocities[i].Size() / 200.f, 6.f);
-		SparkMeshes[i]->SetWorldScale3D(FVector(S * Stretch, S * 0.4f, S * 0.4f));
-		FVector Dir = SparkVelocities[i] + FVector(0.f, 0.f, -800.f * Age);
-		if (!Dir.IsNearlyZero()) SparkMeshes[i]->SetWorldRotation(Dir.Rotation());
+		float Sp = 0.06f * Alpha;
+		float Stretch = FMath::Min(SparkVelocities[i].Size() / 200.f, 7.f);
+		SparkMeshes[i]->SetWorldScale3D(FVector(Sp * Stretch, Sp * 0.4f, Sp * 0.4f));
+		FVector Dir = SparkVelocities[i] + FVector(0.f, 0.f, -1000.f * Age);
+		if (!Dir.IsNearlyZero())
+		{
+			SparkMeshes[i]->SetWorldRotation(Dir.Rotation());
+		}
 	}
 
 	if (Age >= Lifetime) Destroy();

@@ -48,7 +48,7 @@ void AExoTracerWake::InitWake(const FLinearColor& Color, float Scale)
 
 	// Core dot — bright emissive
 	DotMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor Emissive(Color.R * 30.f, Color.G * 30.f, Color.B * 30.f);
+	FLinearColor Emissive(Color.R * 50.f, Color.G * 50.f, Color.B * 50.f);
 	DotMat->SetVectorParameterValue(TEXT("BaseColor"), Emissive);
 	DotMat->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 	DotMesh->SetMaterial(0, DotMat);
@@ -56,14 +56,14 @@ void AExoTracerWake::InitWake(const FLinearColor& Color, float Scale)
 
 	// Halo — larger, softer glow
 	HaloMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor HaloCol(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f);
+	FLinearColor HaloCol(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f);
 	HaloMat->SetVectorParameterValue(TEXT("BaseColor"), HaloCol);
 	HaloMat->SetVectorParameterValue(TEXT("EmissiveColor"), HaloCol);
 	HaloMesh->SetMaterial(0, HaloMat);
-	HaloMesh->SetRelativeScale3D(FVector(2.5f));
+	HaloMesh->SetRelativeScale3D(FVector(3.5f));
 
 	DotLight->SetLightColor(Color);
-	DotLight->SetIntensity(8000.f * Scale / 0.1f);
+	DotLight->SetIntensity(15000.f * Scale / 0.1f);
 }
 
 void AExoTracerWake::Tick(float DeltaTime)
@@ -81,18 +81,18 @@ void AExoTracerWake::Tick(float DeltaTime)
 
 	if (DotMat)
 	{
-		FLinearColor Em(BaseColor.R * 30.f * Alpha, BaseColor.G * 30.f * Alpha,
-			BaseColor.B * 30.f * Alpha);
+		FLinearColor Em(BaseColor.R * 50.f * Alpha, BaseColor.G * 50.f * Alpha,
+			BaseColor.B * 50.f * Alpha);
 		DotMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	}
 	if (HaloMat)
 	{
-		FLinearColor HEm(BaseColor.R * 8.f * Alpha, BaseColor.G * 8.f * Alpha,
-			BaseColor.B * 8.f * Alpha);
+		FLinearColor HEm(BaseColor.R * 15.f * Alpha, BaseColor.G * 15.f * Alpha,
+			BaseColor.B * 15.f * Alpha);
 		HaloMat->SetVectorParameterValue(TEXT("EmissiveColor"), HEm);
 	}
 
-	DotLight->SetIntensity(8000.f * Alpha * BaseScale / 0.1f);
+	DotLight->SetIntensity(15000.f * Alpha * BaseScale / 0.1f);
 
 	if (Age >= Lifetime) Destroy();
 }
@@ -125,7 +125,7 @@ void AExoTracerWake::SpawnWake(UWorld* World, const FVector& Start, const FVecto
 			AExoTracerWake::StaticClass(), Pos, FRotator::ZeroRotator, Params);
 		if (Wake)
 		{
-			float Scale = FMath::RandRange(0.06f, 0.12f);
+			float Scale = FMath::RandRange(0.10f, 0.20f);
 			Wake->InitWake(Color, Scale);
 		}
 	}

@@ -80,38 +80,38 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 
 	if (TotalDistance < 1.f) { Destroy(); return; }
 
-	// Weapon-specific beam parameters — large, visible sci-fi energy bolts
+	// Weapon-specific beam parameters — thick, dramatic sci-fi energy bolts
 	switch (WeaponType)
 	{
 	case EWeaponType::Rifle:
-		CoreRadius = 0.08f; GlowRadius = 0.22f; TrailRadius = 0.04f;
-		CoronaRadius = 0.45f; HeadScale = 0.55f; BeamLength = 2400.f;
-		TravelSpeed = 80000.f; LightIntensity = 90000.f; FadeTime = 0.25f;
+		CoreRadius = 0.25f; GlowRadius = 0.65f; TrailRadius = 0.12f;
+		CoronaRadius = 1.2f; HeadScale = 1.4f; BeamLength = 2800.f;
+		TravelSpeed = 80000.f; LightIntensity = 160000.f; FadeTime = 0.55f;
 		break;
 	case EWeaponType::SMG:
-		CoreRadius = 0.06f; GlowRadius = 0.16f; TrailRadius = 0.025f;
-		CoronaRadius = 0.32f; HeadScale = 0.40f; BeamLength = 1800.f;
-		TravelSpeed = 95000.f; LightIntensity = 65000.f; FadeTime = 0.18f;
+		CoreRadius = 0.18f; GlowRadius = 0.45f; TrailRadius = 0.08f;
+		CoronaRadius = 0.85f; HeadScale = 1.0f; BeamLength = 2000.f;
+		TravelSpeed = 95000.f; LightIntensity = 120000.f; FadeTime = 0.35f;
 		break;
 	case EWeaponType::Pistol:
-		CoreRadius = 0.07f; GlowRadius = 0.18f; TrailRadius = 0.03f;
-		CoronaRadius = 0.38f; HeadScale = 0.48f; BeamLength = 2000.f;
-		TravelSpeed = 75000.f; LightIntensity = 80000.f; FadeTime = 0.22f;
+		CoreRadius = 0.22f; GlowRadius = 0.55f; TrailRadius = 0.10f;
+		CoronaRadius = 1.0f; HeadScale = 1.2f; BeamLength = 2400.f;
+		TravelSpeed = 75000.f; LightIntensity = 140000.f; FadeTime = 0.45f;
 		break;
 	case EWeaponType::Shotgun:
-		CoreRadius = 0.10f; GlowRadius = 0.28f; TrailRadius = 0.05f;
-		CoronaRadius = 0.55f; HeadScale = 0.65f; BeamLength = 1200.f;
-		TravelSpeed = 55000.f; LightIntensity = 110000.f; FadeTime = 0.15f;
+		CoreRadius = 0.30f; GlowRadius = 0.80f; TrailRadius = 0.15f;
+		CoronaRadius = 1.5f; HeadScale = 1.6f; BeamLength = 1400.f;
+		TravelSpeed = 55000.f; LightIntensity = 200000.f; FadeTime = 0.30f;
 		break;
 	case EWeaponType::Sniper:
-		CoreRadius = 0.09f; GlowRadius = 0.25f; TrailRadius = 0.06f;
-		CoronaRadius = 0.50f; HeadScale = 0.70f; BeamLength = 4500.f;
-		TravelSpeed = 120000.f; LightIntensity = 130000.f; FadeTime = 0.40f;
+		CoreRadius = 0.28f; GlowRadius = 0.70f; TrailRadius = 0.18f;
+		CoronaRadius = 1.4f; HeadScale = 1.8f; BeamLength = 5000.f;
+		TravelSpeed = 120000.f; LightIntensity = 250000.f; FadeTime = 0.80f;
 		break;
 	default:
-		CoreRadius = 0.08f; GlowRadius = 0.22f; TrailRadius = 0.04f;
-		CoronaRadius = 0.45f; HeadScale = 0.55f; BeamLength = 2200.f;
-		TravelSpeed = 70000.f; LightIntensity = 80000.f; FadeTime = 0.25f;
+		CoreRadius = 0.25f; GlowRadius = 0.60f; TrailRadius = 0.12f;
+		CoronaRadius = 1.1f; HeadScale = 1.3f; BeamLength = 2600.f;
+		TravelSpeed = 70000.f; LightIntensity = 150000.f; FadeTime = 0.50f;
 		break;
 	}
 
@@ -119,17 +119,17 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 	BeamRot.Pitch += 90.f;
 	SetActorRotation(BeamRot);
 
-	float HitBoost = bIsHit ? 4.f : 1.f;
-	// Core: white-hot center with extreme emissive (boosted for bloom)
+	float HitBoost = bIsHit ? 5.f : 1.f;
+	// Core: blazing white-hot center, extreme emissive for massive bloom
 	CoreColor = FLinearColor(
-		WeaponColor.R * 40.f * HitBoost + 15.f,
-		WeaponColor.G * 40.f * HitBoost + 15.f,
-		WeaponColor.B * 40.f * HitBoost + 15.f);
-	// Glow: heavily saturated weapon color
+		WeaponColor.R * 80.f * HitBoost + 30.f,
+		WeaponColor.G * 80.f * HitBoost + 30.f,
+		WeaponColor.B * 80.f * HitBoost + 30.f);
+	// Glow: heavily saturated weapon color halo
 	GlowColor = FLinearColor(
-		WeaponColor.R * 20.f,
-		WeaponColor.G * 20.f,
-		WeaponColor.B * 20.f);
+		WeaponColor.R * 45.f,
+		WeaponColor.G * 45.f,
+		WeaponColor.B * 45.f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
@@ -163,39 +163,39 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 
 	// Head — blazing energy ball leading the bolt
 	HeadMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor HeadColor = CoreColor * 3.f;
+	FLinearColor HeadColor = CoreColor * 5.f;
 	HeadMat->SetVectorParameterValue(TEXT("BaseColor"), HeadColor);
 	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), HeadColor);
 	HeadMesh->SetMaterial(0, HeadMat);
-	HeadMesh->SetRelativeScale3D(FVector(HeadScale, HeadScale * 0.7f, HeadScale * 0.7f));
+	HeadMesh->SetRelativeScale3D(FVector(HeadScale, HeadScale * 0.8f, HeadScale * 0.8f));
 
-	// Trailing sparks — random scatter velocities
+	// Trailing sparks — random scatter velocities, bigger and brighter
 	SparkOffsets.SetNum(NUM_SPARKS);
 	SparkVelocities.SetNum(NUM_SPARKS);
 	for (int32 i = 0; i < NUM_SPARKS; i++)
 	{
 		SparkOffsets[i] = FVector::ZeroVector;
 		SparkVelocities[i] = FVector(
-			FMath::RandRange(-150.f, 150.f),
-			FMath::RandRange(-150.f, 150.f),
-			FMath::RandRange(-80.f, 80.f));
-		float S = FMath::RandRange(0.03f, 0.08f);
-		SparkMeshes[i]->SetRelativeScale3D(FVector(S, S * 0.4f, S * 2.5f));
+			FMath::RandRange(-250.f, 250.f),
+			FMath::RandRange(-250.f, 250.f),
+			FMath::RandRange(-120.f, 120.f));
+		float S = FMath::RandRange(0.06f, 0.14f);
+		SparkMeshes[i]->SetRelativeScale3D(FVector(S, S * 0.4f, S * 3.f));
 		UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(BaseMat, this);
-		FLinearColor SparkCol = CoreColor * FMath::RandRange(0.4f, 0.8f);
+		FLinearColor SparkCol = CoreColor * FMath::RandRange(0.5f, 1.0f);
 		SM->SetVectorParameterValue(TEXT("BaseColor"), SparkCol);
 		SM->SetVectorParameterValue(TEXT("EmissiveColor"), SparkCol);
 		SparkMeshes[i]->SetMaterial(0, SM);
 	}
 
-	// Lights — strong illumination
+	// Lights — strong illumination that lights up the environment
 	HeadLight->SetLightColor(WeaponColor);
 	HeadLight->SetIntensity(LightIntensity);
-	HeadLight->SetAttenuationRadius(2000.f + LightIntensity * 0.02f);
+	HeadLight->SetAttenuationRadius(3000.f + LightIntensity * 0.015f);
 
 	TailLight->SetLightColor(WeaponColor);
-	TailLight->SetIntensity(LightIntensity * 0.45f);
-	TailLight->SetAttenuationRadius(1400.f);
+	TailLight->SetIntensity(LightIntensity * 0.5f);
+	TailLight->SetAttenuationRadius(2000.f);
 
 	SetActorLocation(StartPos);
 

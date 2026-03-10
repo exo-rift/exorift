@@ -50,10 +50,10 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 		FLinearColor(0.02f, 0.02f, 0.02f, 1.f));
 	ScorchMesh->SetMaterial(0, ScorchMat);
 
-	// Glowing ring (weapon color)
+	// Glowing ring (weapon color, bright for bloom)
 	UMaterialInstanceDynamic* GlowMat = UMaterialInstanceDynamic::Create(
 		MatFinder.Object, this);
-	FLinearColor GlowCol(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f, 1.f);
+	FLinearColor GlowCol(Color.R * 20.f, Color.G * 20.f, Color.B * 20.f, 1.f);
 	GlowMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 	GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
 	GlowRing->SetMaterial(0, GlowMat);

@@ -7,9 +7,7 @@
 class UPointLightComponent;
 class UStaticMeshComponent;
 
-static constexpr int32 NUM_SPARKS = 5;
-
-/** Short-lived impact burst at bullet hit locations with sparks and dust. */
+/** Dramatic impact burst at bullet hit locations with sparks, shockwave ring, and dust. */
 UCLASS()
 class AExoImpactEffect : public AActor
 {
@@ -24,11 +22,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	static constexpr int32 IMPACT_NUM_SPARKS = 10;
+
 	UPROPERTY()
 	UStaticMeshComponent* CoreMesh;
 
 	UPROPERTY()
 	UStaticMeshComponent* DustPuff;
+
+	UPROPERTY()
+	UStaticMeshComponent* ShockwaveRing;
 
 	UPROPERTY()
 	UPointLightComponent* FlashLight;
@@ -38,7 +41,8 @@ private:
 
 	TArray<FVector> SparkVelocities;
 
+	FVector HitNorm = FVector::UpVector;
 	float Age = 0.f;
-	float Lifetime = 0.2f;
+	float Lifetime = 0.5f;
 	float BaseIntensity = 0.f;
 };

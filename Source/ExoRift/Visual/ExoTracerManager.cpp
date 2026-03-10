@@ -1,8 +1,10 @@
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoTracer.h"
 #include "Visual/ExoTracerWake.h"
+#include "Visual/ExoEnergyRibbon.h"
 #include "Visual/ExoMuzzleFlash.h"
 #include "Visual/ExoMuzzleSmoke.h"
+#include "Visual/ExoMuzzleSparks.h"
 #include "Visual/ExoImpactEffect.h"
 #include "Visual/ExoImpactDecal.h"
 #include "Visual/ExoExplosionEffect.h"
@@ -28,6 +30,12 @@ void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const F
 	float WakeSpacing = (WeaponType == EWeaponType::Sniper) ? 200.f :
 		(WeaponType == EWeaponType::Shotgun) ? 180.f : 300.f;
 	AExoTracerWake::SpawnWake(World, Start, End, WakeColor, WakeSpacing);
+
+	// Persistent energy ribbon contrail — lingers 1.5s after the bolt passes
+	float RibbonThickness = (WeaponType == EWeaponType::Sniper) ? 1.6f :
+		(WeaponType == EWeaponType::Shotgun) ? 1.4f :
+		(WeaponType == EWeaponType::SMG) ? 0.8f : 1.f;
+	AExoEnergyRibbon::SpawnRibbon(World, Start, End, WakeColor, RibbonThickness);
 }
 
 void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
@@ -47,6 +55,10 @@ void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
 
 	// Lingering smoke wisps at the muzzle
 	AExoMuzzleSmoke::SpawnSmoke(World, Location, Rotation);
+
+	// Energy discharge sparks from barrel
+	AExoMuzzleSparks::SpawnSparks(World, Location, Rotation,
+		GetWeaponTracerColor(WeaponType), WeaponType);
 }
 
 void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location,

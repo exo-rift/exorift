@@ -40,7 +40,7 @@ private:
 	class UMaterialInstanceDynamic* HaloMat;
 
 	float Age = 0.f;
-	float Lifetime = 0.35f;
+	float Lifetime = 0.7f;
 	float BaseScale = 0.1f;
 	FLinearColor BaseColor;
 };
