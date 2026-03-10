@@ -4,6 +4,8 @@
 #include "Map/ExoDropPodManager.h"
 #include "Player/ExoCharacter.h"
 #include "Visual/ExoTracerManager.h"
+#include "Visual/ExoPostProcess.h"
+#include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -179,6 +181,14 @@ void AExoDropPod::Tick(float DeltaTime)
 		ShakeIntensity = 12.f;
 		ShakeDecay = 8.f;
 
+		// Landing screen effects
+		FExoScreenShake::AddShake(2.f, 0.5f);
+		if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+		{
+			PP->TriggerDamageFlash(0.6f);
+			PP->ApplySpeedBoostEffect(0.f); // Clear descent blur
+		}
+
 		// Audio
 		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 		{
@@ -197,6 +207,14 @@ void AExoDropPod::Tick(float DeltaTime)
 	}
 
 	UpdateThrusterVFX(DeltaTime, BrakeAlpha);
+
+	// Screen effects during descent
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		float SpeedFrac = DescentSpeed / MaxDescentSpeed;
+		// Speed boost effect proportional to descent speed
+		PP->ApplySpeedBoostEffect(SpeedFrac * 0.8f);
+	}
 }
 
 void AExoDropPod::UpdateLandedSequence(float DeltaTime)
