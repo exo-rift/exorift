@@ -49,16 +49,16 @@ AExoExplosionEffect::AExoExplosionEffect()
 	// Main explosion light (orange, lingers)
 	ExplosionLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ExplosionLight"));
 	ExplosionLight->SetupAttachment(FireballMesh);
-	ExplosionLight->SetIntensity(180000.f);
-	ExplosionLight->SetAttenuationRadius(6000.f);
+	ExplosionLight->SetIntensity(350000.f);
+	ExplosionLight->SetAttenuationRadius(10000.f);
 	ExplosionLight->SetLightColor(FLinearColor(1.f, 0.45f, 0.1f));
 	ExplosionLight->CastShadows = false;
 
 	// Flash light (white, very brief)
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(FireballMesh);
-	FlashLight->SetIntensity(350000.f);
-	FlashLight->SetAttenuationRadius(8000.f);
+	FlashLight->SetIntensity(600000.f);
+	FlashLight->SetAttenuationRadius(12000.f);
 	FlashLight->SetLightColor(FLinearColor(1.f, 0.9f, 0.7f));
 	FlashLight->CastShadows = false;
 
@@ -112,22 +112,22 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 
 	if (EmissiveMat)
 	{
-		// Fireball — hot orange-red emissive
+		// Fireball — intensely hot orange-red emissive for massive bloom
 		UMaterialInstanceDynamic* FBMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(18.f, 7.f, 1.2f));
+			FLinearColor(35.f, 14.f, 2.5f));
 		FireballMesh->SetMaterial(0, FBMat);
 
-		// Inner flash — white-hot
+		// Inner flash — searing white-hot core
 		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(40.f, 35.f, 25.f));
+			FLinearColor(80.f, 70.f, 50.f));
 		InnerFlashMesh->SetMaterial(0, FlashMat);
 
-		// Shockwave — cyan-white
+		// Shockwave — bright cyan-white
 		UMaterialInstanceDynamic* SwMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		SwMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(8.f, 10.f, 15.f));
+			FLinearColor(15.f, 20.f, 30.f));
 		ShockwaveRing->SetMaterial(0, SwMat);
 
 		// Ground scorch — subtle ember glow
@@ -157,12 +157,12 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 			PC->GetPawn()->GetActorLocation(), Radius * 3.f, 2.f);
 	}
 
-	// Random debris velocities
+	// Random debris velocities — dramatic high-energy scatter
 	DebrisVelocities.SetNum(DebrisMeshes.Num());
 	for (int32 i = 0; i < DebrisMeshes.Num(); i++)
 	{
-		FVector Vel = FMath::VRand() * FMath::RandRange(600.f, 1500.f);
-		Vel.Z = FMath::Abs(Vel.Z) + 500.f;
+		FVector Vel = FMath::VRand() * FMath::RandRange(900.f, 2200.f);
+		Vel.Z = FMath::Abs(Vel.Z) + 800.f;
 		DebrisVelocities[i] = Vel;
 
 		float S = FMath::RandRange(0.05f, 0.15f);
@@ -231,7 +231,7 @@ void AExoExplosionEffect::Tick(float DeltaTime)
 	if (FlashLight)
 	{
 		float FlashT = FMath::Clamp(Age / (Lifetime * 0.1f), 0.f, 1.f);
-		float FlashI = 200000.f * (1.f - FlashT) * (1.f - FlashT);
+		float FlashI = 600000.f * (1.f - FlashT) * (1.f - FlashT);
 		FlashLight->SetIntensity(FlashI);
 	}
 
