@@ -52,8 +52,8 @@ AExoImpactEffect::AExoImpactEffect()
 
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(CoreMesh);
-	FlashLight->SetIntensity(25000.f);
-	FlashLight->SetAttenuationRadius(600.f);
+	FlashLight->SetIntensity(50000.f);
+	FlashLight->SetAttenuationRadius(1000.f);
 	FlashLight->CastShadows = false;
 }
 
@@ -61,8 +61,8 @@ void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 {
 	// Color scheme: red/orange for characters, bright cyan-white for surfaces
 	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(12.f, 2.f, 0.5f, 1.f)
-		: FLinearColor(6.f, 10.f, 14.f, 1.f);
+		? FLinearColor(20.f, 4.f, 1.f, 1.f)
+		: FLinearColor(10.f, 18.f, 25.f, 1.f);
 
 	FLinearColor LightColor = bHitCharacter
 		? FLinearColor(1.f, 0.3f, 0.1f)
@@ -106,12 +106,12 @@ void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 	SparkVelocities.SetNum(SparkMeshes.Num());
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
-		FVector Vel = HitNormal * FMath::RandRange(200.f, 500.f);
-		Vel += Tangent * FMath::RandRange(-200.f, 200.f);
-		Vel += Bitangent * FMath::RandRange(-200.f, 200.f);
+		FVector Vel = HitNormal * FMath::RandRange(350.f, 800.f);
+		Vel += Tangent * FMath::RandRange(-350.f, 350.f);
+		Vel += Bitangent * FMath::RandRange(-350.f, 350.f);
 		SparkVelocities[i] = Vel;
 
-		float S = FMath::RandRange(0.02f, 0.05f);
+		float S = FMath::RandRange(0.04f, 0.09f);
 		SparkMeshes[i]->SetWorldScale3D(FVector(S * 4.f, S, S));
 	}
 }

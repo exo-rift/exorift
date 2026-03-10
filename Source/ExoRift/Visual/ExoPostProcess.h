@@ -42,6 +42,9 @@ public:
 	/** Shield bubble — brief cyan flash overlay. */
 	void TriggerShieldFlash();
 
+	/** Brief bloom + exposure spike when firing weapon. Intensity 0-1 per weapon. */
+	void TriggerWeaponFireFlash(float Intensity);
+
 	static AExoPostProcess* Get(UWorld* World);
 
 	/** Post-process component — public for weather system integration. */
@@ -86,6 +89,9 @@ protected:
 
 	// Shield flash state
 	float ShieldFlashIntensity = 0.f;
+
+	// Weapon fire bloom kick
+	float WeaponFireFlash = 0.f;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* VignetteMID;

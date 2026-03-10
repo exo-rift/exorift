@@ -57,6 +57,13 @@ void AExoWeaponBase::FireShot()
 		default: ShakeIntensity = 0.10f; break;
 		}
 		FExoScreenShake::AddShake(ShakeIntensity, 0.08f);
+
+		// Bloom + exposure kick when firing
+		if (OwnerPawn && OwnerPawn->IsLocallyControlled())
+		{
+			if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+				PP->TriggerWeaponFireFlash(ShakeIntensity * 2.5f);
+		}
 	}
 
 	// Track shots

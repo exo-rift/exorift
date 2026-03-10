@@ -98,6 +98,12 @@ void AExoPostProcess::Tick(float DeltaTime)
 		ShieldFlashIntensity = FMath::Max(0.f, ShieldFlashIntensity - DeltaTime * 6.f);
 	}
 
+	// Decay weapon fire flash (very fast)
+	if (WeaponFireFlash > 0.f)
+	{
+		WeaponFireFlash = FMath::Max(0.f, WeaponFireFlash - DeltaTime * 12.f);
+	}
+
 	// --- Combine all effects ---
 
 	// Vignette: base + damage flash + low health + zone damage + heartbeat + abilities
@@ -182,7 +188,11 @@ void AExoPostProcess::Tick(float DeltaTime)
 		PostProcessComp->Settings.MotionBlurAmount = TotalMotionBlur * 0.6f;
 	}
 	PostProcessComp->Settings.BloomIntensity = 0.7f + SpeedBoostAlpha * 0.4f
-		+ ShieldFlashIntensity * 0.6f + ScanPulseIntensity * 0.3f;
+		+ ShieldFlashIntensity * 0.6f + ScanPulseIntensity * 0.3f
+		+ WeaponFireFlash * 1.5f;
+
+	// Weapon fire: brief auto-exposure kick for visible muzzle bloom
+	PostProcessComp->Settings.AutoExposureBias = WeaponFireFlash * 0.4f;
 }
 
 void AExoPostProcess::TriggerDamageFlash(float Intensity)
@@ -249,6 +259,11 @@ void AExoPostProcess::TriggerScanPulse()
 void AExoPostProcess::TriggerShieldFlash()
 {
 	ShieldFlashIntensity = 1.f;
+}
+
+void AExoPostProcess::TriggerWeaponFireFlash(float Intensity)
+{
+	WeaponFireFlash = FMath::Max(WeaponFireFlash, FMath::Clamp(Intensity, 0.f, 1.f));
 }
 
 AExoPostProcess* AExoPostProcess::Get(UWorld* World)
