@@ -3,6 +3,8 @@
 #include "Player/ExoPlayerController.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Player/ExoKillStreakComponent.h"
+#include "Weapons/ExoWeaponBase.h"
+#include "Weapons/ExoDeathBox.h"
 #include "Core/ExoGameMode.h"
 #include "Core/ExoPlayerState.h"
 #include "Core/ExoAudioManager.h"
@@ -187,13 +189,39 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->DisableMovement();
 
-	// Drop all weapons as pickups
+	// Collect weapon info, then spawn a death box containing all loot
 	if (InventoryComp)
 	{
+		TArray<TPair<EWeaponType, EWeaponRarity>> WeaponList;
 		for (int32 i = 0; i < InventoryComp->GetSlotCount(); i++)
 		{
-			if (InventoryComp->GetWeapon(i))
-				InventoryComp->DropWeapon(i);
+			AExoWeaponBase* W = InventoryComp->GetWeapon(i);
+			if (W)
+			{
+				WeaponList.Add(TPair<EWeaponType, EWeaponRarity>(W->GetWeaponType(), W->Rarity));
+				// Destroy weapon actor directly (don't spawn individual pickups)
+				W->StopFire();
+				W->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+				W->Destroy();
+			}
+		}
+
+		// Spawn death box
+		if (WeaponList.Num() > 0)
+		{
+			FActorSpawnParameters BoxParams;
+			BoxParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AExoDeathBox* Box = GetWorld()->SpawnActor<AExoDeathBox>(
+				AExoDeathBox::StaticClass(),
+				GetActorLocation() + FVector(0.f, 0.f, 30.f),
+				FRotator::ZeroRotator, BoxParams);
+			if (Box)
+			{
+				FString Name = GetPlayerState()
+					? GetPlayerState()->GetPlayerName() : GetName();
+				Box->InitFromPlayer(Name, WeaponList);
+			}
 		}
 	}
 

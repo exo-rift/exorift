@@ -2,6 +2,7 @@
 #include "Visual/ExoTracer.h"
 #include "Visual/ExoTracerWake.h"
 #include "Visual/ExoMuzzleFlash.h"
+#include "Visual/ExoMuzzleSmoke.h"
 #include "Visual/ExoImpactEffect.h"
 #include "Visual/ExoImpactDecal.h"
 #include "Visual/ExoExplosionEffect.h"
@@ -43,6 +44,9 @@ void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
 	{
 		Flash->InitFlash(Rotation, GetWeaponTracerColor(WeaponType), WeaponType);
 	}
+
+	// Lingering smoke wisps at the muzzle
+	AExoMuzzleSmoke::SpawnSmoke(World, Location, Rotation);
 }
 
 void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location,
