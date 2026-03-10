@@ -178,6 +178,9 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	AController* PC = OwnerPawn->GetController();
 	if (!PC) return;
 
+	// Smooth ADS blend
+	ADSBlend = FMath::FInterpTo(ADSBlend, bIsADS ? 1.f : 0.f, DeltaTime, ADSBlendSpeed);
+
 	FRotator CurrentRot = PC->GetControlRotation();
 	FRotator DeltaRot = CurrentRot - PrevControlRotation;
 	DeltaRot.Normalize();
@@ -199,8 +202,19 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	float IdleY = FMath::Sin(Time * 1.2f) * 0.15f;
 	float IdleZ = FMath::Sin(Time * 0.8f + 0.7f) * 0.1f;
 
-	FVector BasePos(20.f, 10.f, -8.f);
-	ViewModel->SetRelativeLocation(BasePos + SwayOffset + RecoilOffset + FVector(0.f, IdleY, IdleZ));
+	// ADS position: weapon centers and moves forward
+	FVector HipPos(20.f, 10.f, -8.f);
+	FVector ADSPos(30.f, 0.f, -2.f); // Centered, closer to eye
+	FVector BasePos = FMath::Lerp(HipPos, ADSPos, ADSBlend);
+
+	// Reduce sway/idle while ADS
+	float SwayScale = FMath::Lerp(1.f, 0.15f, ADSBlend);
+	float IdleScale = FMath::Lerp(1.f, 0.1f, ADSBlend);
+
+	ViewModel->SetRelativeLocation(BasePos
+		+ SwayOffset * SwayScale
+		+ RecoilOffset
+		+ FVector(0.f, IdleY * IdleScale, IdleZ * IdleScale));
 	ViewModel->SetRelativeRotation(FRotator(RecoilRotation, 0.f, 0.f));
 }
 

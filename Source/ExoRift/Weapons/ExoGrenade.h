@@ -62,6 +62,9 @@ protected:
 
 private:
 	void Explode();
+	void ExplodeFrag();
+	void ExplodeEMP();
+	void ExplodeSmoke();
 
 	FTimerHandle FuseTimerHandle;
 };

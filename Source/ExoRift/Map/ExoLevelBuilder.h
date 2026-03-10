@@ -79,6 +79,13 @@ private:
 	void SpawnLandingPad(const FVector& Center, float Radius);
 	void SpawnDirectionMarker(const FVector& Pos, float Yaw, const FLinearColor& Color);
 
+	// --- Atmosphere (in ExoLevelBuilderAtmosphere.cpp) ---
+	void BuildAtmosphere();
+	void SpawnHolographicDisplay(const FVector& Pos, float Yaw, float Scale);
+	void SpawnSpotlightBeam(const FVector& Base, float Height, const FLinearColor& Color);
+	void SpawnEnergyConduit(const FVector& Start, const FVector& End, const FLinearColor& Color);
+	void SpawnNeonTube(const FVector& Pos, const FVector& Scale, float Yaw, const FLinearColor& Color);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

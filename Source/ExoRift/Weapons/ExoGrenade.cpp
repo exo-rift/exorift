@@ -1,14 +1,19 @@
 #include "Weapons/ExoGrenade.h"
+#include "Player/ExoCharacter.h"
+#include "Player/ExoShieldComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoTracerManager.h"
+#include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
+#include "Engine/OverlapResult.h"
 #include "ExoRift.h"
 
 AExoGrenade::AExoGrenade()
@@ -172,27 +177,119 @@ void AExoGrenade::Explode()
 	UE_LOG(LogExoRift, Log, TEXT("Grenade exploded at %s (Type=%d)"),
 		*GetActorLocation().ToString(), static_cast<uint8>(GrenadeType));
 
+	switch (GrenadeType)
+	{
+	case EGrenadeType::Frag:  ExplodeFrag();  break;
+	case EGrenadeType::EMP:   ExplodeEMP();   break;
+	case EGrenadeType::Smoke: ExplodeSmoke(); break;
+	default: ExplodeFrag(); break;
+	}
+
+	Destroy();
+}
+
+void AExoGrenade::ExplodeFrag()
+{
 	TArray<AActor*> IgnoreActors;
 	UGameplayStatics::ApplyRadialDamageWithFalloff(
-		GetWorld(),
-		ExplosionDamage,
-		ExplosionDamage * 0.2f,
-		GetActorLocation(),
-		ExplosionRadius * 0.3f,
-		ExplosionRadius,
-		1.f,
-		nullptr,
-		IgnoreActors,
-		this,
-		GetInstigatorController()
-	);
+		GetWorld(), ExplosionDamage, ExplosionDamage * 0.2f,
+		GetActorLocation(), ExplosionRadius * 0.3f, ExplosionRadius,
+		1.f, nullptr, IgnoreActors, this, GetInstigatorController());
 
 	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
 	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
-	{
 		Audio->PlayExplosionSound(GetActorLocation());
+}
+
+void AExoGrenade::ExplodeEMP()
+{
+	FVector Origin = GetActorLocation();
+
+	// Find all characters in radius
+	TArray<FOverlapResult> Overlaps;
+	FCollisionShape Shape = FCollisionShape::MakeSphere(ExplosionRadius);
+	GetWorld()->OverlapMultiByChannel(Overlaps, Origin, FQuat::Identity,
+		ECC_Pawn, Shape);
+
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AExoCharacter* Char = Cast<AExoCharacter>(O.GetActor());
+		if (!Char) continue;
+
+		// Drain shields completely
+		UExoShieldComponent* Shield = Char->GetShieldComponent();
+		if (Shield) Shield->AbsorbDamage(999.f);
+
+		// Slow movement for 4 seconds
+		UCharacterMovementComponent* CMC = Char->GetCharacterMovement();
+		if (CMC)
+		{
+			float OrigSpeed = CMC->MaxWalkSpeed;
+			CMC->MaxWalkSpeed *= 0.4f;
+			FTimerHandle Handle;
+			GetWorld()->GetTimerManager().SetTimer(Handle,
+				[CMC, OrigSpeed]() { if (CMC) CMC->MaxWalkSpeed = OrigSpeed; },
+				4.f, false);
+		}
+
+		// Small EMP damage
+		FDamageEvent DmgEvent;
+		Char->TakeDamage(15.f, DmgEvent, GetInstigatorController(), this);
 	}
 
-	Destroy();
+	// Blue-white flash effect
+	FExoScreenShake::AddShake(0.4f, 0.3f);
+
+	// Spawn a blue flash (using explosion effect with reduced scale)
+	FExoTracerManager::SpawnExplosionEffect(GetWorld(), Origin, ExplosionRadius * 0.5f);
+
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		Audio->PlayExplosionSound(Origin);
+}
+
+void AExoGrenade::ExplodeSmoke()
+{
+	// Spawn a large smoke cloud using multiple mesh components on a temporary actor
+	FVector Origin = GetActorLocation();
+
+	// Spawn a smoke cloud actor
+	FActorSpawnParameters Params;
+	AActor* Cloud = GetWorld()->SpawnActor<AActor>(AActor::StaticClass(), Origin,
+		FRotator::ZeroRotator, Params);
+	if (!Cloud) return;
+	Cloud->SetLifeSpan(8.f);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (!SphereFinder.Succeeded() || !MatFinder.Succeeded()) return;
+
+	// Create cluster of smoke spheres
+	for (int32 i = 0; i < 12; i++)
+	{
+		UStaticMeshComponent* Smoke = NewObject<UStaticMeshComponent>(Cloud);
+		Smoke->SetupAttachment(Cloud->GetRootComponent());
+		Smoke->SetStaticMesh(SphereFinder.Object);
+		Smoke->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Smoke->CastShadow = false;
+
+		FVector Offset = FMath::VRand() * FMath::RandRange(50.f, 250.f);
+		Offset.Z = FMath::Abs(Offset.Z) + FMath::RandRange(0.f, 200.f);
+		Smoke->SetWorldLocation(Origin + Offset);
+		float S = FMath::RandRange(2.f, 4.f);
+		Smoke->SetWorldScale3D(FVector(S, S, S * 0.7f));
+
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
+			MatFinder.Object, Cloud);
+		float Grey = FMath::RandRange(0.15f, 0.3f);
+		Mat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(Grey, Grey, Grey * 0.9f));
+		Smoke->SetMaterial(0, Mat);
+		Smoke->RegisterComponent();
+	}
+
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		Audio->PlayExplosionSound(Origin);
 }

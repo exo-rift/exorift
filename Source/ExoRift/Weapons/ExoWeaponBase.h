@@ -175,6 +175,12 @@ protected:
 	float SwayAmount = 0.4f;
 	float MaxSwayOffset = 3.f;
 
+	// ADS blend
+	float ADSBlend = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADS")
+	float ADSBlendSpeed = 10.f;
+
 	// Visual recoil kick
 	void ApplyRecoilKick();
 	FVector RecoilOffset = FVector::ZeroVector;

@@ -161,11 +161,17 @@ protected:
 	bool bIsADS = false;
 	bool bIsDead = false;
 
-	// ADS FOV interpolation
+	// FOV interpolation (ADS, sprint)
 	float DefaultFOV = 90.f;
+	float SprintFOV = 100.f;
 	float CurrentFOV = 90.f;
 	float TargetFOV = 90.f;
-	void TickADS(float DeltaTime);
+	void TickFOV(float DeltaTime);
+
+	// Landing impact
+	bool bWasInAir = false;
+	float LandingImpact = 0.f;
+	void TickLandingImpact(float DeltaTime);
 
 	// DBNO state
 	bool bIsDBNO = false;

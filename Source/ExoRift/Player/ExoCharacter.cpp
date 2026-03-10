@@ -112,7 +112,7 @@ void AExoCharacter::Tick(float DeltaTime)
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
 	TickFootsteps(DeltaTime);
-	TickADS(DeltaTime);
+	TickFOV(DeltaTime);
 	if (EmoteComp) EmoteComp->TickEmote(DeltaTime);
 
 	// Update post-process effects and HUD subsystems (local player only)
@@ -164,6 +164,7 @@ void AExoCharacter::Tick(float DeltaTime)
 		}
 
 		TickCameraBob(DeltaTime);
+		TickLandingImpact(DeltaTime);
 	}
 }
 
@@ -286,24 +287,13 @@ void AExoCharacter::StartADS()
 {
 	if (bIsDead || bIsDBNO || bIsSprinting || bIsSliding || bIsExecuting) return;
 	bIsADS = true;
-	AExoWeaponBase* W = GetCurrentWeapon();
-	if (W)
-	{
-		W->StartADS();
-		TargetFOV = W->GetADSFOV();
-	}
-	else
-	{
-		TargetFOV = 75.f;
-	}
-	// Slow movement while ADS
+	if (AExoWeaponBase* W = GetCurrentWeapon()) W->StartADS();
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed * 0.6f;
 }
 
 void AExoCharacter::StopADS()
 {
 	bIsADS = false;
-	TargetFOV = DefaultFOV;
 	if (AExoWeaponBase* W = GetCurrentWeapon()) W->StopADS();
 	if (!bIsSprinting)
 		GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
@@ -314,13 +304,54 @@ void AExoCharacter::ToggleFireMode()
 	if (AExoWeaponBase* W = GetCurrentWeapon()) W->ToggleFireMode();
 }
 
-void AExoCharacter::TickADS(float DeltaTime)
+void AExoCharacter::TickFOV(float DeltaTime)
 {
-	// Smooth FOV interpolation
+	// Determine target: ADS narrows, sprint widens
+	if (bIsADS)
+	{
+		AExoWeaponBase* W = GetCurrentWeapon();
+		TargetFOV = W ? W->GetADSFOV() : 75.f;
+	}
+	else if (bIsSprinting)
+	{
+		TargetFOV = SprintFOV;
+	}
+	else
+	{
+		TargetFOV = DefaultFOV;
+	}
+
 	CurrentFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, 12.f);
 	if (FirstPersonCamera && FMath::Abs(FirstPersonCamera->FieldOfView - CurrentFOV) > 0.1f)
 	{
 		FirstPersonCamera->SetFieldOfView(CurrentFOV);
+	}
+}
+
+void AExoCharacter::TickLandingImpact(float DeltaTime)
+{
+	bool bInAir = !GetCharacterMovement()->IsMovingOnGround();
+	if (bWasInAir && !bInAir)
+	{
+		// Just landed — impact strength based on fall speed
+		float FallSpeed = FMath::Abs(GetCharacterMovement()->Velocity.Z);
+		if (FallSpeed > 200.f)
+		{
+			LandingImpact = FMath::Clamp(FallSpeed / 1500.f, 0.15f, 1.f);
+			FExoScreenShake::AddShake(LandingImpact * 0.3f, 0.15f);
+		}
+	}
+	bWasInAir = bInAir;
+
+	if (LandingImpact > 0.f)
+	{
+		LandingImpact = FMath::FInterpTo(LandingImpact, 0.f, DeltaTime, 8.f);
+		if (FirstPersonCamera)
+		{
+			FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
+			CamLoc.Z -= LandingImpact * 8.f;
+			FirstPersonCamera->SetRelativeLocation(CamLoc);
+		}
 	}
 }
 
