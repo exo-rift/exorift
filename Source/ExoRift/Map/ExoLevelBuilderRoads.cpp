@@ -75,17 +75,83 @@ void AExoLevelBuilder::BuildRoads()
 		CenterRing->SetMaterial(0, RingMat);
 	}
 
-	// Center monument — tall pylon with glow
-	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 500.f),
-		FVector(2.f, 2.f, 10.f), FRotator::ZeroRotator, CylinderMesh,
-		FLinearColor(0.07f, 0.07f, 0.09f));
+	// Center monument — ExoRift obelisk with floating ring and energy beam
+	FLinearColor MonoMetal(0.05f, 0.05f, 0.07f);
+	FLinearColor MonoAccent(0.1f, 0.4f, 0.8f);
+	UMaterialInterface* MonoEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+	UMaterialInterface* MonoAdditive = FExoMaterialFactory::GetEmissiveAdditive();
 
+	// Stepped base platform (3 tiers)
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 30.f),
+		FVector(10.f, 10.f, 0.6f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.04f, 0.04f, 0.05f));
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 60.f),
+		FVector(7.f, 7.f, 0.4f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.045f, 0.045f, 0.055f));
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 85.f),
+		FVector(5.f, 5.f, 0.3f), FRotator::ZeroRotator, CubeMesh,
+		FLinearColor(0.05f, 0.05f, 0.06f));
+
+	// Main obelisk — tapered column
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 600.f),
+		FVector(2.f, 2.f, 10.f), FRotator::ZeroRotator, CylinderMesh, MonoMetal);
+	// Obelisk cap — narrower, brighter
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 1150.f),
+		FVector(1.2f, 1.2f, 2.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.06f, 0.06f, 0.08f));
+
+	// Floating ring around obelisk mid-height
+	SpawnStaticMesh(FVector(0.f, 0.f, GroundZ + 700.f),
+		FVector(5.f, 5.f, 0.08f), FRotator::ZeroRotator, CylinderMesh, MonoMetal);
+	// Ring emissive inner edge
+	UStaticMeshComponent* RingGlow = SpawnStaticMesh(
+		FVector(0.f, 0.f, GroundZ + 700.f),
+		FVector(3.5f, 3.5f, 0.04f), FRotator::ZeroRotator, CylinderMesh, MonoAccent);
+	if (RingGlow && MonoEmissive)
+	{
+		UMaterialInstanceDynamic* RGMat = UMaterialInstanceDynamic::Create(MonoEmissive, this);
+		RGMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.2f, 0.8f, 1.6f));
+		RingGlow->SetMaterial(0, RGMat);
+	}
+
+	// Vertical energy beam through the center
+	if (MonoAdditive)
+	{
+		UStaticMeshComponent* Beam = SpawnStaticMesh(
+			FVector(0.f, 0.f, GroundZ + 800.f),
+			FVector(0.15f, 0.15f, 16.f), FRotator::ZeroRotator, CylinderMesh, MonoAccent);
+		if (Beam)
+		{
+			UMaterialInstanceDynamic* BMat = UMaterialInstanceDynamic::Create(MonoAdditive, this);
+			BMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.3f, 1.2f, 2.5f));
+			Beam->SetMaterial(0, BMat);
+		}
+	}
+
+	// Four accent lights around the base
+	for (int32 i = 0; i < 4; i++)
+	{
+		float Ang = (PI * 0.5f) * i;
+		FVector LPos(FMath::Cos(Ang) * 350.f, FMath::Sin(Ang) * 350.f, GroundZ + 100.f);
+		UPointLightComponent* BL = NewObject<UPointLightComponent>(this);
+		BL->SetupAttachment(RootComponent);
+		BL->SetWorldLocation(LPos);
+		BL->SetIntensity(3000.f);
+		BL->SetAttenuationRadius(800.f);
+		BL->SetLightColor(MonoAccent);
+		BL->CastShadows = false;
+		BL->RegisterComponent();
+	}
+
+	// Top beacon light
 	UPointLightComponent* MonumentLight = NewObject<UPointLightComponent>(this);
 	MonumentLight->SetupAttachment(RootComponent);
-	MonumentLight->SetWorldLocation(FVector(0.f, 0.f, GroundZ + 1000.f));
-	MonumentLight->SetIntensity(8000.f);
-	MonumentLight->SetAttenuationRadius(3000.f);
-	MonumentLight->SetLightColor(FLinearColor(0.1f, 0.4f, 0.8f));
+	MonumentLight->SetWorldLocation(FVector(0.f, 0.f, GroundZ + 1250.f));
+	MonumentLight->SetIntensity(15000.f);
+	MonumentLight->SetAttenuationRadius(5000.f);
+	MonumentLight->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
 	MonumentLight->CastShadows = false;
 	MonumentLight->RegisterComponent();
 

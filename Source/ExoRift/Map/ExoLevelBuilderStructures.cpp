@@ -66,6 +66,22 @@ void AExoLevelBuilder::BuildStructures()
 			FVector(10.f, 10.f, 30.f), FRotator::ZeroRotator, CylinderMesh,
 			FLinearColor(0.1f, 0.1f, 0.12f));
 	}
+	// Industrial smokestack — landmark visible from afar
+	SpawnStaticMesh(FVector(8000.f, NY + 5000.f, 2500.f),
+		FVector(3.f, 3.f, 50.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.08f, 0.08f, 0.1f));
+	// Smoke top ring (emissive orange, suggests active furnace)
+	UStaticMeshComponent* SmokeCap = SpawnStaticMesh(
+		FVector(8000.f, NY + 5000.f, 5050.f),
+		FVector(3.5f, 3.5f, 0.1f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.6f, 0.3f, 0.05f));
+	if (SmokeCap)
+	{
+		UMaterialInterface* CapEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CapEmissive, this);
+		CM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.f, 0.8f, 0.15f));
+		SmokeCap->SetMaterial(0, CM);
+	}
 
 	// === SOUTH COMPOUND — research labs ===
 	float SY = -80000.f;
@@ -80,6 +96,21 @@ void AExoLevelBuilder::BuildStructures()
 	// Containment area
 	SpawnWall(FVector(-9000.f, SY - 5000.f, 0.f), FVector(-9000.f, SY + 5000.f, 0.f), 1800.f);
 	SpawnWall(FVector(-9000.f, SY + 5000.f, 0.f), FVector(9000.f, SY + 5000.f, 0.f), 1800.f);
+	// Tesla coil landmark — tall conductor with emissive tip
+	SpawnStaticMesh(FVector(-6000.f, SY, 1800.f),
+		FVector(0.4f, 0.4f, 36.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.12f, 0.12f, 0.15f));
+	UStaticMeshComponent* TeslaOrb = SpawnStaticMesh(
+		FVector(-6000.f, SY, 3650.f),
+		FVector(2.f, 2.f, 2.f), FRotator::ZeroRotator, SphereMesh,
+		FLinearColor(0.1f, 0.6f, 0.3f));
+	if (TeslaOrb)
+	{
+		UMaterialInterface* TeslaEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* TM = UMaterialInstanceDynamic::Create(TeslaEmissive, this);
+		TM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.3f, 2.f, 1.f));
+		TeslaOrb->SetMaterial(0, TM);
+	}
 
 	// === EAST COMPOUND — power station ===
 	float EX = 80000.f;
@@ -110,6 +141,21 @@ void AExoLevelBuilder::BuildStructures()
 	SpawnStaticMesh(FVector(EX - 5000.f, -5000.f, 1500.f),
 		FVector(15.f, 15.f, 30.f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.09f, 0.1f, 0.11f));
+	// Reactor housing — glowing core visible between towers
+	SpawnStaticMesh(FVector(EX - 5000.f, 0.f, 800.f),
+		FVector(10.f, 10.f, 8.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.06f, 0.06f, 0.08f));
+	UStaticMeshComponent* ReactorGlow = SpawnStaticMesh(
+		FVector(EX - 5000.f, 0.f, 1250.f),
+		FVector(6.f, 6.f, 0.15f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.1f, 0.3f, 0.8f));
+	if (ReactorGlow)
+	{
+		UMaterialInterface* RxEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* RM = UMaterialInstanceDynamic::Create(RxEmissive, this);
+		RM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.2f, 0.6f, 1.6f));
+		ReactorGlow->SetMaterial(0, RM);
+	}
 
 	// === WEST COMPOUND — barracks ===
 	float WX = -80000.f;
@@ -126,6 +172,26 @@ void AExoLevelBuilder::BuildStructures()
 	// Guard posts at entrance
 	SpawnBuilding(FVector(WX + 4000.f, -6000.f, 0.f), FVector(1500.f, 1500.f, 2500.f));
 	SpawnBuilding(FVector(WX + 4000.f, 6000.f, 0.f), FVector(1500.f, 1500.f, 2500.f));
+	// Comms array landmark — tall mast with emissive signal dish
+	SpawnStaticMesh(FVector(WX + 5000.f, 0.f, 2500.f),
+		FVector(0.4f, 0.4f, 50.f), FRotator::ZeroRotator, CylinderMesh,
+		FLinearColor(0.1f, 0.1f, 0.12f));
+	// Dish (tilted flat cylinder)
+	SpawnStaticMesh(FVector(WX + 5000.f, 0.f, 4800.f),
+		FVector(5.f, 5.f, 0.15f), FRotator(30.f, 45.f, 0.f), CylinderMesh,
+		FLinearColor(0.14f, 0.14f, 0.16f));
+	// Signal emitter at dish center
+	UStaticMeshComponent* SignalOrb = SpawnStaticMesh(
+		FVector(WX + 5000.f, 0.f, 5000.f),
+		FVector(0.8f, 0.8f, 0.8f), FRotator::ZeroRotator, SphereMesh,
+		FLinearColor(0.8f, 0.2f, 0.2f));
+	if (SignalOrb)
+	{
+		UMaterialInterface* SigEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* SigM = UMaterialInstanceDynamic::Create(SigEmissive, this);
+		SigM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.5f, 0.4f, 0.4f));
+		SignalOrb->SetMaterial(0, SigM);
+	}
 
 	// === CORNER OUTPOSTS ===
 	float CornerDist = 120000.f;
