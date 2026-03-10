@@ -1,10 +1,15 @@
 // ExoCharacterCombat.cpp — DBNO, revive, execution, and death systems
 #include "Player/ExoCharacter.h"
 #include "Player/ExoPlayerController.h"
+#include "Player/ExoInventoryComponent.h"
+#include "Player/ExoKillStreakComponent.h"
 #include "Core/ExoGameMode.h"
 #include "Core/ExoPlayerState.h"
+#include "Core/ExoAudioManager.h"
 #include "Visual/ExoDeathEffect.h"
 #include "Visual/ExoCharacterModel.h"
+#include "Visual/ExoScreenShake.h"
+#include "UI/ExoPickupNotification.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ExoRift.h"
@@ -181,6 +186,16 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->DisableMovement();
 
+	// Drop all weapons as pickups
+	if (InventoryComp)
+	{
+		for (int32 i = 0; i < InventoryComp->GetSlotCount(); i++)
+		{
+			if (InventoryComp->GetWeapon(i))
+				InventoryComp->DropWeapon(i);
+		}
+	}
+
 	// Death energy burst effect
 	{
 		FActorSpawnParameters SpawnParams;
@@ -192,8 +207,38 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 			FRotator::ZeroRotator, SpawnParams);
 		if (FX)
 		{
-			FLinearColor AccentCol(0.2f, 0.5f, 1.f); // Default blue
+			FLinearColor AccentCol(0.2f, 0.5f, 1.f);
 			FX->Init(AccentCol);
+		}
+	}
+
+	// Death screen shake for nearby players
+	FExoScreenShake::AddExplosionShake(GetActorLocation(),
+		GetActorLocation(), 3000.f, 0.3f);
+
+	// Register kill streak for the killer
+	if (Killer)
+	{
+		AExoCharacter* KillerChar = Cast<AExoCharacter>(Killer->GetPawn());
+		if (KillerChar && KillerChar->KillStreakComp)
+		{
+			KillerChar->KillStreakComp->RegisterKill();
+			int32 Streak = KillerChar->KillStreakComp->GetCurrentStreak();
+
+			// Streak audio and notification
+			if (KillerChar->IsLocallyControlled() && Streak >= 2)
+			{
+				FString StreakText;
+				if (Streak == 2) StreakText = TEXT("Double Kill!");
+				else if (Streak == 3) StreakText = TEXT("Triple Kill!");
+				else if (Streak == 4) StreakText = TEXT("Quad Kill!");
+				else if (Streak >= 5) StreakText = KillerChar->KillStreakComp->GetStreakName();
+
+				if (!StreakText.IsEmpty())
+				{
+					FExoPickupNotification::ShowElimination(StreakText, false);
+				}
+			}
 		}
 	}
 
