@@ -107,9 +107,6 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 
 	// Energy elements use emissive additive material
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
-	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	if (EmissiveMat)
 	{
 		// Fireball — intensely hot orange-red emissive for massive bloom
@@ -140,12 +137,16 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 		}
 	}
 
-	// Smoke column — opaque dark (no glow)
-	if (BasicMat && SmokeColumn)
+	// Smoke column — opaque dark PBR (no glow)
+	UMaterialInterface* SmokeLitMat = FExoMaterialFactory::GetLitEmissive();
+	if (SmokeLitMat && SmokeColumn)
 	{
-		UMaterialInstanceDynamic* SmokeMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		UMaterialInstanceDynamic* SmokeMat = UMaterialInstanceDynamic::Create(SmokeLitMat, this);
 		SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.06f, 0.05f, 0.04f));
+		SmokeMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		SmokeMat->SetScalarParameterValue(TEXT("Metallic"), 0.f);
+		SmokeMat->SetScalarParameterValue(TEXT("Roughness"), 0.95f);
 		SmokeColumn->SetMaterial(0, SmokeMat);
 	}
 

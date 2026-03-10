@@ -37,7 +37,6 @@ private:
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 
 	float SearchAngle = 0.f;
 };

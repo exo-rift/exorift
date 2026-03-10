@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "ExoRift.h"
@@ -55,20 +56,21 @@ void AExoEnergyCellPickup::BeginPlay()
 
 void AExoEnergyCellPickup::BuildCellModel()
 {
-	// Teal energy material on the main body
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	UMaterialInterface* BaseMat = MatFinder.Succeeded() ? MatFinder.Object : nullptr;
+	// Teal energy material on the main body — PBR metallic
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 
-	if (BaseMat && DisplayMesh)
+	if (LitMat && DisplayMesh)
 	{
-		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.05f, 0.15f, 0.12f));
+		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		BodyMat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
 		DisplayMesh->SetMaterial(0, BodyMat);
 	}
 
 	// Top cap — flattened sphere
-	if (CachedSphere && BaseMat)
+	if (CachedSphere && LitMat)
 	{
 		UStaticMeshComponent* TopCap = NewObject<UStaticMeshComponent>(this);
 		TopCap->SetupAttachment(DisplayMesh);
@@ -76,8 +78,11 @@ void AExoEnergyCellPickup::BuildCellModel()
 		TopCap->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
 		TopCap->SetRelativeScale3D(FVector(1.1f, 1.1f, 0.3f));
 		TopCap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		UMaterialInstanceDynamic* CapMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		UMaterialInstanceDynamic* CapMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		CapMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.25f, 0.2f));
+		CapMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		CapMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		CapMat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
 		TopCap->SetMaterial(0, CapMat);
 		TopCap->RegisterComponent();
 
@@ -92,8 +97,8 @@ void AExoEnergyCellPickup::BuildCellModel()
 		BotCap->RegisterComponent();
 	}
 
-	// Energy ring — thin cylinder around the middle
-	if (CachedCylinder && BaseMat)
+	// Energy ring — thin emissive cylinder around the middle
+	if (CachedCylinder)
 	{
 		UStaticMeshComponent* Ring = NewObject<UStaticMeshComponent>(this);
 		Ring->SetupAttachment(DisplayMesh);
@@ -101,9 +106,14 @@ void AExoEnergyCellPickup::BuildCellModel()
 		Ring->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 		Ring->SetRelativeScale3D(FVector(1.3f, 1.3f, 0.08f));
 		Ring->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		RingMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.1f, 0.9f, 0.6f));
-		Ring->SetMaterial(0, RingMat);
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		if (EmissiveMat)
+		{
+			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.3f, 2.7f, 1.8f));
+			Ring->SetMaterial(0, RingMat);
+		}
 		Ring->RegisterComponent();
 	}
 

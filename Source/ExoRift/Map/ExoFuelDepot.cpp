@@ -22,9 +22,7 @@ AExoFuelDepot::AExoFuelDepot()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphF.Succeeded()) SphereMesh = SphF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -34,7 +32,7 @@ UStaticMeshComponent* AExoFuelDepot::AddPart(
 	const FVector& Pos, const FVector& Scale, const FRotator& Rot,
 	UStaticMesh* Mesh, const FLinearColor& Color)
 {
-	if (!Mesh || !BaseMaterial) return nullptr;
+	if (!Mesh) return nullptr;
 
 	UStaticMeshComponent* Part = NewObject<UStaticMeshComponent>(this);
 	Part->SetupAttachment(RootComponent);
@@ -47,9 +45,31 @@ UStaticMeshComponent* AExoFuelDepot::AddPart(
 	Part->CastShadow = true;
 	Part->RegisterComponent();
 
-	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	Part->SetMaterial(0, Mat);
+	float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+	if (Lum > 0.15f)
+	{
+		UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveOpaque();
+		if (EmMat)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmMat, this);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+			Part->SetMaterial(0, Mat);
+		}
+	}
+	else
+	{
+		UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+		if (LitMat)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
+			Part->SetMaterial(0, Mat);
+		}
+	}
 	DepotParts.Add(Part);
 	return Part;
 }

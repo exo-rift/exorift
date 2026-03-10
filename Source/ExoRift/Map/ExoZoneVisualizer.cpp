@@ -21,9 +21,7 @@ AExoZoneVisualizer::AExoZoneVisualizer()
 		TEXT("/Engine/BasicShapes/Cube"));
 	if (CubeFind.Succeeded()) CubeMesh = CubeFind.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	// Main zone wall — tall cylinder scaled to zone radius
 	ZoneWallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ZoneWall"));

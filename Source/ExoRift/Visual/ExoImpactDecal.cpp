@@ -41,13 +41,15 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 	ScorchMesh->SetRelativeScale3D(FVector(S, S, 0.005f));
 
 	// Dark scorch mark (opaque PBR)
-	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (BasicMat)
+	UMaterialInterface* ScorchLitMat = FExoMaterialFactory::GetLitEmissive();
+	if (ScorchLitMat)
 	{
-		UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(ScorchLitMat, this);
 		ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.02f, 0.02f, 0.02f, 1.f));
+			FLinearColor(0.02f, 0.02f, 0.02f));
+		ScorchMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		ScorchMat->SetScalarParameterValue(TEXT("Metallic"), 0.1f);
+		ScorchMat->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 		ScorchMesh->SetMaterial(0, ScorchMat);
 	}
 

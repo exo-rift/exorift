@@ -45,5 +45,4 @@ private:
 	float FlashDecay = 0.f;
 
 	UStaticMesh* CubeMesh = nullptr;
-	UMaterialInterface* BaseMat = nullptr;
 };

@@ -14,9 +14,7 @@ AExoGrenadeTrail::AExoGrenadeTrail()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SF.Succeeded()) SphereMesh = SF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MF.Succeeded()) BaseMaterial = MF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;

@@ -72,13 +72,11 @@ void AExoGrenade::BuildGrenadeVisuals()
 		TEXT("/Engine/BasicShapes/Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
 		TEXT("/Engine/BasicShapes/Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
 	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
-	UMaterialInterface* BaseMat = MatF.Succeeded() ? MatF.Object : nullptr;
-	if (!BaseMat) return;
+
+	UMaterialInterface* LitMatG = FExoMaterialFactory::GetLitEmissive();
+	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
 
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color) -> UStaticMeshComponent*
@@ -92,9 +90,23 @@ void AExoGrenade::BuildGrenadeVisuals()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = false;
 		C->RegisterComponent();
-		auto* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		C->SetMaterial(0, Mat);
+		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+		if (Lum > 0.15f && EmissiveOpaque)
+		{
+			auto* Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			C->SetMaterial(0, Mat);
+		}
+		else if (LitMatG)
+		{
+			auto* Mat = UMaterialInstanceDynamic::Create(LitMatG, this);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.28f);
+			C->SetMaterial(0, Mat);
+		}
 		return C;
 	};
 
@@ -265,9 +277,9 @@ void AExoGrenade::ExplodeSmoke()
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!SphereFinder.Succeeded() || !MatFinder.Succeeded()) return;
+	if (!SphereFinder.Succeeded()) return;
+
+	UMaterialInterface* SmokeMat = FExoMaterialFactory::GetEmissiveOpaque();
 
 	// Create cluster of smoke spheres
 	for (int32 i = 0; i < 12; i++)
@@ -284,12 +296,14 @@ void AExoGrenade::ExplodeSmoke()
 		float S = FMath::RandRange(2.f, 4.f);
 		Smoke->SetWorldScale3D(FVector(S, S, S * 0.7f));
 
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFinder.Object, Cloud);
-		float Grey = FMath::RandRange(0.15f, 0.3f);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(Grey, Grey, Grey * 0.9f));
-		Smoke->SetMaterial(0, Mat);
+		if (SmokeMat)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(SmokeMat, Cloud);
+			float Grey = FMath::RandRange(0.15f, 0.3f);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Grey * 0.5f, Grey * 0.5f, Grey * 0.45f));
+			Smoke->SetMaterial(0, Mat);
+		}
 		Smoke->RegisterComponent();
 	}
 

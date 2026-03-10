@@ -68,11 +68,6 @@ void AExoLootCrate::BeginPlay()
 
 void AExoLootCrate::BuildVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
-
 	// Random crate accent color — cyan, amber, or magenta
 	int32 Roll = FMath::RandRange(0, 2);
 	switch (Roll)
@@ -82,15 +77,25 @@ void AExoLootCrate::BuildVisuals()
 	default: CrateColor = FLinearColor(0.9f, 0.2f, 0.8f); break;  // Magenta
 	}
 
-	// Dark crate body
-	UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
-	CrateBody->SetMaterial(0, BodyMat);
+	// PBR metallic crate body
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
+	{
+		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
+		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+		BodyMat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
+		CrateBody->SetMaterial(0, BodyMat);
 
-	// Lid — slightly lighter
-	LidMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	LidMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.1f));
-	CrateLid->SetMaterial(0, LidMat);
+		// Lid — slightly lighter
+		LidMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		LidMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.1f));
+		LidMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		LidMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		LidMat->SetScalarParameterValue(TEXT("Roughness"), 0.28f);
+		CrateLid->SetMaterial(0, LidMat);
+	}
 
 	// Glowing accent strips
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();

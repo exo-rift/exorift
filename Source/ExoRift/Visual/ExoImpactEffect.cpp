@@ -121,12 +121,14 @@ void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter
 
 	CoreMesh->SetMaterial(0, MakeMat(SparkColor * 2.f));
 
-	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (BasicMat)
+	UMaterialInterface* DustLitMat = FExoMaterialFactory::GetLitEmissive();
+	if (DustLitMat)
 	{
-		UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(DustLitMat, this);
 		DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
+		DustMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		DustMat->SetScalarParameterValue(TEXT("Metallic"), 0.f);
+		DustMat->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 		DustPuff->SetMaterial(0, DustMat);
 	}
 

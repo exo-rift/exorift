@@ -46,16 +46,18 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 	RotationSpeed = RotSpeed;
 	AccentLight->SetLightColor(AccentColor);
 
-	UMaterialInterface* BaseMat = LoadObject<UMaterialInterface>(nullptr,
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!BaseMat) return;
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (!LitMat) return;
 
 	FLinearColor DarkMetal(0.05f, 0.05f, 0.07f);
 
 	// Base pillar
 	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMat, this);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), DarkMetal);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+		M->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
 		BaseMesh->SetMaterial(0, M);
 		BaseMesh->SetRelativeScale3D(FVector(0.3f, 0.3f, 0.05f) * PropScale);
 	}
@@ -65,20 +67,26 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 	switch (PropType)
 	{
 	case 0: // Fan — flat blades rotating horizontally
-		SpinMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		SpinMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		SpinningPart->SetRelativeScale3D(FVector(3.f, 0.1f, 0.5f) * PropScale);
 		SpinningPart->SetRelativeLocation(FVector(0.f, 0.f, 60.f * PropScale));
 		SpinMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
+		SpinMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		SpinMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		SpinMat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
 		BobAmplitude = 0.f;
 		BobFrequency = 0.f;
 		break;
 
 	case 1: // Radar dish — tilted disk rotating
-		SpinMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		SpinMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		SpinningPart->SetRelativeScale3D(FVector(2.f, 2.f, 0.08f) * PropScale);
 		SpinningPart->SetRelativeLocation(FVector(0.f, 0.f, 80.f * PropScale));
 		SpinningPart->SetRelativeRotation(FRotator(25.f, 0.f, 0.f));
 		SpinMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.07f, 0.07f, 0.09f));
+		SpinMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		SpinMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		SpinMat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
 		BobAmplitude = 0.f;
 		BobFrequency = 0.f;
 		break;

@@ -40,5 +40,4 @@ private:
 	class UMaterialInstanceDynamic* DotMatTemplate;
 
 	UStaticMesh* SphereMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

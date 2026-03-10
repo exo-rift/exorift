@@ -19,9 +19,7 @@ UExoFPArms::UExoFPArms()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphF.Succeeded()) SphereMesh = SphF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 }
 
 UStaticMeshComponent* UExoFPArms::AddPart(const FVector& Offset, const FVector& Scale,

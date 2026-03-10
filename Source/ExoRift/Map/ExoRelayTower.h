@@ -43,7 +43,6 @@ private:
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 
 	float DishAngle = 0.f;
 };

@@ -22,9 +22,7 @@ AExoCrashedCapitalShip::AExoCrashedCapitalShip()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphF.Succeeded()) SphereMesh = SphF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -34,7 +32,7 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddHullSection(
 	const FVector& Pos, const FVector& Scale, const FRotator& Rot,
 	const FLinearColor& Color)
 {
-	if (!CubeMesh || !BaseMaterial) return nullptr;
+	if (!CubeMesh) return nullptr;
 
 	UStaticMeshComponent* Part = NewObject<UStaticMeshComponent>(this);
 	Part->SetupAttachment(RootComponent);
@@ -47,9 +45,16 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddHullSection(
 	Part->CastShadow = true;
 	Part->RegisterComponent();
 
-	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	Part->SetMaterial(0, Mat);
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
+	{
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+		Mat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
+		Part->SetMaterial(0, Mat);
+	}
 	HullParts.Add(Part);
 	return Part;
 }
@@ -143,10 +148,14 @@ void AExoCrashedCapitalShip::BuildShip()
 			Eng->SetCollisionResponseToAllChannels(ECR_Block);
 			Eng->CastShadow = true;
 			Eng->RegisterComponent();
-			if (BaseMaterial)
+			UMaterialInterface* EngLitMat = FExoMaterialFactory::GetLitEmissive();
+			if (EngLitMat)
 			{
-				UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+				UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EngLitMat, this);
 				M->SetVectorParameterValue(TEXT("BaseColor"), HullDark);
+				M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+				M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+				M->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
 				Eng->SetMaterial(0, M);
 			}
 			HullParts.Add(Eng);

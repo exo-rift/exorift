@@ -19,9 +19,7 @@ UExoCharacterModel::UExoCharacterModel()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphFind.Succeeded()) SphereMesh = SphFind.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
+	// Materials created at runtime via FExoMaterialFactory
 }
 
 void UExoCharacterModel::BuildModel(bool bIsBot)
@@ -185,11 +183,19 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		Part->SetMaterial(0, Mat);
 	}
-	else if (BaseMaterial)
+	else
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		Part->SetMaterial(0, Mat);
+		// Dark structural parts: metallic PBR armor surface
+		UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+		if (LitMat)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, GetOwner());
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.9f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.22f);
+			Part->SetMaterial(0, Mat);
+		}
 	}
 
 	Part->RegisterComponent();

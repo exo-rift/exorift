@@ -22,9 +22,7 @@ AExoReactorCore::AExoReactorCore()
 		TEXT("/Engine/BasicShapes/Cube"));
 	if (CubF.Succeeded()) CubeMesh = CubF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	auto MakeMesh = [&](const TCHAR* Name, UStaticMesh* Mesh) -> UStaticMeshComponent*
 	{
@@ -84,12 +82,16 @@ AExoReactorCore::AExoReactorCore()
 
 void AExoReactorCore::InitReactor()
 {
-	if (!BaseMaterial) return;
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (!LitMat) return;
 
 	auto MakeStructMat = [&](const FLinearColor& Base) -> UMaterialInstanceDynamic*
 	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), Base);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		M->SetScalarParameterValue(TEXT("Metallic"), 0.9f);
+		M->SetScalarParameterValue(TEXT("Roughness"), 0.2f);
 		return M;
 	};
 

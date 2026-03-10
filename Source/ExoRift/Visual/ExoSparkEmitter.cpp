@@ -14,9 +14,7 @@ AExoSparkEmitter::AExoSparkEmitter()
 		TEXT("/Engine/BasicShapes/Cube"));
 	if (CF.Succeeded()) CubeMesh = CF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MF.Succeeded()) BaseMat = MF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;

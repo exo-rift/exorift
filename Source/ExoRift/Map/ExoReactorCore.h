@@ -66,5 +66,4 @@ private:
 	UStaticMesh* SphereMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* CubeMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

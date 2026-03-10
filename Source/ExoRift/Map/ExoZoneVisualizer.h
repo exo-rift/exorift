@@ -75,5 +75,4 @@ protected:
 	// Cached engine meshes
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* CubeMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

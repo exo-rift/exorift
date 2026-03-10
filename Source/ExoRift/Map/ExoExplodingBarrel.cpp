@@ -4,6 +4,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoTracerManager.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
@@ -26,12 +27,15 @@ AExoExplodingBarrel::AExoExplodingBarrel()
 		BarrelMesh->SetStaticMesh(CylFinder.Object);
 	}
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFinder.Succeeded())
+	// PBR metallic barrel body via LitEmissive
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.15f, 0.04f, 0.02f));
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.8f);
+		Mat->SetScalarParameterValue(TEXT("Roughness"), 0.35f);
 		BarrelMesh->SetMaterial(0, Mat);
 	}
 
@@ -56,14 +60,11 @@ void AExoExplodingBarrel::BuildBarrelVisuals()
 		TEXT("/Engine/BasicShapes/Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
 		TEXT("/Engine/BasicShapes/Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
 	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
-	UMaterialInterface* BaseMat = MatF.Succeeded() ? MatF.Object : nullptr;
 
-	if (!BaseMat) return;
+	UMaterialInterface* LitMatV = FExoMaterialFactory::GetLitEmissive();
+	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
 
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator)
@@ -79,9 +80,23 @@ void AExoExplodingBarrel::BuildBarrelVisuals()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = true;
 		C->RegisterComponent();
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		C->SetMaterial(0, Mat);
+		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+		if (Lum > 0.15f && EmissiveOpaque)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+			C->SetMaterial(0, Mat);
+		}
+		else if (LitMatV)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMatV, this);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
+			C->SetMaterial(0, Mat);
+		}
 		return C;
 	};
 

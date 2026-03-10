@@ -78,14 +78,16 @@ void AExoPowerUpTerminal::InitTerminal(EPowerUpType Type)
 
 void AExoPowerUpTerminal::BuildVisuals()
 {
-	UMaterialInterface* BaseMat = LoadObject<UMaterialInterface>(nullptr,
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!BaseMat) return;
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (!LitMat) return;
 
 	auto ApplyStructMat = [&](UStaticMeshComponent* C, const FLinearColor& Color)
 	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMat, this);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+		M->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
 		C->SetMaterial(0, M);
 	};
 

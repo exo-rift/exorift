@@ -69,9 +69,7 @@ void AExoPatrolDrone::InitDrone(const TArray<FVector>& InWaypoints,
 	DroneLight->SetLightColor(Color);
 	ScanLight->SetLightColor(FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
 
-	// Dark metallic body with accent
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	// Dark metallic body with accent glow
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);

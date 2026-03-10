@@ -18,9 +18,7 @@ AExoForceFieldGate::AExoForceFieldGate()
 		TEXT("/Engine/BasicShapes/Cylinder"));
 	if (CylF.Succeeded()) CylinderMesh = CylF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	auto MakeMesh = [&](const TCHAR* Name, UStaticMesh* Mesh) -> UStaticMeshComponent*
 	{
@@ -62,15 +60,6 @@ void AExoForceFieldGate::InitGate(float Width, float Height, const FLinearColor&
 	GateWidth = Width;
 	GateHeight = Height;
 	GateColor = Color;
-
-	if (!BaseMaterial) return;
-
-	auto MakeStructMat = [&](const FLinearColor& Base) -> UMaterialInstanceDynamic*
-	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		M->SetVectorParameterValue(TEXT("BaseColor"), Base);
-		return M;
-	};
 
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 

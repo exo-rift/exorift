@@ -22,9 +22,7 @@ AExoMiningExcavation::AExoMiningExcavation()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphF.Succeeded()) SphereMesh = SphF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
+	// Materials created at runtime via FExoMaterialFactory
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -34,7 +32,7 @@ UStaticMeshComponent* AExoMiningExcavation::AddPart(
 	const FVector& Pos, const FVector& Scale, const FRotator& Rot,
 	UStaticMesh* Mesh, const FLinearColor& Color)
 {
-	if (!Mesh || !BaseMaterial) return nullptr;
+	if (!Mesh) return nullptr;
 
 	UStaticMeshComponent* Part = NewObject<UStaticMeshComponent>(this);
 	Part->SetupAttachment(RootComponent);
@@ -47,9 +45,16 @@ UStaticMeshComponent* AExoMiningExcavation::AddPart(
 	Part->CastShadow = true;
 	Part->RegisterComponent();
 
-	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	Part->SetMaterial(0, Mat);
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
+	{
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
+		Part->SetMaterial(0, Mat);
+	}
 	SiteParts.Add(Part);
 	return Part;
 }

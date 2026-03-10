@@ -12,13 +12,10 @@ void AExoWeaponPickup::BuildPickupModel()
 {
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(TEXT("/Engine/BasicShapes/Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFind(TEXT("/Engine/BasicShapes/Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	UStaticMesh* CubeMesh = CubeFind.Succeeded() ? CubeFind.Object : nullptr;
 	UStaticMesh* CylMesh = CylFind.Succeeded() ? CylFind.Object : nullptr;
-	UMaterialInterface* BaseMat = MatFind.Succeeded() ? MatFind.Object : nullptr;
 
-	if (!CubeMesh || !BaseMat) return;
+	if (!CubeMesh) return;
 
 	FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Rarity);
 
@@ -55,11 +52,18 @@ void AExoWeaponPickup::BuildPickupModel()
 				FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
 			C->SetMaterial(0, Mat);
 		}
-		else if (BaseMat)
+		else
 		{
-			Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-			C->SetMaterial(0, Mat);
+			UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+			if (LitMat)
+			{
+				Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+				Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
+				C->SetMaterial(0, Mat);
+			}
 		}
 		return Mat;
 	};

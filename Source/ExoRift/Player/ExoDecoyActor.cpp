@@ -2,6 +2,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
 #include "UObject/ConstructorHelpers.h"
@@ -15,9 +16,6 @@ AExoDecoyActor::AExoDecoyActor()
 		TEXT("/Engine/BasicShapes/Cylinder"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	// Body — tall cylinder for torso
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
 	RootComponent = BodyMesh;
@@ -68,22 +66,18 @@ void AExoDecoyActor::BeginPlay()
 	Super::BeginPlay();
 	SpawnLocation = GetActorLocation();
 
-	// Create hologram material — bright cyan-blue emissive
-	UMaterialInterface* Base = BodyMesh->GetMaterial(0);
-	if (Base)
+	// Hologram material — bright cyan-blue emissive additive
+	UMaterialInterface* EmissiveAdd = FExoMaterialFactory::GetEmissiveAdditive();
+	if (EmissiveAdd)
 	{
-		HoloMat = UMaterialInstanceDynamic::Create(Base, this);
-		FLinearColor HoloCol(0.1f, 0.5f, 1.f);
-		HoloMat->SetVectorParameterValue(TEXT("BaseColor"), HoloCol);
+		HoloMat = UMaterialInstanceDynamic::Create(EmissiveAdd, this);
 		HoloMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.2f, 1.5f, 4.f));
 		BodyMesh->SetMaterial(0, HoloMat);
 		HeadMesh->SetMaterial(0, HoloMat);
 
 		// Base disk — dimmer accent
-		BaseMat = UMaterialInstanceDynamic::Create(Base, this);
-		BaseMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.05f, 0.2f, 0.4f));
+		BaseMat = UMaterialInstanceDynamic::Create(EmissiveAdd, this);
 		BaseMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.1f, 0.8f, 2.f));
 		BaseDisk->SetMaterial(0, BaseMat);
@@ -101,14 +95,10 @@ void AExoDecoyActor::BuildDetailParts()
 		TEXT("/Engine/BasicShapes/Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
 		TEXT("/Engine/BasicShapes/Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
 	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
-	UMaterialInterface* BaseMaterial = MatF.Succeeded() ? MatF.Object : nullptr;
 
-	if (!CubeMesh || !BaseMaterial || !HoloMat) return;
+	if (!CubeMesh || !HoloMat) return;
 
 	auto AddHoloPart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FRotator& Rot = FRotator::ZeroRotator)
@@ -166,10 +156,13 @@ void AExoDecoyActor::BuildDetailParts()
 	ScanLineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ScanLineMesh->CastShadow = false;
 	ScanLineMesh->RegisterComponent();
-	ScanMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	ScanMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.15f, 0.7f, 1.f));
-	ScanMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.5f, 3.f, 8.f));
-	ScanLineMesh->SetMaterial(0, ScanMat);
+	UMaterialInterface* ScanEmissive = FExoMaterialFactory::GetEmissiveAdditive();
+	if (ScanEmissive)
+	{
+		ScanMat = UMaterialInstanceDynamic::Create(ScanEmissive, this);
+		ScanMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.5f, 3.f, 8.f));
+		ScanLineMesh->SetMaterial(0, ScanMat);
+	}
 
 	// Scan line light that follows the bar
 	ScanLight = NewObject<UPointLightComponent>(this);
