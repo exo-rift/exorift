@@ -83,7 +83,7 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 	Spot->SetupAttachment(RootComponent);
 	Spot->SetWorldLocation(Base + FVector(0.f, 0.f, Height));
 	Spot->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
-	Spot->SetIntensity(50000.f);
+	Spot->SetIntensity(80000.f);
 	Spot->SetAttenuationRadius(Height * 1.5f);
 	Spot->SetOuterConeAngle(35.f);
 	Spot->SetInnerConeAngle(20.f);
@@ -91,15 +91,55 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 	Spot->CastShadows = false;
 	Spot->RegisterComponent();
 
-	// Ground pool of light (bright circle on ground)
+	// Visible beam geometry — emissive tapered cylinder from fixture to ground
+	UMaterialInterface* BeamMat = FExoMaterialFactory::GetEmissiveAdditive();
+	float BeamHeight = Height - 50.f;
+	UStaticMeshComponent* Beam = SpawnStaticMesh(
+		Base + FVector(0.f, 0.f, BeamHeight * 0.5f + 50.f),
+		FVector(0.6f, 0.6f, BeamHeight / 100.f), FRotator::ZeroRotator,
+		CylinderMesh, Color);
+	if (Beam && BeamMat)
+	{
+		UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BeamMat, this);
+		BM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 0.4f, Color.G * 0.4f, Color.B * 0.4f));
+		Beam->SetMaterial(0, BM);
+	}
+
+	// Narrower inner beam core — brighter
+	UStaticMeshComponent* InnerBeam = SpawnStaticMesh(
+		Base + FVector(0.f, 0.f, BeamHeight * 0.5f + 50.f),
+		FVector(0.15f, 0.15f, BeamHeight / 100.f + 0.1f), FRotator::ZeroRotator,
+		CylinderMesh, Color);
+	if (InnerBeam && BeamMat)
+	{
+		UMaterialInstanceDynamic* IBM = UMaterialInstanceDynamic::Create(BeamMat, this);
+		IBM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
+		InnerBeam->SetMaterial(0, IBM);
+	}
+
+	// Ground pool — bright circle on ground
 	UPointLightComponent* PoolLight = NewObject<UPointLightComponent>(this);
 	PoolLight->SetupAttachment(RootComponent);
 	PoolLight->SetWorldLocation(Base + FVector(0.f, 0.f, 50.f));
-	PoolLight->SetIntensity(3000.f);
-	PoolLight->SetAttenuationRadius(500.f);
+	PoolLight->SetIntensity(5000.f);
+	PoolLight->SetAttenuationRadius(800.f);
 	PoolLight->SetLightColor(Color);
 	PoolLight->CastShadows = false;
 	PoolLight->RegisterComponent();
+
+	// Ground glow disk
+	UStaticMeshComponent* GroundDisk = SpawnStaticMesh(
+		Base + FVector(0.f, 0.f, 3.f),
+		FVector(3.f, 3.f, 0.02f), FRotator::ZeroRotator, CylinderMesh, Color);
+	if (GroundDisk && BeamMat)
+	{
+		UMaterialInstanceDynamic* GDM = UMaterialInstanceDynamic::Create(BeamMat, this);
+		GDM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 0.8f, Color.G * 0.8f, Color.B * 0.8f));
+		GroundDisk->SetMaterial(0, GDM);
+	}
 
 	// Status LED on fixture
 	UStaticMeshComponent* LED = SpawnStaticMesh(

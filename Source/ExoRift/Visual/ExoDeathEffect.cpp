@@ -1,10 +1,12 @@
-// ExoDeathEffect.cpp — Energy burst + scattering fragments on elimination
+// ExoDeathEffect.cpp — Energy burst, rising pillar, scorch mark, scattering fragments
 #include "Visual/ExoDeathEffect.h"
 #include "Visual/ExoMaterialFactory.h"
+#include "Visual/ExoScreenShake.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 AExoDeathEffect::AExoDeathEffect()
 {
@@ -27,7 +29,7 @@ AExoDeathEffect::AExoDeathEffect()
 	if (SphereFinder.Succeeded()) CoreFlash->SetStaticMesh(SphereFinder.Object);
 	CoreFlash->SetWorldScale3D(FVector(0.1f));
 
-	// Expanding shockwave ring
+	// Primary expanding shockwave ring
 	ShockRing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShockRing"));
 	ShockRing->SetupAttachment(CoreFlash);
 	ShockRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -36,15 +38,49 @@ AExoDeathEffect::AExoDeathEffect()
 	if (CylFinder.Succeeded()) ShockRing->SetStaticMesh(CylFinder.Object);
 	ShockRing->SetWorldScale3D(FVector(0.01f, 0.01f, 0.001f));
 
+	// Secondary delayed ring — expands slightly after the first
+	SecondaryRing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SecondaryRing"));
+	SecondaryRing->SetupAttachment(CoreFlash);
+	SecondaryRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SecondaryRing->CastShadow = false;
+	SecondaryRing->SetGenerateOverlapEvents(false);
+	SecondaryRing->SetVisibility(false);
+	if (CylFinder.Succeeded()) SecondaryRing->SetStaticMesh(CylFinder.Object);
+
+	// Rising energy pillar — vertical column of light
+	EnergyPillar = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EnergyPillar"));
+	EnergyPillar->SetupAttachment(CoreFlash);
+	EnergyPillar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	EnergyPillar->CastShadow = false;
+	EnergyPillar->SetGenerateOverlapEvents(false);
+	EnergyPillar->SetVisibility(false);
+	if (CylFinder.Succeeded()) EnergyPillar->SetStaticMesh(CylFinder.Object);
+
+	// Ground scorch mark
+	GroundScorch = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GroundScorch"));
+	GroundScorch->SetupAttachment(CoreFlash);
+	GroundScorch->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GroundScorch->CastShadow = false;
+	GroundScorch->SetGenerateOverlapEvents(false);
+	GroundScorch->SetVisibility(false);
+	if (CylFinder.Succeeded()) GroundScorch->SetStaticMesh(CylFinder.Object);
+
 	// Bright burst light
 	BurstLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("BurstLight"));
 	BurstLight->SetupAttachment(CoreFlash);
-	BurstLight->SetIntensity(80000.f);
-	BurstLight->SetAttenuationRadius(3000.f);
+	BurstLight->SetIntensity(200000.f);
+	BurstLight->SetAttenuationRadius(5000.f);
 	BurstLight->SetLightColor(FLinearColor(0.3f, 0.6f, 1.f));
 	BurstLight->CastShadows = false;
 
-	// Fragment cubes
+	// Pillar overhead light
+	PillarLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PillarLight"));
+	PillarLight->SetupAttachment(CoreFlash);
+	PillarLight->SetIntensity(0.f);
+	PillarLight->SetAttenuationRadius(3000.f);
+	PillarLight->CastShadows = false;
+
+	// Fragment cubes — more fragments for dramatic scatter
 	for (int32 i = 0; i < NumFragments; i++)
 	{
 		FName Name = *FString::Printf(TEXT("Frag_%d"), i);
@@ -53,7 +89,11 @@ AExoDeathEffect::AExoDeathEffect()
 		Frag->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Frag->CastShadow = false;
 		Frag->SetGenerateOverlapEvents(false);
-		if (CubeFinder.Succeeded()) Frag->SetStaticMesh(CubeFinder.Object);
+		// Mix cube and sphere fragments for variety
+		if (i % 3 == 0 && SphereFinder.Succeeded())
+			Frag->SetStaticMesh(SphereFinder.Object);
+		else if (CubeFinder.Succeeded())
+			Frag->SetStaticMesh(CubeFinder.Object);
 		Fragments.Add(Frag);
 	}
 }
@@ -61,38 +101,84 @@ AExoDeathEffect::AExoDeathEffect()
 void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 {
 	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
+	UMaterialInterface* EmOpaque = FExoMaterialFactory::GetEmissiveOpaque();
 
-	// Core flash — bright white-blue
-	UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(15.f, 18.f, 25.f));
-	CoreFlash->SetMaterial(0, FlashMat);
+	// Core flash — intense white-blue burst
+	if (EmMat)
+	{
+		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(30.f, 35.f, 50.f));
+		CoreFlash->SetMaterial(0, FlashMat);
+	}
 
-	// Shock ring — accent-colored
-	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(AccentColor.R * 5.f, AccentColor.G * 5.f, AccentColor.B * 5.f));
-	ShockRing->SetMaterial(0, RingMat);
+	// Primary shock ring — accent-colored
+	if (EmMat)
+	{
+		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(AccentColor.R * 10.f, AccentColor.G * 10.f, AccentColor.B * 10.f));
+		ShockRing->SetMaterial(0, RingMat);
+	}
+
+	// Secondary ring — white pulse
+	if (EmMat)
+	{
+		UMaterialInstanceDynamic* Sec = UMaterialInstanceDynamic::Create(EmMat, this);
+		Sec->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(8.f, 10.f, 15.f));
+		SecondaryRing->SetMaterial(0, Sec);
+	}
+
+	// Energy pillar — tall column, accent color
+	if (EmMat)
+	{
+		UMaterialInstanceDynamic* PilMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		PilMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(AccentColor.R * 6.f, AccentColor.G * 6.f, AccentColor.B * 6.f));
+		EnergyPillar->SetMaterial(0, PilMat);
+	}
+
+	// Ground scorch — dark ember glow
+	if (EmOpaque)
+	{
+		UMaterialInstanceDynamic* ScMat = UMaterialInstanceDynamic::Create(EmOpaque, this);
+		ScMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(AccentColor.R * 0.5f, AccentColor.G * 0.3f, AccentColor.B * 0.2f));
+		GroundScorch->SetMaterial(0, ScMat);
+	}
 
 	BurstLight->SetLightColor(AccentColor);
+	PillarLight->SetLightColor(AccentColor);
 
-	// Fragment velocities and materials
+	// Screen shake
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC && PC->GetPawn())
+	{
+		FExoScreenShake::AddExplosionShake(GetActorLocation(),
+			PC->GetPawn()->GetActorLocation(), 4000.f, 1.5f);
+	}
+
+	// Fragment velocities and materials — high-energy scatter
 	FragVelocities.SetNum(NumFragments);
 	for (int32 i = 0; i < NumFragments; i++)
 	{
-		FVector Vel = FMath::VRand() * FMath::RandRange(300.f, 800.f);
-		Vel.Z = FMath::Abs(Vel.Z) + 200.f;
+		FVector Vel = FMath::VRand() * FMath::RandRange(500.f, 1200.f);
+		Vel.Z = FMath::Abs(Vel.Z) + 300.f;
 		FragVelocities[i] = Vel;
 
-		float S = FMath::RandRange(0.02f, 0.07f);
+		float S = FMath::RandRange(0.02f, 0.08f);
 		Fragments[i]->SetWorldScale3D(FVector(S));
 
-		UMaterialInstanceDynamic* FragMat = UMaterialInstanceDynamic::Create(EmMat, this);
-		float Brightness = FMath::RandRange(2.f, 6.f);
-		FragMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(AccentColor.R * Brightness,
-				AccentColor.G * Brightness, AccentColor.B * Brightness));
-		Fragments[i]->SetMaterial(0, FragMat);
+		if (EmMat)
+		{
+			UMaterialInstanceDynamic* FragMat = UMaterialInstanceDynamic::Create(EmMat, this);
+			float Brightness = FMath::RandRange(3.f, 10.f);
+			FragMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(AccentColor.R * Brightness,
+					AccentColor.G * Brightness, AccentColor.B * Brightness));
+			Fragments[i]->SetMaterial(0, FragMat);
+		}
 	}
 }
 
@@ -105,25 +191,70 @@ void AExoDeathEffect::Tick(float DeltaTime)
 
 	// Core flash: rapid expand then fade
 	{
-		float ExpandT = FMath::Clamp(Age / (Lifetime * 0.2f), 0.f, 1.f);
-		float MaxScale = 2.5f;
+		float ExpandT = FMath::Clamp(Age / (Lifetime * 0.15f), 0.f, 1.f);
+		float MaxScale = 3.5f;
 		float Scale = FMath::Lerp(0.1f, MaxScale, FMath::Sqrt(ExpandT));
-		float FadeT = FMath::Clamp((Age - Lifetime * 0.15f) / (Lifetime * 0.5f), 0.f, 1.f);
+		float FadeT = FMath::Clamp((Age - Lifetime * 0.1f) / (Lifetime * 0.4f), 0.f, 1.f);
 		Scale *= (1.f - FadeT * FadeT);
 		CoreFlash->SetWorldScale3D(FVector(FMath::Max(Scale, 0.01f)));
 	}
 
-	// Shock ring: expand outward
+	// Primary shock ring: expand outward
 	{
-		float RingT = FMath::Clamp(Age / (Lifetime * 0.7f), 0.f, 1.f);
-		float RingScale = 4.f * RingT;
+		float RingT = FMath::Clamp(Age / (Lifetime * 0.6f), 0.f, 1.f);
+		float RingScale = 6.f * RingT;
 		float RingAlpha = 1.f - RingT;
-		ShockRing->SetWorldScale3D(FVector(RingScale, RingScale, 0.003f * RingAlpha));
+		ShockRing->SetWorldScale3D(FVector(RingScale, RingScale, 0.004f * RingAlpha));
 		ShockRing->SetVisibility(RingT < 1.f);
 	}
 
-	// Light: fast decay
-	BurstLight->SetIntensity(80000.f * (1.f - T) * (1.f - T));
+	// Secondary ring: delayed by 0.15s, smaller and faster
+	{
+		float Delay = 0.15f;
+		float SecT = FMath::Clamp((Age - Delay) / (Lifetime * 0.4f), 0.f, 1.f);
+		if (SecT > 0.f && !SecondaryRing->IsVisible())
+			SecondaryRing->SetVisibility(true);
+		if (SecT > 0.f)
+		{
+			float SecScale = 4.f * SecT;
+			float SecAlpha = 1.f - SecT;
+			SecondaryRing->SetWorldScale3D(FVector(SecScale, SecScale, 0.003f * SecAlpha));
+			if (SecT >= 1.f) SecondaryRing->SetVisibility(false);
+		}
+	}
+
+	// Energy pillar: rises from center, thin and tall
+	{
+		float PilT = FMath::Clamp((Age - 0.05f) / (Lifetime * 0.7f), 0.f, 1.f);
+		if (PilT > 0.f && !EnergyPillar->IsVisible())
+			EnergyPillar->SetVisibility(true);
+		if (PilT > 0.f)
+		{
+			float PilHeight = 800.f * FMath::Sqrt(PilT);
+			float PilWidth = 0.15f * (1.f - PilT * PilT);
+			EnergyPillar->SetRelativeLocation(FVector(0.f, 0.f, PilHeight * 0.5f));
+			EnergyPillar->SetWorldScale3D(FVector(PilWidth, PilWidth, PilHeight / 100.f));
+			PillarLight->SetRelativeLocation(FVector(0.f, 0.f, PilHeight));
+			PillarLight->SetIntensity(40000.f * (1.f - PilT) * (1.f - PilT));
+			if (PilT >= 1.f) EnergyPillar->SetVisibility(false);
+		}
+	}
+
+	// Ground scorch: appears after flash, persists
+	{
+		float ScT = FMath::Clamp((Age - 0.1f) / (Lifetime * 0.3f), 0.f, 1.f);
+		if (ScT > 0.f && !GroundScorch->IsVisible())
+			GroundScorch->SetVisibility(true);
+		if (ScT > 0.f)
+		{
+			float ScScale = 2.5f * FMath::Sqrt(ScT);
+			GroundScorch->SetRelativeLocation(FVector(0.f, 0.f, -GetActorLocation().Z + 2.f));
+			GroundScorch->SetWorldScale3D(FVector(ScScale, ScScale, 0.02f));
+		}
+	}
+
+	// Lights: fast decay
+	BurstLight->SetIntensity(200000.f * (1.f - T) * (1.f - T) * (1.f - T));
 
 	// Fragments: fly outward with gravity and spin
 	for (int32 i = 0; i < Fragments.Num(); i++)
@@ -136,8 +267,19 @@ void AExoDeathEffect::Tick(float DeltaTime)
 		FRotator Rot(Age * 400.f * (i + 1), Age * 250.f * (i + 2), Age * 180.f);
 		Fragments[i]->SetRelativeRotation(Rot);
 
-		float S = FMath::Lerp(0.05f, 0.002f, T * T);
+		float S = FMath::Lerp(0.06f, 0.002f, T * T);
 		Fragments[i]->SetWorldScale3D(FVector(S));
+
+		// Fade fragment emissive
+		UMaterialInstanceDynamic* FMat = Cast<UMaterialInstanceDynamic>(Fragments[i]->GetMaterial(0));
+		if (FMat)
+		{
+			FLinearColor Em;
+			FMat->GetVectorParameterValue(TEXT("EmissiveColor"), Em);
+			float Fade = (1.f - T * T);
+			FMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Em.R * Fade, Em.G * Fade, Em.B * Fade));
+		}
 	}
 
 	if (Age >= Lifetime) Destroy();

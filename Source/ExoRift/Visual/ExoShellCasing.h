@@ -5,10 +5,11 @@
 #include "ExoShellCasing.generated.h"
 
 class UStaticMeshComponent;
+class UPointLightComponent;
 
 /**
- * Ejected shell casing with simple ballistic trajectory.
- * Spawned by weapon fire — flies out to the right, tumbles, fades.
+ * Ejected energy shell casing with ballistic trajectory.
+ * Spawned by weapon fire — flies out, tumbles, glows, fades.
  */
 UCLASS()
 class AExoShellCasing : public AActor
@@ -22,10 +23,18 @@ public:
 	void InitCasing(const FVector& EjectDirection, const FLinearColor& Color);
 
 private:
-	UPROPERTY(VisibleAnywhere) UStaticMeshComponent* CasingMesh;
+	UPROPERTY()
+	UStaticMeshComponent* CasingMesh;
+
+	UPROPERTY()
+	UStaticMeshComponent* HotTip;
+
+	UPROPERTY()
+	UPointLightComponent* CasingLight;
 
 	FVector Velocity = FVector::ZeroVector;
 	FRotator TumbleRate = FRotator::ZeroRotator;
 	float Age = 0.f;
-	float Lifetime = 0.6f;
+	float Lifetime = 0.7f;
+	FLinearColor TipColor;
 };

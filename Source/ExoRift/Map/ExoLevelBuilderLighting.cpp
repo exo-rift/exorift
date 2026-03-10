@@ -32,6 +32,8 @@ void AExoLevelBuilder::BuildCompoundLighting()
 		{FVector(-80000.f, 0.f, 0.f), FLinearColor(1.f, 0.2f, 0.15f), 14000.f},
 	};
 
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	for (const FCompoundTheme& T : Themes)
 	{
 		// 4 ambient lights at ground level around the compound perimeter
@@ -50,18 +52,55 @@ void AExoLevelBuilder::BuildCompoundLighting()
 			Ambient->SetLightColor(T.AccentColor);
 			Ambient->CastShadows = false;
 			Ambient->RegisterComponent();
+
+			// Ground accent strip at each perimeter light
+			if (EmissiveMat)
+			{
+				FVector StripDir = Offset.GetSafeNormal2D();
+				float StripYaw = FMath::RadiansToDegrees(FMath::Atan2(StripDir.Y, StripDir.X));
+				UStaticMeshComponent* Strip = SpawnStaticMesh(
+					T.Center + FVector(Offset.X, Offset.Y, 3.f),
+					FVector(2.f, 0.06f, 0.02f), FRotator(0.f, StripYaw, 0.f),
+					CubeMesh, T.AccentColor);
+				if (Strip)
+				{
+					UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+					SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+						FLinearColor(T.AccentColor.R * 0.6f, T.AccentColor.G * 0.6f,
+							T.AccentColor.B * 0.6f));
+					Strip->SetMaterial(0, SM);
+				}
+			}
 		}
 
 		// Overhead color wash light (high above, wide radius)
 		UPointLightComponent* Overhead = NewObject<UPointLightComponent>(this);
 		Overhead->SetupAttachment(RootComponent);
 		Overhead->SetWorldLocation(T.Center + FVector(0.f, 0.f, 5000.f));
-		Overhead->SetIntensity(8000.f);
-		Overhead->SetAttenuationRadius(T.Radius * 0.8f);
+		Overhead->SetIntensity(12000.f);
+		Overhead->SetAttenuationRadius(T.Radius);
 		Overhead->SetLightColor(FLinearColor(
 			T.AccentColor.R * 0.3f, T.AccentColor.G * 0.3f, T.AccentColor.B * 0.3f));
 		Overhead->CastShadows = false;
 		Overhead->RegisterComponent();
+
+		// Perimeter glow ring — thin emissive cylinder marking compound boundary
+		if (EmissiveMat)
+		{
+			float RingScale = T.Radius / 50.f;
+			UStaticMeshComponent* Perimeter = SpawnStaticMesh(
+				T.Center + FVector(0.f, 0.f, 2.f),
+				FVector(RingScale, RingScale, 0.008f), FRotator::ZeroRotator,
+				CylinderMesh, T.AccentColor);
+			if (Perimeter)
+			{
+				UMaterialInstanceDynamic* PM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+				PM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(T.AccentColor.R * 0.3f, T.AccentColor.G * 0.3f,
+						T.AccentColor.B * 0.3f));
+				Perimeter->SetMaterial(0, PM);
+			}
+		}
 
 		// Glowing ground markers at the compound center
 		SpawnCompoundGroundMarker(T.Center, T.AccentColor);

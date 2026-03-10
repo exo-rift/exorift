@@ -4,9 +4,12 @@
 #include "GameFramework/Actor.h"
 #include "ExoMuzzleSmoke.generated.h"
 
+class UStaticMeshComponent;
+class UMaterialInstanceDynamic;
+
 /**
- * Brief smoke wisp that lingers at the muzzle after firing.
- * Drifts upward and expands before fading.
+ * Multi-puff muzzle smoke cloud that lingers after firing.
+ * Drifts upward, turbulates, and expands before fading.
  */
 UCLASS()
 class AExoMuzzleSmoke : public AActor
@@ -23,14 +26,16 @@ public:
 		const FRotator& MuzzleRot);
 
 private:
-	UPROPERTY()
-	UStaticMeshComponent* SmokePuff;
+	static constexpr int32 NUM_PUFFS = 3;
 
 	UPROPERTY()
-	class UMaterialInstanceDynamic* SmokeMat;
+	UStaticMeshComponent* SmokePuffs[NUM_PUFFS];
 
-	FVector DriftVelocity;
+	UPROPERTY()
+	UMaterialInstanceDynamic* SmokeMats[NUM_PUFFS];
+
+	FVector DriftVelocities[NUM_PUFFS];
 	float Age = 0.f;
-	float Lifetime = 0.6f;
+	float Lifetime = 0.7f;
 	float BaseScale = 0.15f;
 };

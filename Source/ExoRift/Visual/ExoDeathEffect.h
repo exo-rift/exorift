@@ -7,7 +7,7 @@
 class UStaticMeshComponent;
 class UPointLightComponent;
 
-/** Energy burst + scattering fragments when a character is eliminated. */
+/** Energy burst + scattering fragments + rising pillar on elimination. */
 UCLASS()
 class AExoDeathEffect : public AActor
 {
@@ -27,7 +27,19 @@ private:
 	UStaticMeshComponent* ShockRing;
 
 	UPROPERTY()
+	UStaticMeshComponent* SecondaryRing;
+
+	UPROPERTY()
+	UStaticMeshComponent* EnergyPillar;
+
+	UPROPERTY()
+	UStaticMeshComponent* GroundScorch;
+
+	UPROPERTY()
 	UPointLightComponent* BurstLight;
+
+	UPROPERTY()
+	UPointLightComponent* PillarLight;
 
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> Fragments;
@@ -35,6 +47,6 @@ private:
 	TArray<FVector> FragVelocities;
 
 	float Age = 0.f;
-	static constexpr float Lifetime = 0.6f;
-	static constexpr int32 NumFragments = 10;
+	static constexpr float Lifetime = 1.2f;
+	static constexpr int32 NumFragments = 16;
 };
