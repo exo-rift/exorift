@@ -54,6 +54,7 @@ void AExoLevelBuilder::BeginPlay()
 	PlaceExplodingBarrels();
 	PlaceCoverElements();
 	BuildProps();
+	BuildEnvironmentalDebris();
 	BuildRoads();
 	BuildWaterFeatures();
 	BuildFoliage();

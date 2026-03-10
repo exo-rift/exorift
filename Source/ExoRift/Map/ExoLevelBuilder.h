@@ -57,6 +57,12 @@ private:
 	void BuildWaterFeatures();
 	void BuildFoliage();
 
+	// --- Environmental debris (in ExoLevelBuilderDebris.cpp) ---
+	void BuildEnvironmentalDebris();
+	void SpawnCrashedShip(const FVector& Center, float Yaw, float Scale);
+	void SpawnDebrisField(const FVector& Center, float Radius, int32 Count);
+	void SpawnScorchMark(const FVector& Center, float Radius, float Yaw = 0.f);
+
 	// --- Detail & environment (in ExoLevelBuilderDetail.cpp) ---
 	void BuildGroundDetail();
 	void SpawnFloorPanels(const FVector& Center, float Radius, int32 Count);
