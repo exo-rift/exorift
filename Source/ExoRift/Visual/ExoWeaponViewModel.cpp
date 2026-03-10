@@ -76,7 +76,7 @@ UStaticMeshComponent* UExoWeaponViewModel::AddPart(const FVector& Offset,
 		if (Luminance > 0.15f)
 		{
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+				FLinearColor(Color.R * 4.f, Color.G * 4.f, Color.B * 4.f));
 		}
 		Part->SetMaterial(0, Mat);
 	}
@@ -113,6 +113,15 @@ void UExoWeaponViewModel::BuildRifleModel(const FLinearColor& Accent)
 	AddPart(FVector(20.f, 0.f, 2.5f), FVector(0.22f, 0.065f, 0.005f), Accent);
 	// Charging handle
 	AddPart(FVector(5.f, 0.f, 2.8f), FVector(0.03f, 0.02f, 0.01f), Trim);
+	// Ejection port cover
+	AddPart(FVector(14.f, 3.f, 1.f), FVector(0.04f, 0.003f, 0.015f), Trim);
+	// Forward grip nub
+	AddPart(FVector(25.f, 0.f, -2.5f), FVector(0.025f, 0.025f, 0.04f), Dark);
+	// Buttstock
+	AddPart(FVector(-12.f, 0.f, 0.f), FVector(0.08f, 0.04f, 0.04f), Dark);
+	AddPart(FVector(-16.f, 0.f, 0.f), FVector(0.02f, 0.05f, 0.04f), Trim);
+	// Secondary accent dot (rear sight area)
+	AddPart(FVector(2.f, 0.f, 3.2f), FVector(0.006f, 0.006f, 0.006f), Accent);
 }
 
 void UExoWeaponViewModel::BuildSMGModel(const FLinearColor& Accent)

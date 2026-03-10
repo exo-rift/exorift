@@ -14,7 +14,10 @@ AExoPostProcess::AExoPostProcess()
 
 	// Base settings for sci-fi look
 	PostProcessComp->Settings.bOverride_BloomIntensity = true;
-	PostProcessComp->Settings.BloomIntensity = 0.7f;
+	PostProcessComp->Settings.BloomIntensity = 0.8f;
+
+	PostProcessComp->Settings.bOverride_BloomThreshold = true;
+	PostProcessComp->Settings.BloomThreshold = 0.8f;
 
 	PostProcessComp->Settings.bOverride_AutoExposureBias = true;
 	PostProcessComp->Settings.AutoExposureBias = 0.f;
@@ -23,13 +26,27 @@ AExoPostProcess::AExoPostProcess()
 	PostProcessComp->Settings.VignetteIntensity = 0.3f;
 
 	PostProcessComp->Settings.bOverride_FilmGrainIntensity = true;
-	PostProcessComp->Settings.FilmGrainIntensity = 0.05f;
+	PostProcessComp->Settings.FilmGrainIntensity = 0.04f;
 
+	// Cool shadow tint — blue-shifted shadows for sci-fi atmosphere
 	PostProcessComp->Settings.bOverride_ColorContrastShadows = true;
-	PostProcessComp->Settings.ColorContrastShadows = FVector4(1.05f, 1.05f, 1.1f, 1.f);
+	PostProcessComp->Settings.ColorContrastShadows = FVector4(1.05f, 1.05f, 1.12f, 1.f);
+
+	PostProcessComp->Settings.bOverride_ColorGammaShadows = true;
+	PostProcessComp->Settings.ColorGammaShadows = FVector4(0.98f, 0.98f, 1.04f, 1.f);
+
+	// Slightly warm highlights for contrast against cool shadows
+	PostProcessComp->Settings.bOverride_ColorGainHighlights = true;
+	PostProcessComp->Settings.ColorGainHighlights = FVector4(1.02f, 1.0f, 0.97f, 1.f);
 
 	PostProcessComp->Settings.bOverride_SceneFringeIntensity = true;
 	PostProcessComp->Settings.SceneFringeIntensity = 0.f;
+
+	// Ambient occlusion for depth in enclosed spaces
+	PostProcessComp->Settings.bOverride_AmbientOcclusionIntensity = true;
+	PostProcessComp->Settings.AmbientOcclusionIntensity = 0.5f;
+	PostProcessComp->Settings.bOverride_AmbientOcclusionRadius = true;
+	PostProcessComp->Settings.AmbientOcclusionRadius = 200.f;
 }
 
 void AExoPostProcess::Tick(float DeltaTime)
