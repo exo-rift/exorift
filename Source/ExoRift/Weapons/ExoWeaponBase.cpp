@@ -315,7 +315,10 @@ void AExoWeaponBase::TickHeatGlow()
 {
 	if (!ViewModel || !ViewModel->IsRegistered()) return;
 
-	// Update muzzle ready light based on heat — cool blue when ready, hot orange when hot
+	// Update barrel material heat glow
+	ViewModel->UpdateHeatGlow(CurrentHeat);
+
+	// Update muzzle ready light based on heat — cool accent when ready, hot orange when hot
 	UPointLightComponent* Light = nullptr;
 	TArray<USceneComponent*> VMChildren;
 	ViewModel->GetChildrenComponents(false, VMChildren);
@@ -329,17 +332,20 @@ void AExoWeaponBase::TickHeatGlow()
 	}
 	if (!Light) return;
 
-	if (CurrentHeat > 0.3f)
+	if (CurrentHeat > 0.2f)
 	{
-		float HeatAlpha = FMath::Clamp((CurrentHeat - 0.3f) / 0.7f, 0.f, 1.f);
-		FLinearColor CoolColor = Light->GetLightColor();
+		float HeatAlpha = FMath::Clamp((CurrentHeat - 0.2f) / 0.8f, 0.f, 1.f);
 		FLinearColor HotColor(1.f, 0.3f, 0.05f);
+		FLinearColor CoolColor = GetRarityColor(Rarity);
 		Light->SetLightColor(FMath::Lerp(CoolColor, HotColor, HeatAlpha));
-		Light->SetIntensity(FMath::Lerp(800.f, 3000.f, HeatAlpha));
+		Light->SetIntensity(FMath::Lerp(800.f, 5000.f, HeatAlpha));
+		Light->SetAttenuationRadius(FMath::Lerp(120.f, 300.f, HeatAlpha));
 	}
 	else
 	{
+		Light->SetLightColor(GetRarityColor(Rarity));
 		Light->SetIntensity(800.f);
+		Light->SetAttenuationRadius(120.f);
 	}
 }
 

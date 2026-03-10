@@ -9,6 +9,7 @@
 #include "Visual/ExoWeaponViewModel.h"
 #include "Visual/ExoScreenShake.h"
 #include "Visual/ExoBulletWhiz.h"
+#include "Visual/ExoHeatShimmer.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "UI/ExoPickupNotification.h"
@@ -112,6 +113,13 @@ void AExoWeaponBase::FireShot()
 		FVector EjectDir = GetActorRightVector();
 		FExoTracerManager::SpawnShellCasing(GetWorld(), MuzzleLoc + EjectDir * 5.f,
 			EjectDir, WeaponType);
+
+		// Heat shimmer from barrel when weapon is hot
+		if (CurrentHeat > 0.5f)
+		{
+			float ShimmerIntensity = (CurrentHeat - 0.5f) * 2.f; // 0-1 over heat range 0.5-1.0
+			AExoHeatShimmer::SpawnShimmer(GetWorld(), MuzzleLoc, ShimmerIntensity);
+		}
 
 		// Near-miss bullet whiz for other players
 		FExoBulletWhiz::CheckNearMiss(GetWorld(), MuzzleLoc, TraceEnd);

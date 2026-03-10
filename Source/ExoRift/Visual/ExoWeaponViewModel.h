@@ -27,6 +27,9 @@ public:
 	/** Get the muzzle tip location for tracer/flash spawning. */
 	FVector GetMuzzleLocation() const;
 
+	/** Update barrel heat glow — call every tick with weapon heat 0-1. */
+	void UpdateHeatGlow(float Heat);
+
 private:
 	void BuildRifleModel(const FLinearColor& Accent);
 	void BuildPistolModel(const FLinearColor& Accent);
@@ -47,6 +50,16 @@ private:
 
 	UPROPERTY()
 	UExoFPArms* Arms = nullptr;
+
+	/** Adds a barrel part — same as AddPart but tracked for heat glow. */
+	UStaticMeshComponent* AddBarrelPart(const FVector& Offset, const FVector& Scale,
+		const FLinearColor& Color, UStaticMesh* Mesh = nullptr);
+
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*> BarrelMats;
+
+	/** Original dark colors of barrel parts (for lerp back from heat). */
+	TArray<FLinearColor> BarrelBaseColors;
 
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;

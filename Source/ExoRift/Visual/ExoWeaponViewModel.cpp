@@ -92,6 +92,60 @@ UStaticMeshComponent* UExoWeaponViewModel::AddPart(const FVector& Offset,
 	return Part;
 }
 
+UStaticMeshComponent* UExoWeaponViewModel::AddBarrelPart(const FVector& Offset,
+	const FVector& Scale, const FLinearColor& Color, UStaticMesh* Mesh)
+{
+	UStaticMeshComponent* Part = AddPart(Offset, Scale, Color, Mesh);
+	if (Part)
+	{
+		UMaterialInstanceDynamic* Mat = Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0));
+		if (Mat)
+		{
+			BarrelMats.Add(Mat);
+			BarrelBaseColors.Add(Color);
+		}
+	}
+	return Part;
+}
+
+void UExoWeaponViewModel::UpdateHeatGlow(float Heat)
+{
+	if (Heat < 0.05f)
+	{
+		// Fully cool — restore original colors
+		for (int32 i = 0; i < BarrelMats.Num(); i++)
+		{
+			if (!BarrelMats[i]) continue;
+			BarrelMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		}
+		return;
+	}
+
+	// Heat color ramp: 0.05-0.4 = dark red, 0.4-0.7 = red-orange, 0.7-1.0 = orange-white
+	FLinearColor HeatEmissive;
+	if (Heat < 0.4f)
+	{
+		float T = (Heat - 0.05f) / 0.35f;
+		HeatEmissive = FLinearColor(T * 2.f, T * 0.3f, T * 0.05f);
+	}
+	else if (Heat < 0.7f)
+	{
+		float T = (Heat - 0.4f) / 0.3f;
+		HeatEmissive = FLinearColor(2.f + T * 4.f, 0.3f + T * 2.f, 0.05f + T * 0.3f);
+	}
+	else
+	{
+		float T = (Heat - 0.7f) / 0.3f;
+		HeatEmissive = FLinearColor(6.f + T * 10.f, 2.3f + T * 6.f, 0.35f + T * 4.f);
+	}
+
+	for (int32 i = 0; i < BarrelMats.Num(); i++)
+	{
+		if (!BarrelMats[i]) continue;
+		BarrelMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"), HeatEmissive);
+	}
+}
+
 void UExoWeaponViewModel::BuildRifleModel(const FLinearColor& Accent)
 {
 	FLinearColor Body(0.08f, 0.08f, 0.1f);
@@ -101,12 +155,12 @@ void UExoWeaponViewModel::BuildRifleModel(const FLinearColor& Accent)
 	// Main receiver
 	AddPart(FVector(15.f, 0.f, 0.f), FVector(0.35f, 0.06f, 0.05f), Body);
 	// Barrel shroud
-	AddPart(FVector(32.f, 0.f, 0.f), FVector(0.12f, 0.04f, 0.04f), Dark);
+	AddBarrelPart(FVector(32.f, 0.f, 0.f), FVector(0.12f, 0.04f, 0.04f), Dark);
 	// Barrel
-	MuzzleTip = AddPart(FVector(42.f, 0.f, 0.5f), FVector(0.16f, 0.02f, 0.02f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(42.f, 0.f, 0.5f), FVector(0.16f, 0.02f, 0.02f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Muzzle brake
-	AddPart(FVector(48.f, 0.f, 0.5f), FVector(0.025f, 0.025f, 0.015f), Trim, CylinderMesh);
+	AddBarrelPart(FVector(48.f, 0.f, 0.5f), FVector(0.025f, 0.025f, 0.015f), Trim, CylinderMesh);
 	// Magazine
 	AddPart(FVector(10.f, 0.f, -4.f), FVector(0.06f, 0.03f, 0.08f), Dark);
 	// Grip
@@ -142,10 +196,10 @@ void UExoWeaponViewModel::BuildSMGModel(const FLinearColor& Accent)
 	// Upper rail
 	AddPart(FVector(14.f, 0.f, 2.8f), FVector(0.1f, 0.012f, 0.006f), Trim);
 	// Short barrel
-	MuzzleTip = AddPart(FVector(28.f, 0.f, 0.5f), FVector(0.08f, 0.018f, 0.018f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(28.f, 0.f, 0.5f), FVector(0.08f, 0.018f, 0.018f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Barrel shroud
-	AddPart(FVector(24.f, 0.f, 0.5f), FVector(0.05f, 0.022f, 0.022f), Body, CylinderMesh);
+	AddBarrelPart(FVector(24.f, 0.f, 0.5f), FVector(0.05f, 0.022f, 0.022f), Body, CylinderMesh);
 	// Magazine (straight)
 	AddPart(FVector(8.f, 0.f, -4.f), FVector(0.04f, 0.025f, 0.07f), Dark);
 	// Grip
@@ -167,10 +221,10 @@ void UExoWeaponViewModel::BuildShotgunModel(const FLinearColor& Accent)
 	// Thick body
 	AddPart(FVector(12.f, 0.f, 0.f), FVector(0.3f, 0.07f, 0.06f), Body);
 	// Wide barrel
-	MuzzleTip = AddPart(FVector(38.f, 0.f, 0.f), FVector(0.12f, 0.03f, 0.03f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(38.f, 0.f, 0.f), FVector(0.12f, 0.03f, 0.03f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Muzzle flare (wider at end)
-	AddPart(FVector(44.f, 0.f, 0.f), FVector(0.015f, 0.035f, 0.035f), Trim, CylinderMesh);
+	AddBarrelPart(FVector(44.f, 0.f, 0.f), FVector(0.015f, 0.035f, 0.035f), Trim, CylinderMesh);
 	// Pump slide
 	AddPart(FVector(22.f, 0.f, -1.5f), FVector(0.08f, 0.04f, 0.035f), Trim);
 	// Pump rail
@@ -198,11 +252,11 @@ void UExoWeaponViewModel::BuildSniperModel(const FLinearColor& Accent)
 	// Long body
 	AddPart(FVector(20.f, 0.f, 0.f), FVector(0.45f, 0.05f, 0.04f), Body);
 	// Long barrel
-	MuzzleTip = AddPart(FVector(55.f, 0.f, 0.5f), FVector(0.22f, 0.015f, 0.015f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(55.f, 0.f, 0.5f), FVector(0.22f, 0.015f, 0.015f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Barrel stabilizer fins
-	AddPart(FVector(50.f, 0.f, 2.5f), FVector(0.04f, 0.002f, 0.015f), Trim);
-	AddPart(FVector(50.f, 0.f, -1.5f), FVector(0.04f, 0.002f, 0.015f), Trim);
+	AddBarrelPart(FVector(50.f, 0.f, 2.5f), FVector(0.04f, 0.002f, 0.015f), Trim);
+	AddBarrelPart(FVector(50.f, 0.f, -1.5f), FVector(0.04f, 0.002f, 0.015f), Trim);
 	// Scope body (cylinder)
 	AddPart(FVector(22.f, 0.f, 4.5f), FVector(0.1f, 0.025f, 0.025f), Dark, CylinderMesh);
 	// Scope lens (front) — glowing accent
@@ -234,7 +288,7 @@ void UExoWeaponViewModel::BuildPistolModel(const FLinearColor& Accent)
 	// Slide serrations (back)
 	AddPart(FVector(0.f, 0.f, 1.f), FVector(0.03f, 0.042f, 0.037f), Trim);
 	// Short barrel
-	MuzzleTip = AddPart(FVector(22.f, 0.f, 1.f), FVector(0.06f, 0.015f, 0.015f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(22.f, 0.f, 1.f), FVector(0.06f, 0.015f, 0.015f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Frame / lower
 	AddPart(FVector(6.f, 0.f, -1.f), FVector(0.14f, 0.038f, 0.02f), Dark);
@@ -257,10 +311,10 @@ void UExoWeaponViewModel::BuildLauncherModel(const FLinearColor& Accent)
 	FLinearColor Trim(0.12f, 0.11f, 0.1f);
 
 	// Thick cylindrical barrel
-	MuzzleTip = AddPart(FVector(30.f, 0.f, 0.f), FVector(0.22f, 0.04f, 0.04f), Dark, CylinderMesh);
+	MuzzleTip = AddBarrelPart(FVector(30.f, 0.f, 0.f), FVector(0.22f, 0.04f, 0.04f), Dark, CylinderMesh);
 	if (MuzzleTip) MuzzleTip->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 	// Barrel ring (muzzle end)
-	AddPart(FVector(40.f, 0.f, 0.f), FVector(0.015f, 0.05f, 0.05f), Trim, CylinderMesh);
+	AddBarrelPart(FVector(40.f, 0.f, 0.f), FVector(0.015f, 0.05f, 0.05f), Trim, CylinderMesh);
 	// Body housing
 	AddPart(FVector(10.f, 0.f, 0.f), FVector(0.2f, 0.07f, 0.06f), Body);
 	// Drum magazine (cylinder below body)
