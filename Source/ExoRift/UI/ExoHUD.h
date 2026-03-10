@@ -76,6 +76,7 @@ protected:
 
 	void DrawFPS();
 	void DrawSprintLines();
+	void DrawGrenadeWarning();
 
 	float CrosshairSpread = 0.f;
 	float SprintLineAlpha = 0.f;

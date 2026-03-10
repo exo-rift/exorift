@@ -24,6 +24,9 @@ public:
 	/** Launch the grenade in the given direction. */
 	void Ignite(FVector Direction);
 
+	/** True if the fuse is lit and ticking. */
+	bool IsIgnited() const { return bIgnited; }
+
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade")
 	EGrenadeType GrenadeType = EGrenadeType::Frag;
 

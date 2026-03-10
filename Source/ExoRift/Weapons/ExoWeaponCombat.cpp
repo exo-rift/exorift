@@ -8,6 +8,7 @@
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoWeaponViewModel.h"
 #include "Visual/ExoScreenShake.h"
+#include "Visual/ExoBulletWhiz.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "UI/ExoPickupNotification.h"
@@ -111,6 +112,9 @@ void AExoWeaponBase::FireShot()
 		FVector EjectDir = GetActorRightVector();
 		FExoTracerManager::SpawnShellCasing(GetWorld(), MuzzleLoc + EjectDir * 5.f,
 			EjectDir, WeaponType);
+
+		// Near-miss bullet whiz for other players
+		FExoBulletWhiz::CheckNearMiss(GetWorld(), MuzzleLoc, TraceEnd);
 	}
 
 	if (!Hit.bBlockingHit) return;

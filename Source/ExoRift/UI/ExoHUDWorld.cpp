@@ -6,6 +6,7 @@
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSupplyDrop.h"
 #include "Visual/ExoWeatherSystem.h"
+#include "Weapons/ExoGrenade.h"
 #include "Engine/Canvas.h"
 #include "EngineUtils.h"
 
@@ -304,4 +305,72 @@ void AExoHUD::DrawLocationBanner()
 	float DT = GetWorld()->GetDeltaSeconds();
 	FExoLocationNames::Tick(DT, Char->GetActorLocation());
 	FExoLocationNames::Draw(this, Canvas, HUDFont);
+}
+
+void AExoHUD::DrawGrenadeWarning()
+{
+	APawn* Pawn = GetOwningPawn();
+	if (!Pawn) return;
+
+	FVector PlayerPos = Pawn->GetActorLocation();
+	const float WarnRadius = 2000.f;
+	float ClosestDist = WarnRadius;
+	FVector ClosestGrenadePos = FVector::ZeroVector;
+	bool bFound = false;
+
+	for (TActorIterator<AExoGrenade> It(GetWorld()); It; ++It)
+	{
+		AExoGrenade* G = *It;
+		if (!G->IsIgnited()) continue;
+
+		float Dist = FVector::Distance(PlayerPos, G->GetActorLocation());
+		if (Dist < ClosestDist)
+		{
+			ClosestDist = Dist;
+			ClosestGrenadePos = G->GetActorLocation();
+			bFound = true;
+		}
+	}
+
+	if (!bFound) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+
+	// Direction to grenade
+	FVector ToGrenade = ClosestGrenadePos - PlayerPos;
+	FVector2D Dir2D(ToGrenade.X, ToGrenade.Y);
+	Dir2D.Normalize();
+
+	// Rotate into screen space based on camera yaw
+	float CamYaw = FMath::DegreesToRadians(
+		Pawn->GetControlRotation().Yaw);
+	float RX = Dir2D.X * FMath::Cos(-CamYaw) - Dir2D.Y * FMath::Sin(-CamYaw);
+	float RY = Dir2D.X * FMath::Sin(-CamYaw) + Dir2D.Y * FMath::Cos(-CamYaw);
+
+	// Intensity — closer = more urgent
+	float Urgency = 1.f - (ClosestDist / WarnRadius);
+	float Pulse = 0.5f + 0.5f * FMath::Sin(GetWorld()->GetTimeSeconds() * 12.f * Urgency);
+	float Alpha = Urgency * (0.6f + 0.4f * Pulse);
+
+	FLinearColor WarnCol(1.f, 0.3f, 0.1f, Alpha);
+
+	// Draw directional indicator arc
+	float IndicatorDist = FMath::Min(Canvas->SizeX, Canvas->SizeY) * 0.35f;
+	float IX = CX + RY * IndicatorDist; // Swap: RY is forward on screen
+	float IY = CY - RX * IndicatorDist;
+
+	// Warning indicator dot pointing toward grenade
+	float DotSize = 12.f + 8.f * Urgency;
+	DrawRect(WarnCol, IX - DotSize * 0.5f, IY - DotSize * 0.5f, DotSize, DotSize);
+
+	// "GRENADE" text
+	if (Urgency > 0.3f && HUDFont)
+	{
+		FString Text = TEXT("! GRENADE !");
+		float TW, TH;
+		GetTextSize(Text, TW, TH, HUDFont, 1.f);
+		DrawText(Text, WarnCol, CX - TW * 0.5f,
+			CY + Canvas->SizeY * 0.25f, HUDFont, 1.f);
+	}
 }

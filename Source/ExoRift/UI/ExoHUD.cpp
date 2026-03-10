@@ -88,6 +88,7 @@ void AExoHUD::DrawHUD()
 	DrawWeatherIndicator();
 	DrawRainOverlay();
 	DrawAbilities();
+	DrawGrenadeWarning();
 	DrawInteractionPrompt();
 	DrawVehicleHUD();
 	DrawLocationBanner();
