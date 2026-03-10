@@ -40,20 +40,28 @@ UStaticMeshComponent* UExoFPArms::AddPart(const FVector& Offset, const FVector& 
 	Part->CastShadow = false;
 	Part->SetGenerateOverlapEvents(false);
 
-	float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
-	if (Lum > 0.12f)
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			FExoMaterialFactory::GetLitEmissive(), GetOwner());
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
-		Part->SetMaterial(0, Mat);
-	}
-	else if (BaseMaterial)
-	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+
+		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+		if (Lum > 0.12f)
+		{
+			// Accent/display parts: strong emissive for glow
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f));
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.3f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.1f);
+		}
+		else
+		{
+			// Suit/glove parts: matte tactical fabric, slightly rough
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.15f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.6f);
+		}
 		Part->SetMaterial(0, Mat);
 	}
 
