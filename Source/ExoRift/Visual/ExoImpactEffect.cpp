@@ -58,7 +58,7 @@ AExoImpactEffect::AExoImpactEffect()
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(CoreMesh);
 	FlashLight->SetIntensity(120000.f);
-	FlashLight->SetAttenuationRadius(1800.f);
+	FlashLight->SetAttenuationRadius(3000.f);
 	FlashLight->CastShadows = false;
 }
 
@@ -92,21 +92,21 @@ void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter
 	}
 	else
 	{
-		// Surface hits: weapon-colored energy sparks
+		// Surface hits: bright weapon-colored energy sparks
 		SparkColor = FLinearColor(
-			WeaponColor.R * 55.f + 5.f,
-			WeaponColor.G * 55.f + 5.f,
-			WeaponColor.B * 55.f + 5.f);
+			WeaponColor.R * 80.f + 8.f,
+			WeaponColor.G * 80.f + 8.f,
+			WeaponColor.B * 80.f + 8.f);
 		LightColor = WeaponColor;
 		DustColor = FLinearColor(0.2f, 0.2f, 0.25f);
 		RingColor = FLinearColor(
-			WeaponColor.R * 35.f + 3.f,
-			WeaponColor.G * 35.f + 3.f,
-			WeaponColor.B * 35.f + 3.f);
+			WeaponColor.R * 50.f + 5.f,
+			WeaponColor.G * 50.f + 5.f,
+			WeaponColor.B * 50.f + 5.f);
 	}
 
 	FlashLight->SetLightColor(LightColor);
-	FlashLight->SetIntensity(180000.f);
+	FlashLight->SetIntensity(300000.f);
 	BaseIntensity = FlashLight->Intensity;
 
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
@@ -144,14 +144,14 @@ void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter
 	SparkVelocities.SetNum(SparkMeshes.Num());
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)
 	{
-		FVector Vel = InHitNormal * FMath::RandRange(400.f, 1200.f);
-		Vel += Tangent * FMath::RandRange(-500.f, 500.f);
-		Vel += Bitangent * FMath::RandRange(-500.f, 500.f);
+		FVector Vel = InHitNormal * FMath::RandRange(500.f, 1600.f);
+		Vel += Tangent * FMath::RandRange(-700.f, 700.f);
+		Vel += Bitangent * FMath::RandRange(-700.f, 700.f);
 		SparkVelocities[i] = Vel;
 
-		float S = FMath::RandRange(0.06f, 0.14f);
+		float S = FMath::RandRange(0.08f, 0.18f);
 		SparkMeshes[i]->SetWorldScale3D(FVector(S * 5.f, S, S));
-		SparkMeshes[i]->SetMaterial(0, MakeMat(SparkColor * FMath::RandRange(0.6f, 1.2f)));
+		SparkMeshes[i]->SetMaterial(0, MakeMat(SparkColor * FMath::RandRange(0.6f, 1.4f)));
 	}
 }
 
@@ -178,8 +178,8 @@ void AExoImpactEffect::Tick(float DeltaTime)
 	DustPuff->SetRelativeLocation(HitNorm * Age * 60.f);
 
 	// Shockwave ring: expand rapidly, flatten and fade
-	float RingExpand = FMath::Lerp(0.1f, 2.5f, FMath::Sqrt(T));
-	float RingThick = 0.003f * FMath::Max(Alpha * 2.f, 0.01f);
+	float RingExpand = FMath::Lerp(0.15f, 3.5f, FMath::Sqrt(T));
+	float RingThick = 0.004f * FMath::Max(Alpha * 2.f, 0.01f);
 	ShockwaveRing->SetWorldScale3D(FVector(RingExpand, RingExpand, RingThick));
 
 	// Sparks: fly outward with gravity, tumbling

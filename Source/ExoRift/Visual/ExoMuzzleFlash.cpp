@@ -92,19 +92,19 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	FlashFlare->SetRelativeScale3D(FVector(0.04f, 0.03f, FlareScale));
 	FlashRing->SetRelativeScale3D(FVector(RingScale * 0.3f, RingScale * 0.3f, 0.005f));
 
-	// Blazing emissive energy burst (cranked for massive bloom)
+	// Blazing emissive energy burst (extreme bloom for dramatic flash)
 	FLinearColor HotCenter(
-		WeaponColor.R * 70.f + 40.f,
-		WeaponColor.G * 70.f + 40.f,
-		WeaponColor.B * 70.f + 40.f);
+		WeaponColor.R * 120.f + 60.f,
+		WeaponColor.G * 120.f + 60.f,
+		WeaponColor.B * 120.f + 60.f);
 	FLinearColor FlareColor(
-		WeaponColor.R * 90.f,
-		WeaponColor.G * 90.f,
-		WeaponColor.B * 90.f);
+		WeaponColor.R * 150.f,
+		WeaponColor.G * 150.f,
+		WeaponColor.B * 150.f);
 	FLinearColor RingColor(
-		WeaponColor.R * 45.f,
-		WeaponColor.G * 45.f,
-		WeaponColor.B * 45.f);
+		WeaponColor.R * 70.f,
+		WeaponColor.G * 70.f,
+		WeaponColor.B * 70.f);
 
 	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
 	if (BaseMat)
@@ -122,12 +122,12 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	}
 
 	FlashLight->SetLightColor(WeaponColor);
-	FlashLight->SetIntensity(250000.f);
-	FlashLight->SetAttenuationRadius(3000.f);
+	FlashLight->SetIntensity(400000.f);
+	FlashLight->SetAttenuationRadius(4000.f);
 	BaseIntensity = FlashLight->Intensity;
 
 	BounceLight->SetLightColor(WeaponColor);
-	BounceLight->SetIntensity(80000.f);
+	BounceLight->SetIntensity(120000.f);
 }
 
 void AExoMuzzleFlash::Tick(float DeltaTime)
