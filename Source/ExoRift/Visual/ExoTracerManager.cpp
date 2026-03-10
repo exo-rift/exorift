@@ -1,5 +1,6 @@
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoTracer.h"
+#include "Visual/ExoTracerWake.h"
 #include "Visual/ExoMuzzleFlash.h"
 #include "Visual/ExoImpactEffect.h"
 #include "Visual/ExoImpactDecal.h"
@@ -20,6 +21,12 @@ void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const F
 	{
 		Tracer->InitTracer(Start, End, bIsHit, GetWeaponTracerColor(WeaponType), WeaponType);
 	}
+
+	// Energy droplets left in the tracer's wake
+	FLinearColor WakeColor = GetWeaponTracerColor(WeaponType);
+	float WakeSpacing = (WeaponType == EWeaponType::Sniper) ? 200.f :
+		(WeaponType == EWeaponType::Shotgun) ? 180.f : 300.f;
+	AExoTracerWake::SpawnWake(World, Start, End, WakeColor, WakeSpacing);
 }
 
 void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
@@ -39,7 +46,7 @@ void FExoTracerManager::SpawnMuzzleFlash(UWorld* World, const FVector& Location,
 }
 
 void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location,
-	const FVector& HitNormal, bool bHitCharacter)
+	const FVector& HitNormal, bool bHitCharacter, EWeaponType WeaponType)
 {
 	if (!World) return;
 
@@ -57,7 +64,7 @@ void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location
 	if (!bHitCharacter)
 	{
 		AExoImpactDecal::SpawnDecal(World, Location, HitNormal,
-			FLinearColor(0.3f, 0.6f, 1.f)); // Default energy blue
+			GetWeaponTracerColor(WeaponType));
 	}
 }
 

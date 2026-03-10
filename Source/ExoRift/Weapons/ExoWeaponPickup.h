@@ -72,8 +72,14 @@ protected:
 	class UStaticMeshComponent* RarityRing = nullptr;
 
 	UPROPERTY()
+	class UStaticMeshComponent* BeaconBeam = nullptr;
+
+	UPROPERTY()
 	class UMaterialInstanceDynamic* PedestalMat = nullptr;
 
 	UPROPERTY()
 	class UMaterialInstanceDynamic* RingMat = nullptr;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* BeaconMat = nullptr;
 };

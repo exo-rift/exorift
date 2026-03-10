@@ -20,7 +20,8 @@ public:
 
 	/** Spawn impact sparks at a bullet hit location. */
 	static void SpawnImpactEffect(UWorld* World, const FVector& Location,
-		const FVector& HitNormal, bool bHitCharacter);
+		const FVector& HitNormal, bool bHitCharacter,
+		EWeaponType WeaponType = EWeaponType::Rifle);
 
 	/** Spawn an ejected shell casing from weapon fire. */
 	static void SpawnShellCasing(UWorld* World, const FVector& Location,

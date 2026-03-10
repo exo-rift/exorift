@@ -205,6 +205,29 @@ void AExoWeaponPickup::BuildPickupModel()
 			RarityRing->SetMaterial(0, RingMat);
 		}
 	}
+
+	// --- Vertical beacon beam — visible from distance ---
+	if (CylMesh && BaseMat && Rarity >= EWeaponRarity::Rare)
+	{
+		BeaconBeam = NewObject<UStaticMeshComponent>(this);
+		BeaconBeam->SetupAttachment(RootComponent);
+		BeaconBeam->SetStaticMesh(CylMesh);
+		BeaconBeam->SetRelativeLocation(FVector(0.f, 0.f, 800.f));
+		BeaconBeam->SetRelativeScale3D(FVector(0.015f, 0.015f, 16.f));
+		BeaconBeam->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		BeaconBeam->CastShadow = false;
+		BeaconBeam->RegisterComponent();
+
+		BeaconMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		float BeaconEm = EmMul * 1.5f;
+		BeaconMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(RarityColor.R * BeaconEm * 0.3f, RarityColor.G * BeaconEm * 0.3f,
+				RarityColor.B * BeaconEm * 0.3f));
+		BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(RarityColor.R * BeaconEm, RarityColor.G * BeaconEm,
+				RarityColor.B * BeaconEm));
+		BeaconBeam->SetMaterial(0, BeaconMat);
+	}
 }
 
 void AExoWeaponPickup::Tick(float DeltaTime)
@@ -265,6 +288,23 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 			// Breathe ring scale
 			float RingBreath = 0.65f + 0.05f * FMath::Sin(BobPhase * 1.2f);
 			RarityRing->SetRelativeScale3D(FVector(RingBreath, RingBreath, 0.005f));
+		}
+
+		// Beacon beam shimmer
+		if (BeaconBeam && BeaconMat)
+		{
+			FLinearColor RC = AExoWeaponBase::GetRarityColor(Rarity);
+			float BaseEm;
+			switch (Rarity)
+			{
+			case EWeaponRarity::Rare:      BaseEm = 1.8f; break;
+			case EWeaponRarity::Epic:      BaseEm = 3.0f; break;
+			case EWeaponRarity::Legendary: BaseEm = 6.0f; break;
+			default:                       BaseEm = 1.0f; break;
+			}
+			float Shimmer = BaseEm * (0.6f + 0.4f * FMath::Sin(BobPhase * 2.5f));
+			BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(RC.R * Shimmer, RC.G * Shimmer, RC.B * Shimmer));
 		}
 	}
 	else if (bRespawns)

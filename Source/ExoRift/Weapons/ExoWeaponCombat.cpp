@@ -196,7 +196,7 @@ void AExoWeaponBase::FireShot()
 	if (DmgNums) DmgNums->SpawnDamageNumber(Hit.ImpactPoint, FinalDamage, bHeadshot);
 	if (Audio) Audio->PlayImpactSound(Hit.ImpactPoint, HitChar != nullptr);
 	FExoTracerManager::SpawnImpactEffect(GetWorld(), Hit.ImpactPoint,
-		Hit.ImpactNormal, HitChar != nullptr);
+		Hit.ImpactNormal, HitChar != nullptr, WeaponType);
 }
 
 FHitResult AExoWeaponBase::DoLineTrace(float Range) const

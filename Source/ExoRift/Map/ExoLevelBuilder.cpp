@@ -1,5 +1,7 @@
 // ExoLevelBuilder.cpp — Terrain, lighting, skybox, and mesh helper
 #include "Map/ExoLevelBuilder.h"
+#include "Map/ExoLootCrate.h"
+#include "Map/ExoTargetDummy.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -73,6 +75,50 @@ void AExoLevelBuilder::BeginPlay()
 	// Ambient floating particles (dust motes / energy wisps)
 	AExoAmbientParticles* Particles = AExoAmbientParticles::Get(GetWorld());
 	if (Particles) Particles->SetStyle(true); // Energy wisps for sci-fi
+
+	// Loot crates scattered at key locations
+	{
+		FActorSpawnParameters Crate;
+		Crate.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FVector CratePositions[] = {
+			{1500.f, -2000.f, 50.f}, {-1800.f, 3000.f, 50.f},
+			{3500.f, 79500.f, 50.f}, {-4500.f, 81500.f, 50.f},
+			{2000.f, -80500.f, 50.f}, {-3500.f, -82000.f, 50.f},
+			{81500.f, 1500.f, 50.f}, {79000.f, -2500.f, 50.f},
+			{-80500.f, 2500.f, 50.f}, {-82000.f, -1500.f, 50.f},
+			{45000.f, 45000.f, 50.f}, {-55000.f, -55000.f, 50.f},
+		};
+		for (const FVector& P : CratePositions)
+		{
+			AExoLootCrate* LC = GetWorld()->SpawnActor<AExoLootCrate>(
+				AExoLootCrate::StaticClass(), P,
+				FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f), Crate);
+			if (LC) LC->ItemCount = FMath::RandRange(1, 3);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 12 loot crates"));
+	}
+
+	// Target dummies near hub for warmup practice
+	{
+		FActorSpawnParameters Dum;
+		Dum.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		struct FDummyDef { FVector Pos; FLinearColor Color; };
+		FDummyDef Dummies[] = {
+			{{5000.f, 5000.f, 10.f}, FLinearColor(1.f, 0.3f, 0.1f)},
+			{{-5000.f, 5500.f, 10.f}, FLinearColor(0.1f, 0.8f, 1.f)},
+			{{5500.f, -5000.f, 10.f}, FLinearColor(0.2f, 1.f, 0.3f)},
+			{{-5500.f, -5500.f, 10.f}, FLinearColor(1.f, 0.7f, 0.1f)},
+			{{7000.f, 0.f, 10.f}, FLinearColor(0.8f, 0.2f, 1.f)},
+			{{-7000.f, 0.f, 10.f}, FLinearColor(1.f, 0.1f, 0.4f)},
+		};
+		for (const FDummyDef& D : Dummies)
+		{
+			AExoTargetDummy* TD = GetWorld()->SpawnActor<AExoTargetDummy>(
+				AExoTargetDummy::StaticClass(), D.Pos, FRotator::ZeroRotator, Dum);
+			if (TD) TD->InitDummy(D.Color, 200.f);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 6 target dummies"));
+	}
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),
 		LevelMeshes.Num());
