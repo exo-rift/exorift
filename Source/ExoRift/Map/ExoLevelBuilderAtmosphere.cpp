@@ -6,6 +6,9 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoFlickerLight.h"
 #include "Visual/ExoHoloBillboard.h"
+#include "Visual/ExoSparkEmitter.h"
+#include "Visual/ExoRotatingProp.h"
+#include "ExoRift.h"
 
 void AExoLevelBuilder::BuildAtmosphere()
 {
@@ -120,6 +123,82 @@ void AExoLevelBuilder::BuildAtmosphere()
 				FRotator(0.f, B.Yaw, 0.f), BP);
 			if (BB) BB->InitBillboard(B.Color, B.W, B.H);
 		}
+	}
+
+	// === SPARK EMITTERS — damaged electrical panels at compounds ===
+	{
+		FActorSpawnParameters SP;
+		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		struct FSparkDef { FVector Pos; FRotator Dir; FLinearColor Color; float Interval; };
+		TArray<FSparkDef> SparkDefs = {
+			// Hub — damaged junction box
+			{{3500.f, 2000.f, 300.f}, FRotator(0.f, -90.f, 0.f),
+				FLinearColor(0.3f, 0.7f, 1.f), 4.f},
+			{{-2000.f, -3000.f, 250.f}, FRotator(0.f, 45.f, 0.f),
+				FLinearColor(1.f, 0.6f, 0.1f), 3.5f},
+			// North industrial — exposed wiring
+			{{5000.f, 79000.f, 400.f}, FRotator(0.f, 0.f, 0.f),
+				FLinearColor(1.f, 0.5f, 0.1f), 2.5f},
+			{{-3000.f, 82000.f, 200.f}, FRotator(0.f, 180.f, 0.f),
+				FLinearColor(1.f, 0.7f, 0.2f), 5.f},
+			// East power — overloaded conduit
+			{{81000.f, -2000.f, 350.f}, FRotator(0.f, -90.f, 0.f),
+				FLinearColor(0.2f, 0.5f, 1.f), 2.f},
+			{{79000.f, 3000.f, 500.f}, FRotator(-30.f, 0.f, 0.f),
+				FLinearColor(0.4f, 0.6f, 1.f), 3.f},
+			// South labs — containment breach sparks
+			{{2000.f, -81000.f, 300.f}, FRotator(0.f, 90.f, 0.f),
+				FLinearColor(0.3f, 1.f, 0.4f), 4.5f},
+			// West barracks — battle damage
+			{{-81000.f, 5000.f, 250.f}, FRotator(0.f, 0.f, 0.f),
+				FLinearColor(1.f, 0.3f, 0.1f), 3.f},
+			{{-79000.f, -3000.f, 400.f}, FRotator(0.f, 270.f, 0.f),
+				FLinearColor(1.f, 0.4f, 0.15f), 6.f},
+		};
+
+		for (const FSparkDef& S : SparkDefs)
+		{
+			AExoSparkEmitter* SE = GetWorld()->SpawnActor<AExoSparkEmitter>(
+				AExoSparkEmitter::StaticClass(), S.Pos, S.Dir, SP);
+			if (SE) SE->InitSparks(S.Color, S.Interval);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d spark emitters"), SparkDefs.Num());
+	}
+
+	// === ROTATING PROPS — radar dishes, fans, energy coils ===
+	{
+		FActorSpawnParameters RP;
+		RP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		struct FPropDef { FVector Pos; int32 Type; FLinearColor Color; float Speed; float Scale; };
+		TArray<FPropDef> PropDefs = {
+			// Hub — radar dish on command center
+			{{0.f, 0.f, 2600.f}, 1, FLinearColor(0.2f, 0.6f, 1.f), 15.f, 1.5f},
+			// Hub — energy coil at center
+			{{0.f, 3000.f, 200.f}, 2, FLinearColor(0.2f, 0.8f, 1.f), 40.f, 1.2f},
+			// North — industrial exhaust fan
+			{{-4000.f, 81000.f, 600.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 120.f, 1.0f},
+			{{4000.f, 79000.f, 500.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 90.f, 0.8f},
+			// East — power coils
+			{{82000.f, 0.f, 400.f}, 2, FLinearColor(0.4f, 0.6f, 1.f), 60.f, 1.0f},
+			{{78000.f, -4000.f, 350.f}, 2, FLinearColor(0.3f, 0.5f, 1.f), 45.f, 0.7f},
+			// South — research scanner dish
+			{{0.f, -82000.f, 500.f}, 1, FLinearColor(0.3f, 1.f, 0.4f), 8.f, 1.3f},
+			// West — barracks antenna
+			{{-82000.f, 0.f, 600.f}, 1, FLinearColor(1.f, 0.3f, 0.1f), 12.f, 1.0f},
+			// Corner outposts — small dishes
+			{{120000.f, 120000.f, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
+			{{-120000.f, -120000.f, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
+		};
+
+		for (const FPropDef& P : PropDefs)
+		{
+			AExoRotatingProp* Prop = GetWorld()->SpawnActor<AExoRotatingProp>(
+				AExoRotatingProp::StaticClass(), P.Pos, FRotator::ZeroRotator, RP);
+			if (Prop) Prop->InitProp(P.Type, P.Color, P.Speed, P.Scale);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d rotating props"), PropDefs.Num());
 	}
 }
 
