@@ -233,7 +233,8 @@ void AExoLevelBuilder::SpawnBridge(const FVector& Start, const FVector& End,
 
 void AExoLevelBuilder::BuildWaterFeatures()
 {
-	FLinearColor WaterColor(0.02f, 0.05f, 0.1f); // Dark water
+	FLinearColor WaterColor(0.02f, 0.06f, 0.12f);
+	UMaterialInterface* WaterMat = FExoMaterialFactory::GetLitEmissive();
 
 	// River channel running NE to SW through terrain patches
 	float RiverWidth = 4000.f;
@@ -258,17 +259,59 @@ void AExoLevelBuilder::BuildWaterFeatures()
 		float Len = Dir.Size();
 		FRotator Rot = Dir.Rotation();
 
-		// Water surface with subtle emissive sheen
+		// PBR water surface — metallic reflective with sci-fi emissive glow
 		UStaticMeshComponent* Water = SpawnStaticMesh(Mid,
 			FVector(Len / 100.f, RiverWidth / 100.f, 0.05f),
 			Rot, CubeMesh, WaterColor);
-		if (Water)
+		if (Water && WaterMat)
 		{
-			UMaterialInterface* WaterEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-			UMaterialInstanceDynamic* WMat = UMaterialInstanceDynamic::Create(WaterEmissiveMat, this);
+			UMaterialInstanceDynamic* WMat = UMaterialInstanceDynamic::Create(WaterMat, this);
+			WMat->SetVectorParameterValue(TEXT("BaseColor"), WaterColor);
 			WMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.005f, 0.015f, 0.03f));
+				FLinearColor(0.02f, 0.06f, 0.12f));
+			WMat->SetScalarParameterValue(TEXT("Metallic"), 0.95f);
+			WMat->SetScalarParameterValue(TEXT("Roughness"), 0.05f);
 			Water->SetMaterial(0, WMat);
+		}
+
+		// Ambient glow at each river bend
+		if (i > 0 && i < RiverPoints - 2)
+		{
+			UPointLightComponent* WGlow = NewObject<UPointLightComponent>(this);
+			WGlow->SetupAttachment(RootComponent);
+			WGlow->SetWorldLocation(Mid + FVector(0.f, 0.f, 100.f));
+			WGlow->SetIntensity(3000.f);
+			WGlow->SetAttenuationRadius(RiverWidth * 1.5f);
+			WGlow->SetLightColor(FLinearColor(0.05f, 0.2f, 0.4f));
+			WGlow->CastShadows = false;
+			WGlow->RegisterComponent();
+		}
+	}
+
+	// River bank edge strips — faint cyan glow at waterline
+	UMaterialInterface* EdgeMat = FExoMaterialFactory::GetEmissiveAdditive();
+	for (int32 i = 0; i < RiverPoints - 1; i++)
+	{
+		FVector S = RiverPath[i];
+		FVector E = RiverPath[i + 1];
+		FVector Mid = (S + E) * 0.5f;
+		FVector Dir = E - S;
+		float Len = Dir.Size();
+		FRotator Rot = Dir.Rotation();
+		FVector Right = FRotationMatrix(Rot).GetScaledAxis(EAxis::Y);
+		for (int32 Side = -1; Side <= 1; Side += 2)
+		{
+			FVector EdgePos = Mid + Right * (RiverWidth * 0.48f * Side) + FVector(0.f, 0.f, 5.f);
+			UStaticMeshComponent* Edge = SpawnStaticMesh(EdgePos,
+				FVector(Len / 100.f, 0.5f, 0.04f), Rot, CubeMesh,
+				FLinearColor(0.03f, 0.1f, 0.2f));
+			if (Edge && EdgeMat)
+			{
+				UMaterialInstanceDynamic* EMat = UMaterialInstanceDynamic::Create(EdgeMat, this);
+				EMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.04f, 0.15f, 0.3f));
+				Edge->SetMaterial(0, EMat);
+			}
 		}
 	}
 
@@ -277,14 +320,26 @@ void AExoLevelBuilder::BuildWaterFeatures()
 		FVector(85000.f, 10000.f, GroundZ - 50.f),
 		FVector(60.f, 40.f, 0.1f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.03f, 0.06f, 0.08f));
-	if (Pond)
+	if (Pond && WaterMat)
 	{
-		UMaterialInterface* PondEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-		UMaterialInstanceDynamic* PMat = UMaterialInstanceDynamic::Create(PondEmissiveMat, this);
+		UMaterialInstanceDynamic* PMat = UMaterialInstanceDynamic::Create(WaterMat, this);
+		PMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.03f, 0.06f, 0.08f));
 		PMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.008f, 0.02f, 0.03f));
+			FLinearColor(0.03f, 0.08f, 0.15f));
+		PMat->SetScalarParameterValue(TEXT("Metallic"), 0.95f);
+		PMat->SetScalarParameterValue(TEXT("Roughness"), 0.05f);
 		Pond->SetMaterial(0, PMat);
 	}
+
+	// Pond ambient glow
+	UPointLightComponent* PondGlow = NewObject<UPointLightComponent>(this);
+	PondGlow->SetupAttachment(RootComponent);
+	PondGlow->SetWorldLocation(FVector(85000.f, 10000.f, GroundZ));
+	PondGlow->SetIntensity(5000.f);
+	PondGlow->SetAttenuationRadius(4000.f);
+	PondGlow->SetLightColor(FLinearColor(0.05f, 0.15f, 0.3f));
+	PondGlow->CastShadows = false;
+	PondGlow->RegisterComponent();
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Water features placed"));
 }

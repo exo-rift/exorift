@@ -16,9 +16,7 @@ AExoFloatingDust::AExoFloatingDust()
 		TEXT("/Engine/BasicShapes/Cube"));
 	if (CubeFind.Succeeded()) CubeMesh = CubeFind.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
+	// BaseMaterial no longer needed — all motes use emissive material
 }
 
 void AExoFloatingDust::Tick(float DeltaTime)
@@ -26,7 +24,7 @@ void AExoFloatingDust::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Lazy init motes on first tick (after world is ready)
-	if (Motes.Num() == 0 && CubeMesh && BaseMaterial)
+	if (Motes.Num() == 0 && CubeMesh)
 	{
 		for (int32 i = 0; i < NUM_MOTES; i++)
 		{
@@ -42,22 +40,14 @@ void AExoFloatingDust::Tick(float DeltaTime)
 			M.Mesh->SetWorldScale3D(FVector(S, S * 0.5f, S * 0.3f));
 			M.Mesh->RegisterComponent();
 
-			// Random emissive tint — some catch ambient light, some glow faintly
-			float Brightness = FMath::RandRange(0.1f, 0.4f);
+			// Subtle emissive tint — cool-blue dust catching environment light
+			float Brightness = FMath::RandRange(0.08f, 0.35f);
 			FLinearColor Col(Brightness, Brightness * 1.1f, Brightness * 1.3f);
-			if (FMath::RandBool()) // ~50% have subtle emissive
-			{
-				UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-				UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * 0.3f);
-				M.Mesh->SetMaterial(0, Mat);
-			}
-			else
-			{
-				UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-				Mat->SetVectorParameterValue(TEXT("BaseColor"), Col);
-				M.Mesh->SetMaterial(0, Mat);
-			}
+			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			float Glow = FMath::RandRange(0.15f, 0.5f);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * Glow);
+			M.Mesh->SetMaterial(0, Mat);
 
 			// Random position in sphere around origin
 			float Radius = 3000.f;

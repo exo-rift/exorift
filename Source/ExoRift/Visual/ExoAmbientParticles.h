@@ -26,7 +26,7 @@ public:
 	static AExoAmbientParticles* Get(UWorld* World);
 
 private:
-	static constexpr int32 NUM_MOTES = 30;
+	static constexpr int32 NUM_MOTES = 50;
 
 	struct FMote
 	{
@@ -41,7 +41,7 @@ private:
 
 	TArray<FMote> Motes;
 
-	float SpawnRadius = 2500.f;
+	float SpawnRadius = 3500.f;
 	float DriftSpeed = 40.f;
 	bool bIsEnergyStyle = false;
 };

@@ -31,5 +31,4 @@ private:
 
 	TArray<FMote> Motes;
 	UStaticMesh* CubeMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

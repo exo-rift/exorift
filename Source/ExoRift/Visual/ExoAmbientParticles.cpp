@@ -69,14 +69,22 @@ void AExoAmbientParticles::SetStyle(bool bEnergyWisps)
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ParentMat, this);
 		if (bEnergyWisps)
 		{
-			// Glowing cyan/blue energy wisps
-			float Hue = FMath::RandRange(0.f, 1.f);
-			FLinearColor Col(
-				0.1f + Hue * 0.3f,
-				0.5f + Hue * 0.3f,
-				2.f + (1.f - Hue) * 3.f, 1.f);
-			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
-			Motes[i].BaseScale = FMath::RandRange(0.02f, 0.05f);
+			// Varied energy wisps: cyan, teal, violet, white — some bright, some dim
+			FLinearColor Col;
+			int32 Style = i % 5;
+			if (Style < 2) // Cyan
+				Col = FLinearColor(0.1f, 0.6f, 3.5f + FMath::RandRange(0.f, 2.f));
+			else if (Style < 3) // Teal-green
+				Col = FLinearColor(0.05f, 1.5f + FMath::RandRange(0.f, 1.f), 1.0f);
+			else if (Style < 4) // Violet
+				Col = FLinearColor(0.8f + FMath::RandRange(0.f, 0.5f), 0.15f, 2.5f);
+			else // Warm white
+				Col = FLinearColor(1.5f, 1.3f, 1.0f);
+
+			// Random brightness variance
+			float Bright = FMath::RandRange(0.6f, 1.4f);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * Bright);
+			Motes[i].BaseScale = FMath::RandRange(0.015f, 0.06f);
 		}
 		else
 		{

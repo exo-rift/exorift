@@ -51,11 +51,11 @@ void AExoLevelBuilder::BuildSkybox()
 	Nebula2->CastShadows = false;
 	Nebula2->RegisterComponent();
 
-	// Star field — small bright spheres scattered across the sky
+	// Star field — dense scattered spheres across the sky dome
 	if (SphereMesh)
 	{
 		UMaterialInterface* StarEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
-		int32 NumStars = 60;
+		int32 NumStars = 150;
 		for (int32 i = 0; i < NumStars; i++)
 		{
 			float Seed = i * 137.508f;
@@ -69,7 +69,11 @@ void AExoLevelBuilder::BuildSkybox()
 				R * FMath::Sin(Phi) * FMath::Sin(Theta),
 				R * FMath::Cos(Phi));
 
-			float StarScale = 8.f + (i % 5) * 4.f;
+			// Size variety: mostly tiny, a few bright supergiant stars
+			float StarScale;
+			if (i % 25 == 0) StarScale = 20.f + (i % 3) * 8.f; // Bright supergiant
+			else if (i % 8 == 0) StarScale = 12.f + (i % 4) * 3.f; // Medium
+			else StarScale = 5.f + (i % 5) * 2.f; // Small background star
 
 			UStaticMeshComponent* Star = NewObject<UStaticMeshComponent>(this);
 			Star->SetupAttachment(RootComponent);
@@ -80,16 +84,53 @@ void AExoLevelBuilder::BuildSkybox()
 			Star->CastShadow = false;
 			Star->RegisterComponent();
 
+			// More color variety: white, blue, orange, yellow, red giant
 			FLinearColor StarCol;
-			int32 ColorType = i % 10;
-			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f);
-			else if (ColorType < 8) StarCol = FLinearColor(6.f, 8.f, 15.f);
-			else if (ColorType < 9) StarCol = FLinearColor(15.f, 10.f, 4.f);
-			else StarCol = FLinearColor(12.f, 12.f, 6.f);
+			int32 ColorType = i % 15;
+			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f);       // White
+			else if (ColorType < 9) StarCol = FLinearColor(6.f, 8.f, 18.f);    // Blue
+			else if (ColorType < 11) StarCol = FLinearColor(18.f, 10.f, 3.f);  // Orange
+			else if (ColorType < 13) StarCol = FLinearColor(14.f, 14.f, 6.f);  // Yellow
+			else StarCol = FLinearColor(20.f, 5.f, 2.f);                        // Red giant
+
+			// Supergiants are extra bright
+			if (i % 25 == 0) StarCol = StarCol * 1.5f;
 
 			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(StarEmissiveMat, this);
 			StarMat->SetVectorParameterValue(TEXT("EmissiveColor"), StarCol);
 			Star->SetMaterial(0, StarMat);
+		}
+	}
+
+	// Nebula clouds — large soft emissive spheres for visible color regions
+	if (SphereMesh)
+	{
+		UMaterialInterface* NebMat = FExoMaterialFactory::GetEmissiveAdditive();
+		struct FNebCloud { FVector Pos; float Scale; FLinearColor Col; };
+		TArray<FNebCloud> Clouds = {
+			// Purple nebula cluster (upper left)
+			{{-250000.f, 120000.f, 300000.f}, 40000.f, {0.08f, 0.02f, 0.15f}},
+			{{-200000.f, 150000.f, 280000.f}, 30000.f, {0.06f, 0.03f, 0.12f}},
+			{{-220000.f, 100000.f, 320000.f}, 25000.f, {0.10f, 0.01f, 0.10f}},
+			// Teal nebula (lower right)
+			{{200000.f, -160000.f, 180000.f}, 35000.f, {0.02f, 0.08f, 0.10f}},
+			{{180000.f, -130000.f, 200000.f}, 28000.f, {0.01f, 0.10f, 0.08f}},
+			// Warm orange wisps (near planet)
+			{{160000.f, -80000.f, 140000.f}, 20000.f, {0.10f, 0.04f, 0.01f}},
+		};
+		for (const auto& C : Clouds)
+		{
+			UStaticMeshComponent* Cloud = NewObject<UStaticMeshComponent>(this);
+			Cloud->SetupAttachment(RootComponent);
+			Cloud->SetStaticMesh(SphereMesh);
+			Cloud->SetWorldLocation(C.Pos);
+			Cloud->SetWorldScale3D(FVector(C.Scale));
+			Cloud->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Cloud->CastShadow = false;
+			Cloud->RegisterComponent();
+			UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(NebMat, this);
+			CM->SetVectorParameterValue(TEXT("EmissiveColor"), C.Col);
+			Cloud->SetMaterial(0, CM);
 		}
 	}
 
@@ -263,11 +304,45 @@ void AExoLevelBuilder::BuildSkybox()
 			Frag->CastShadow = false;
 			Frag->RegisterComponent();
 
+			// Visible hull glow — sunlit edge + subtle warmth from planet
 			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DebrisEmissiveMat, this);
-			// Faint edge glow from reflected planet light
 			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(D.Col.R * 0.2f, D.Col.G * 0.15f, D.Col.B * 0.1f));
+				FLinearColor(D.Col.R * 0.8f, D.Col.G * 0.6f, D.Col.B * 0.5f));
 			Frag->SetMaterial(0, DM);
+		}
+
+		// Additional small debris fragments for a denser field
+		for (int32 i = 0; i < 8; i++)
+		{
+			float Angle = i * 45.f + FMath::RandRange(-15.f, 15.f);
+			float Elev = FMath::RandRange(0.3f, 0.6f);
+			float Dist = OrbDist * FMath::RandRange(0.8f, 1.1f);
+			FVector Pos(
+				FMath::Cos(FMath::DegreesToRadians(Angle)) * Dist * (1.f - Elev),
+				FMath::Sin(FMath::DegreesToRadians(Angle)) * Dist * (1.f - Elev),
+				Dist * Elev);
+			FVector Scale(
+				FMath::RandRange(60.f, 200.f),
+				FMath::RandRange(40.f, 120.f),
+				FMath::RandRange(10.f, 40.f));
+
+			UStaticMeshComponent* SmallFrag = NewObject<UStaticMeshComponent>(this);
+			SmallFrag->SetupAttachment(RootComponent);
+			SmallFrag->SetStaticMesh(CubeMesh);
+			SmallFrag->SetWorldLocation(Pos);
+			SmallFrag->SetWorldScale3D(Scale);
+			SmallFrag->SetWorldRotation(FRotator(
+				FMath::RandRange(-30.f, 30.f),
+				FMath::RandRange(0.f, 360.f),
+				FMath::RandRange(-20.f, 20.f)));
+			SmallFrag->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			SmallFrag->CastShadow = false;
+			SmallFrag->RegisterComponent();
+
+			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DebrisEmissiveMat, this);
+			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.04f, 0.035f, 0.03f));
+			SmallFrag->SetMaterial(0, DM);
 		}
 	}
 }
