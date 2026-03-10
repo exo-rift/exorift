@@ -174,4 +174,10 @@ protected:
 	float SwayReturnSpeed = 8.f;
 	float SwayAmount = 0.4f;
 	float MaxSwayOffset = 3.f;
+
+	// Visual recoil kick
+	void ApplyRecoilKick();
+	FVector RecoilOffset = FVector::ZeroVector;
+	float RecoilRotation = 0.f;
+	float RecoilRecoverySpeed = 15.f;
 };

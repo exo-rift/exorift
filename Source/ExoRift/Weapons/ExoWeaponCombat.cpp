@@ -43,6 +43,9 @@ void AExoWeaponBase::FireShot()
 		}
 	}
 
+	// View model recoil kick
+	ApplyRecoilKick();
+
 	// Per-weapon fire shake and bloom kick
 	{
 		float ShakeIntensity = 0.f;

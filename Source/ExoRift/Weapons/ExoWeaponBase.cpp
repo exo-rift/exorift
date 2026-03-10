@@ -191,10 +191,35 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 
 	SwayOffset = FMath::VInterpTo(SwayOffset, FVector::ZeroVector, DeltaTime, SwayReturnSpeed);
 
+	// Recoil kick recovery
+	RecoilOffset = FMath::VInterpTo(RecoilOffset, FVector::ZeroVector, DeltaTime, RecoilRecoverySpeed);
+	RecoilRotation = FMath::FInterpTo(RecoilRotation, 0.f, DeltaTime, RecoilRecoverySpeed);
+
 	float Time = GetWorld()->GetTimeSeconds();
 	float IdleY = FMath::Sin(Time * 1.2f) * 0.15f;
 	float IdleZ = FMath::Sin(Time * 0.8f + 0.7f) * 0.1f;
 
 	FVector BasePos(20.f, 10.f, -8.f);
-	ViewModel->SetRelativeLocation(BasePos + SwayOffset + FVector(0.f, IdleY, IdleZ));
+	ViewModel->SetRelativeLocation(BasePos + SwayOffset + RecoilOffset + FVector(0.f, IdleY, IdleZ));
+	ViewModel->SetRelativeRotation(FRotator(RecoilRotation, 0.f, 0.f));
+}
+
+void AExoWeaponBase::ApplyRecoilKick()
+{
+	// Per-weapon recoil kick strength
+	float KickBack = 0.f;
+	float KickUp = 0.f;
+	float KickRot = 0.f;
+	switch (WeaponType)
+	{
+	case EWeaponType::Rifle:          KickBack = -3.f; KickUp = 0.8f; KickRot = -4.f; break;
+	case EWeaponType::SMG:            KickBack = -1.5f; KickUp = 0.4f; KickRot = -2.f; break;
+	case EWeaponType::Pistol:         KickBack = -2.5f; KickUp = 1.0f; KickRot = -5.f; break;
+	case EWeaponType::Shotgun:        KickBack = -6.f; KickUp = 2.0f; KickRot = -8.f; break;
+	case EWeaponType::Sniper:         KickBack = -8.f; KickUp = 2.5f; KickRot = -10.f; break;
+	case EWeaponType::GrenadeLauncher: KickBack = -5.f; KickUp = 1.5f; KickRot = -7.f; break;
+	default: KickBack = -2.f; KickUp = 0.5f; KickRot = -3.f; break;
+	}
+	RecoilOffset += FVector(KickBack, 0.f, KickUp);
+	RecoilRotation += KickRot;
 }
