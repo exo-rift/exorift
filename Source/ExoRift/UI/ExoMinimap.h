@@ -34,4 +34,8 @@ private:
 		float PlayerYaw, const FMinimapConfig& Config);
 	static void DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
 		const FMinimapConfig& Config);
+	static void DrawPOILabels(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
+		const FVector& CenterPos, float PlayerYaw);
+	static void DrawCurrentLocation(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
+		const FVector& PlayerPos);
 };

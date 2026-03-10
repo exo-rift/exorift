@@ -1,4 +1,5 @@
 #include "UI/ExoMinimap.h"
+#include "UI/ExoLocationNames.h"
 #include "GameFramework/HUD.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
@@ -94,6 +95,9 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 			TEXT("/Engine/EngineFonts/Roboto")));
 	DrawCardinals(HUD, Font, CenterX, CenterY, PlayerYaw, Config);
 
+	// POI labels on minimap
+	DrawPOILabels(HUD, Font, Config, PlayerPos, PlayerYaw);
+
 	// Border with corner accents
 	FLinearColor BorderColor(0.25f, 0.4f, 0.55f, 0.9f);
 	float SX = Config.ScreenX, SY = Config.ScreenY, SS = Config.Size;
@@ -113,6 +117,9 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 	HUD->DrawLine(SX, SY + SS, SX, SY + SS - BL, AccCol, 2.f);
 	HUD->DrawLine(SX + SS, SY + SS, SX + SS - BL, SY + SS, AccCol, 2.f);
 	HUD->DrawLine(SX + SS, SY + SS, SX + SS, SY + SS - BL, AccCol, 2.f);
+
+	// Current location name below minimap
+	DrawCurrentLocation(HUD, Font, Config, PlayerPos);
 }
 
 FVector2D FExoMinimap::WorldToMinimap(const FVector& WorldPos, const FVector& CenterPos,
@@ -277,4 +284,60 @@ void FExoMinimap::DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
 				RingColor, 0.5f);
 		}
 	}
+}
+
+void FExoMinimap::DrawPOILabels(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
+	const FVector& CenterPos, float PlayerYaw)
+{
+	if (!Font || !HUD) return;
+
+	// Major compound POIs — show abbreviated names on minimap
+	struct FPOI { FString Label; FVector WorldPos; };
+	static const FPOI POIs[] = {
+		{TEXT("CMD"), FVector(0.f, 0.f, 0.f)},
+		{TEXT("IND"), FVector(0.f, 80000.f, 0.f)},
+		{TEXT("LAB"), FVector(0.f, -80000.f, 0.f)},
+		{TEXT("PWR"), FVector(80000.f, 0.f, 0.f)},
+		{TEXT("BAR"), FVector(-80000.f, 0.f, 0.f)},
+	};
+
+	for (const auto& P : POIs)
+	{
+		float Dist = FVector::Dist2D(CenterPos, P.WorldPos);
+		if (Dist > Config.WorldRange) continue;
+
+		FVector2D Pos = WorldToMinimap(P.WorldPos, CenterPos, PlayerYaw, Config);
+
+		// Check if within minimap bounds
+		if (Pos.X < Config.ScreenX + 10.f || Pos.X > Config.ScreenX + Config.Size - 30.f ||
+			Pos.Y < Config.ScreenY + 10.f || Pos.Y > Config.ScreenY + Config.Size - 10.f)
+			continue;
+
+		FLinearColor LabelCol(0.5f, 0.7f, 0.9f, 0.5f);
+		HUD->DrawText(P.Label, LabelCol, Pos.X - 8.f, Pos.Y - 5.f, Font, 0.5f);
+	}
+}
+
+void FExoMinimap::DrawCurrentLocation(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
+	const FVector& PlayerPos)
+{
+	if (!Font || !HUD) return;
+
+	FString LocName = FExoLocationNames::GetLocationAt(PlayerPos);
+	if (LocName.IsEmpty()) LocName = TEXT("WILDERNESS");
+
+	float TW, TH;
+	HUD->GetTextSize(LocName, TW, TH, Font, 0.7f);
+
+	float X = Config.ScreenX + (Config.Size - TW) * 0.5f;
+	float Y = Config.ScreenY + Config.Size + 6.f;
+
+	// Background
+	HUD->DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.7f),
+		X - 6.f, Y - 2.f, TW + 12.f, TH + 4.f);
+	// Text
+	FLinearColor TextCol = LocName == TEXT("WILDERNESS")
+		? FLinearColor(0.5f, 0.5f, 0.55f, 0.7f)
+		: FLinearColor(0.6f, 0.8f, 1.f, 0.85f);
+	HUD->DrawText(LocName, TextCol, X, Y, Font, 0.7f);
 }

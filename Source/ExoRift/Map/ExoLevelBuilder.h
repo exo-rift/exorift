@@ -92,6 +92,11 @@ private:
 	void SpawnObservationDeck(const FVector& Center, float Radius, float Yaw);
 	void SpawnZiplineAnchor(const FVector& Top);
 
+	// --- Underground tunnels (in ExoLevelBuilderTunnels.cpp) ---
+	void BuildTunnels();
+	void SpawnTunnelEntrance(const FVector& Pos, float Yaw);
+	void SpawnTunnelSegment(const FVector& Start, const FVector& End);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);
