@@ -57,6 +57,9 @@ void AExoPlayerController::SetupInputComponent()
 	EIC->BindAction(In.Jump, ETriggerEvent::Completed, this, &AExoPlayerController::HandleJumpReleased);
 	EIC->BindAction(In.Fire, ETriggerEvent::Started, this, &AExoPlayerController::HandleFire);
 	EIC->BindAction(In.Fire, ETriggerEvent::Completed, this, &AExoPlayerController::HandleFireReleased);
+	EIC->BindAction(In.AimDownSight, ETriggerEvent::Started, this, &AExoPlayerController::HandleADS);
+	EIC->BindAction(In.AimDownSight, ETriggerEvent::Completed, this, &AExoPlayerController::HandleADSReleased);
+	EIC->BindAction(In.FireMode, ETriggerEvent::Started, this, &AExoPlayerController::HandleFireMode);
 	EIC->BindAction(In.Sprint, ETriggerEvent::Started, this, &AExoPlayerController::HandleSprint);
 	EIC->BindAction(In.Sprint, ETriggerEvent::Completed, this, &AExoPlayerController::HandleSprintReleased);
 	EIC->BindAction(In.Crouch, ETriggerEvent::Started, this, &AExoPlayerController::HandleCrouch);
@@ -206,6 +209,23 @@ void AExoPlayerController::HandleFire()
 void AExoPlayerController::HandleFireReleased()
 {
 	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopFire();
+}
+
+void AExoPlayerController::HandleADS()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StartADS();
+}
+
+void AExoPlayerController::HandleADSReleased()
+{
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->StopADS();
+}
+
+void AExoPlayerController::HandleFireMode()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	if (AExoCharacter* C = Cast<AExoCharacter>(GetPawn())) C->ToggleFireMode();
 }
 
 void AExoPlayerController::HandleSwapWeapon()

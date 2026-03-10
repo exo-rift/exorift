@@ -50,6 +50,10 @@ AExoWeaponShotgun::AExoWeaponShotgun()
 	FalloffEndRange = 8000.f;
 	MinDamageMultiplier = 0.2f;
 
+	// Shotgun ADS: minimal zoom, tightens pellet cone slightly
+	ADSFOV = 75.f;
+	ADSSpreadMultiplier = 0.6f;
+
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> ShotgunMesh(
 		TEXT("/Game/Weapons/Shotgun/SKM_Shotgun"));
 	if (ShotgunMesh.Succeeded())

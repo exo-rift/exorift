@@ -25,6 +25,10 @@ AExoWeaponPistol::AExoWeaponPistol()
 	CurrentEnergy = 80.f;
 	EnergyPerShot = 2.f;
 
+	// Pistol ADS: quick snap, moderate zoom
+	ADSFOV = 70.f;
+	ADSSpreadMultiplier = 0.35f;
+
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PistolMesh(
 		TEXT("/Game/Weapons/Pistol/SKM_Pistol"));
 	if (PistolMesh.Succeeded())

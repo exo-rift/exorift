@@ -99,6 +99,12 @@ public:
 	void TryMantle();
 	bool IsMantling() const { return bIsMantling; }
 
+	// ADS (Aim Down Sights)
+	void StartADS();
+	void StopADS();
+	void ToggleFireMode();
+	bool IsADS() const { return bIsADS; }
+
 	// State queries for input gating
 	bool IsSprinting() const { return bIsSprinting; }
 	bool CanPerformActions() const { return !bIsDead && !bIsDBNO && !bIsExecuting; }
@@ -152,7 +158,14 @@ protected:
 	void OnRep_Health();
 
 	bool bIsSprinting = false;
+	bool bIsADS = false;
 	bool bIsDead = false;
+
+	// ADS FOV interpolation
+	float DefaultFOV = 90.f;
+	float CurrentFOV = 90.f;
+	float TargetFOV = 90.f;
+	void TickADS(float DeltaTime);
 
 	// DBNO state
 	bool bIsDBNO = false;

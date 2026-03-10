@@ -20,6 +20,8 @@ struct EXORIFT_API FExoInputSetup
 
 	// Combat
 	UInputAction* Fire = nullptr;
+	UInputAction* AimDownSight = nullptr;
+	UInputAction* FireMode = nullptr;
 	UInputAction* SwapWeapon = nullptr;
 	UInputAction* DropWeapon = nullptr;
 	UInputAction* Grenade = nullptr;

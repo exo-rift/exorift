@@ -1,4 +1,5 @@
 #include "Weapons/ExoWeaponRifle.h"
+#include "ExoRift.h"
 
 AExoWeaponRifle::AExoWeaponRifle()
 {
@@ -25,10 +26,80 @@ AExoWeaponRifle::AExoWeaponRifle()
 	CurrentEnergy = 200.f;
 	EnergyPerShot = 1.f;
 
+	// ADS: moderate zoom, tighter spread
+	ADSFOV = 65.f;
+	ADSSpreadMultiplier = 0.4f;
+
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RifleMesh(
 		TEXT("/Game/Weapons/Rifle/SKM_Rifle"));
 	if (RifleMesh.Succeeded())
 	{
 		WeaponMesh->SetSkeletalMesh(RifleMesh.Object);
+	}
+}
+
+void AExoWeaponRifle::StartFire()
+{
+	Super::StartFire();
+	if (FireMode == ERifleFireMode::Burst && !bInBurstCooldown && BurstShotsRemaining <= 0)
+	{
+		BurstShotsRemaining = 3;
+		BurstTimer = 0.f; // Fire immediately
+	}
+}
+
+void AExoWeaponRifle::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (FireMode != ERifleFireMode::Burst) return;
+
+	// Handle burst fire timing
+	if (bInBurstCooldown)
+	{
+		BurstTimer -= DeltaTime;
+		if (BurstTimer <= 0.f)
+		{
+			bInBurstCooldown = false;
+			// Start new burst if still holding fire
+			if (bWantsToFire && BurstShotsRemaining <= 0)
+				BurstShotsRemaining = 3;
+		}
+		return;
+	}
+
+	if (BurstShotsRemaining > 0 && !bIsOverheated && CurrentEnergy >= EnergyPerShot)
+	{
+		BurstTimer -= DeltaTime;
+		if (BurstTimer <= 0.f)
+		{
+			FireShot();
+			BurstShotsRemaining--;
+			BurstTimer = BurstFireInterval;
+
+			if (BurstShotsRemaining <= 0)
+			{
+				bInBurstCooldown = true;
+				BurstTimer = BurstCooldown;
+			}
+		}
+	}
+}
+
+void AExoWeaponRifle::ToggleFireMode()
+{
+	if (FireMode == ERifleFireMode::FullAuto)
+	{
+		FireMode = ERifleFireMode::Burst;
+		bIsAutomatic = false;
+		BurstShotsRemaining = 0;
+		bInBurstCooldown = false;
+		UE_LOG(LogExoRift, Log, TEXT("Pulse Rifle: Burst mode"));
+	}
+	else
+	{
+		FireMode = ERifleFireMode::FullAuto;
+		bIsAutomatic = true;
+		UE_LOG(LogExoRift, Log, TEXT("Pulse Rifle: Full-auto mode"));
 	}
 }

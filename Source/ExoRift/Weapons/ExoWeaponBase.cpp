@@ -70,10 +70,12 @@ void AExoWeaponBase::Tick(float DeltaTime)
 	TimeSinceLastShot += DeltaTime;
 	TickCooldown(DeltaTime);
 
-	// Spread recovery
+	// Spread recovery (faster when ADS)
 	if (!bWantsToFire || bIsOverheated)
 	{
-		CurrentSpread = FMath::Max(BaseSpread, CurrentSpread - SpreadRecoveryRate * DeltaTime);
+		float RecovRate = bIsADS ? SpreadRecoveryRate * 2.f : SpreadRecoveryRate;
+		float MinSpread = bIsADS ? BaseSpread * ADSSpreadMultiplier : BaseSpread;
+		CurrentSpread = FMath::Max(MinSpread, CurrentSpread - RecovRate * DeltaTime);
 	}
 
 	TickWeaponSway(DeltaTime);
@@ -103,6 +105,21 @@ void AExoWeaponBase::StartFire()
 void AExoWeaponBase::StopFire()
 {
 	bWantsToFire = false;
+}
+
+void AExoWeaponBase::StartADS()
+{
+	bIsADS = true;
+}
+
+void AExoWeaponBase::StopADS()
+{
+	bIsADS = false;
+}
+
+void AExoWeaponBase::ToggleFireMode()
+{
+	// Base weapons don't have fire mode toggle — override in subclass
 }
 
 void AExoWeaponBase::AddHeat(float Amount)

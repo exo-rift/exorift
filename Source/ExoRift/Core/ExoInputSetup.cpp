@@ -62,6 +62,8 @@ void FExoInputSetup::Initialize()
 	Sprint       = MakeAction(TEXT("IA_Sprint"),       B);
 	Crouch       = MakeAction(TEXT("IA_Crouch"),       B);
 	Fire         = MakeAction(TEXT("IA_Fire"),         B);
+	AimDownSight = MakeAction(TEXT("IA_ADS"),          B);
+	FireMode     = MakeAction(TEXT("IA_FireMode"),     B);
 	SwapWeapon   = MakeAction(TEXT("IA_SwapWeapon"),   B);
 	DropWeapon   = MakeAction(TEXT("IA_Drop"),         B);
 	Grenade      = MakeAction(TEXT("IA_Grenade"),      B);
@@ -102,6 +104,8 @@ void FExoInputSetup::Initialize()
 	// All boolean key bindings
 	MappingContext->MapKey(Jump,         EKeys::SpaceBar);
 	MappingContext->MapKey(Fire,         EKeys::LeftMouseButton);
+	MappingContext->MapKey(AimDownSight, EKeys::RightMouseButton);
+	MappingContext->MapKey(FireMode,     EKeys::B);
 	MappingContext->MapKey(SwapWeapon,   EKeys::Q);
 	MappingContext->MapKey(Sprint,       EKeys::LeftShift);
 	MappingContext->MapKey(Interact,     EKeys::E);
@@ -127,5 +131,5 @@ void FExoInputSetup::Initialize()
 	MappingContext->MapKey(Restart,      EKeys::Enter);
 	MappingContext->MapKey(ReturnToMenu, EKeys::BackSpace);
 
-	UE_LOG(LogExoRift, Log, TEXT("Input setup: 29 actions, 33 key bindings"));
+	UE_LOG(LogExoRift, Log, TEXT("Input setup: 31 actions, 35 key bindings"));
 }

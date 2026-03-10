@@ -27,6 +27,14 @@ public:
 	virtual void StopFire();
 	virtual FString GetWeaponName() const { return WeaponName; }
 
+	// ADS (Aim Down Sights)
+	virtual void StartADS();
+	virtual void StopADS();
+	virtual void ToggleFireMode();
+	bool IsADS() const { return bIsADS; }
+	float GetADSFOV() const { return ADSFOV; }
+	float GetADSSpreadMultiplier() const { return ADSSpreadMultiplier; }
+
 	// Rarity system
 	UPROPERTY(EditDefaultsOnly, Category = "Rarity")
 	EWeaponRarity Rarity = EWeaponRarity::Common;
@@ -143,6 +151,15 @@ protected:
 	// Headshot
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float HeadshotMultiplier = 2.f;
+
+	// ADS state
+	UPROPERTY(EditDefaultsOnly, Category = "ADS")
+	float ADSFOV = 65.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ADS")
+	float ADSSpreadMultiplier = 0.5f;
+
+	bool bIsADS = false;
 
 	float CurrentSpread = 0.f;
 	float CurrentHeat = 0.f;

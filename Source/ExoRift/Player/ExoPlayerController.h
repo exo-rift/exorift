@@ -36,6 +36,9 @@ protected:
 	// Combat
 	void HandleFire();
 	void HandleFireReleased();
+	void HandleADS();
+	void HandleADSReleased();
+	void HandleFireMode();
 	void HandleSwapWeapon();
 	void HandleDropWeapon();
 	void HandleGrenade();

@@ -38,6 +38,10 @@ AExoWeaponSMG::AExoWeaponSMG()
 	RecoilYawRange = 0.2f;
 	HeadshotMultiplier = 1.8f;
 
+	// SMG ADS: minimal zoom, small spread reduction (run-and-gun weapon)
+	ADSFOV = 75.f;
+	ADSSpreadMultiplier = 0.7f;
+
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SMGMesh(
 		TEXT("/Game/Weapons/SMG/SKM_SMG"));
 	if (SMGMesh.Succeeded())

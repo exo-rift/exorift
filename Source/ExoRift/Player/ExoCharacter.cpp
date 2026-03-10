@@ -112,6 +112,7 @@ void AExoCharacter::Tick(float DeltaTime)
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
 	TickFootsteps(DeltaTime);
+	TickADS(DeltaTime);
 	if (EmoteComp) EmoteComp->TickEmote(DeltaTime);
 
 	// Update post-process effects and HUD subsystems (local player only)
@@ -277,6 +278,50 @@ void AExoCharacter::StopSprint()
 {
 	bIsSprinting = false;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
+}
+
+// --- ADS ---
+
+void AExoCharacter::StartADS()
+{
+	if (bIsDead || bIsDBNO || bIsSprinting || bIsSliding || bIsExecuting) return;
+	bIsADS = true;
+	AExoWeaponBase* W = GetCurrentWeapon();
+	if (W)
+	{
+		W->StartADS();
+		TargetFOV = W->GetADSFOV();
+	}
+	else
+	{
+		TargetFOV = 75.f;
+	}
+	// Slow movement while ADS
+	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed * 0.6f;
+}
+
+void AExoCharacter::StopADS()
+{
+	bIsADS = false;
+	TargetFOV = DefaultFOV;
+	if (AExoWeaponBase* W = GetCurrentWeapon()) W->StopADS();
+	if (!bIsSprinting)
+		GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
+}
+
+void AExoCharacter::ToggleFireMode()
+{
+	if (AExoWeaponBase* W = GetCurrentWeapon()) W->ToggleFireMode();
+}
+
+void AExoCharacter::TickADS(float DeltaTime)
+{
+	// Smooth FOV interpolation
+	CurrentFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaTime, 12.f);
+	if (FirstPersonCamera && FMath::Abs(FirstPersonCamera->FieldOfView - CurrentFOV) > 0.1f)
+	{
+		FirstPersonCamera->SetFieldOfView(CurrentFOV);
+	}
 }
 
 // DBNO, Revive, Execution, and Die implementations are in ExoCharacterCombat.cpp
