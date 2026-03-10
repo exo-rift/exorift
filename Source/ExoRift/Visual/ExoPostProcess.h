@@ -45,6 +45,9 @@ public:
 	/** Brief bloom + exposure spike when firing weapon. Intensity 0-1 per weapon. */
 	void TriggerWeaponFireFlash(float Intensity);
 
+	/** Cinematic endgame effect — desaturation, vignette, bloom ramp. */
+	void TriggerEndgameCinematic(bool bIsVictory);
+
 	static AExoPostProcess* Get(UWorld* World);
 
 	/** Post-process component — public for weather system integration. */
@@ -92,6 +95,11 @@ protected:
 
 	// Weapon fire bloom kick
 	float WeaponFireFlash = 0.f;
+
+	// Endgame cinematic
+	float EndgameBlend = 0.f;
+	float EndgameTarget = 0.f;
+	bool bEndgameVictory = false;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* VignetteMID;

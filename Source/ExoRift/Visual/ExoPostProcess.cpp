@@ -197,6 +197,41 @@ void AExoPostProcess::Tick(float DeltaTime)
 
 	// Weapon fire: brief auto-exposure kick for visible muzzle bloom
 	PostProcessComp->Settings.AutoExposureBias = WeaponFireFlash * 0.4f;
+
+	// Endgame cinematic blend (slow ramp to dramatic look)
+	EndgameBlend = FMath::FInterpTo(EndgameBlend, EndgameTarget, DeltaTime, 0.8f);
+	if (EndgameBlend > 0.01f)
+	{
+		// Desaturation for dramatic effect (less for victory, more for defeat)
+		float DesatAmount = bEndgameVictory ? 0.15f : 0.5f;
+		float ExistingDesat = PostProcessComp->Settings.ColorSaturation.X;
+		float FinalDesat = FMath::Lerp(ExistingDesat, 1.f - DesatAmount, EndgameBlend);
+		PostProcessComp->Settings.bOverride_ColorSaturation = true;
+		PostProcessComp->Settings.ColorSaturation = FVector4(FinalDesat, FinalDesat, FinalDesat, 1.f);
+
+		// Bloom ramp for cinematic glow
+		PostProcessComp->Settings.BloomIntensity += EndgameBlend * 1.5f;
+
+		// Vignette increase
+		PostProcessComp->Settings.VignetteIntensity += EndgameBlend * 0.3f;
+
+		// Victory: golden tint. Defeat: cool blue tint
+		PostProcessComp->Settings.bOverride_SceneColorTint = true;
+		if (bEndgameVictory)
+		{
+			PostProcessComp->Settings.SceneColorTint = FLinearColor(
+				1.f + EndgameBlend * 0.1f,
+				1.f + EndgameBlend * 0.05f,
+				1.f - EndgameBlend * 0.05f, 1.f);
+		}
+		else
+		{
+			PostProcessComp->Settings.SceneColorTint = FLinearColor(
+				1.f - EndgameBlend * 0.08f,
+				1.f - EndgameBlend * 0.02f,
+				1.f + EndgameBlend * 0.1f, 1.f);
+		}
+	}
 }
 
 void AExoPostProcess::TriggerDamageFlash(float Intensity)
@@ -268,6 +303,12 @@ void AExoPostProcess::TriggerShieldFlash()
 void AExoPostProcess::TriggerWeaponFireFlash(float Intensity)
 {
 	WeaponFireFlash = FMath::Max(WeaponFireFlash, FMath::Clamp(Intensity, 0.f, 1.f));
+}
+
+void AExoPostProcess::TriggerEndgameCinematic(bool bIsVictory)
+{
+	EndgameTarget = 1.f;
+	bEndgameVictory = bIsVictory;
 }
 
 AExoPostProcess* AExoPostProcess::Get(UWorld* World)

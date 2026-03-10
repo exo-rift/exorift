@@ -7,6 +7,7 @@
 #include "Map/ExoExplodingBarrel.h"
 #include "Map/ExoJumpPad.h"
 #include "Map/ExoShieldGenerator.h"
+#include "Map/ExoPatrolDrone.h"
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoZoneVisualizer.h"
 #include "Components/StaticMeshComponent.h"
@@ -361,4 +362,72 @@ void AExoLevelBuilder::PlaceJumpPads()
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed shield generators and rock formations"));
+}
+
+void AExoLevelBuilder::PlaceDrones()
+{
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	struct FDroneRoute
+	{
+		TArray<FVector> Waypoints;
+		FLinearColor Color;
+		float Speed;
+	};
+
+	TArray<FDroneRoute> Routes;
+
+	// Route 1: Perimeter patrol (wide circuit around the map)
+	{
+		FDroneRoute R;
+		R.Color = FLinearColor(0.1f, 0.5f, 1.f);
+		R.Speed = 1200.f;
+		float Rad = MapHalfSize * 0.6f;
+		for (int32 i = 0; i < 8; i++)
+		{
+			float A = (2.f * PI * i) / 8.f;
+			R.Waypoints.Add(FVector(FMath::Cos(A) * Rad, FMath::Sin(A) * Rad, 0.f));
+		}
+		Routes.Add(R);
+	}
+
+	// Route 2: Inner hub patrol
+	{
+		FDroneRoute R;
+		R.Color = FLinearColor(1.f, 0.4f, 0.1f);
+		R.Speed = 600.f;
+		float Rad = 25000.f;
+		for (int32 i = 0; i < 6; i++)
+		{
+			float A = (2.f * PI * i) / 6.f + PI / 6.f;
+			R.Waypoints.Add(FVector(FMath::Cos(A) * Rad, FMath::Sin(A) * Rad, 0.f));
+		}
+		Routes.Add(R);
+	}
+
+	// Route 3: North-south corridor
+	{
+		FDroneRoute R;
+		R.Color = FLinearColor(0.2f, 1.f, 0.4f);
+		R.Speed = 900.f;
+		R.Waypoints.Add(FVector(0.f, -120000.f, 0.f));
+		R.Waypoints.Add(FVector(20000.f, -60000.f, 0.f));
+		R.Waypoints.Add(FVector(-10000.f, 0.f, 0.f));
+		R.Waypoints.Add(FVector(15000.f, 60000.f, 0.f));
+		R.Waypoints.Add(FVector(0.f, 120000.f, 0.f));
+		Routes.Add(R);
+	}
+
+	for (const FDroneRoute& Route : Routes)
+	{
+		AExoPatrolDrone* Drone = GetWorld()->SpawnActor<AExoPatrolDrone>(
+			AExoPatrolDrone::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);
+		if (Drone)
+		{
+			Drone->InitDrone(Route.Waypoints, Route.Color, Route.Speed);
+		}
+	}
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d patrol drones"), Routes.Num());
 }

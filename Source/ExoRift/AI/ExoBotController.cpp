@@ -3,6 +3,7 @@
 #include "AI/ExoBotController.h"
 #include "AI/ExoBotCharacter.h"
 #include "Player/ExoCharacter.h"
+#include "Player/ExoAbilityComponent.h"
 #include "Player/ExoDecoyActor.h"
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
@@ -225,6 +226,9 @@ void AExoBotController::TickFullAI(float DeltaTime)
 
 			// Grenade at medium range
 			TryThrowGrenade();
+
+			// Ability usage during combat
+			TryUseAbilities(DeltaTime);
 		}
 	}
 	else
@@ -233,6 +237,9 @@ void AExoBotController::TickFullAI(float DeltaTime)
 
 		// Try to execute nearby DBNO enemies
 		TryExecuteDBNO();
+
+		// Use scan ability when idle to find targets
+		TryUseAbilities(DeltaTime);
 
 		// No target — look for loot or wander
 		LookForLoot();
@@ -298,5 +305,71 @@ void AExoBotController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 		CurrentTarget = Actor;
 		bReactionPending = true;
 		ReactionTimer = ReactionTime;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Bot ability usage — context-aware ability deployment
+// ---------------------------------------------------------------------------
+
+void AExoBotController::TryUseAbilities(float DeltaTime)
+{
+	AExoCharacter* Bot = Cast<AExoCharacter>(GetPawn());
+	if (!Bot) return;
+
+	UExoAbilityComponent* AbilityComp = Bot->GetAbilityComponent();
+	if (!AbilityComp) return;
+
+	// Cooldown timers for bot-specific usage rate (separate from ability cooldowns)
+	DashCooldownBot = FMath::Max(0.f, DashCooldownBot - DeltaTime);
+	ScanCooldownBot = FMath::Max(0.f, ScanCooldownBot - DeltaTime);
+	ShieldCooldownBot = FMath::Max(0.f, ShieldCooldownBot - DeltaTime);
+	DecoyCooldownBot = FMath::Max(0.f, DecoyCooldownBot - DeltaTime);
+
+	float HealthPct = Bot->GetHealth() / 100.f;
+	bool bInCombat = CurrentTarget != nullptr;
+	float DifficultyFactor = 0.f;
+	switch (Difficulty)
+	{
+	case EBotDifficulty::Easy:   DifficultyFactor = 0.15f; break;
+	case EBotDifficulty::Medium: DifficultyFactor = 0.4f;  break;
+	case EBotDifficulty::Hard:   DifficultyFactor = 0.7f;  break;
+	case EBotDifficulty::Elite:  DifficultyFactor = 0.95f; break;
+	}
+
+	// Only higher-difficulty bots use abilities frequently
+	if (FMath::FRand() > DifficultyFactor) return;
+
+	// DASH: emergency escape when low health in combat
+	if (bInCombat && HealthPct < 0.3f && DashCooldownBot <= 0.f)
+	{
+		AbilityComp->UseAbility(EExoAbilityType::Dash);
+		DashCooldownBot = 12.f;
+		return;
+	}
+
+	// SHIELD BUBBLE: restore shield when health drops below threshold
+	if (bInCombat && HealthPct < 0.5f && ShieldCooldownBot <= 0.f)
+	{
+		AbilityComp->UseAbility(EExoAbilityType::ShieldBubble);
+		ShieldCooldownBot = 35.f;
+		return;
+	}
+
+	// AREA SCAN: use when idle and searching for targets
+	if (!bInCombat && ScanCooldownBot <= 0.f)
+	{
+		AbilityComp->UseAbility(EExoAbilityType::AreaScan);
+		ScanCooldownBot = 25.f;
+		return;
+	}
+
+	// DECOY: deploy during combat when flanking or retreating
+	if (bInCombat && HealthPct < 0.6f && DecoyCooldownBot <= 0.f
+		&& FMath::FRand() < 0.3f)
+	{
+		AbilityComp->UseAbility(EExoAbilityType::Decoy);
+		DecoyCooldownBot = 30.f;
+		return;
 	}
 }

@@ -13,6 +13,7 @@
 #include "Map/ExoMapConfig.h"
 #include "Map/ExoLevelBuilder.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoPostProcess.h"
 #include "Core/ExoCareerStats.h"
 #include "UI/ExoHUD.h"
 #include "UI/ExoNotificationSystem.h"
@@ -213,6 +214,11 @@ void AExoGameMode::TransitionToPhase(EBRMatchPhase NewPhase)
 			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 			{
 				bWon ? Audio->PlayVictoryStinger() : Audio->PlayDefeatStinger();
+			}
+			// Cinematic post-process for endgame
+			if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+			{
+				PP->TriggerEndgameCinematic(bWon);
 			}
 			// Record career stats for the local player
 			if (LocalPC)

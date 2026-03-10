@@ -107,6 +107,14 @@ protected:
 	void TryExecuteDBNO();
 	float ExecutionSearchTimer = 0.f;
 
+	// Ability usage
+	void TryUseAbilities(float DeltaTime);
+	float AbilityCheckTimer = 0.f;
+	float DashCooldownBot = 0.f;
+	float ScanCooldownBot = 0.f;
+	float ShieldCooldownBot = 0.f;
+	float DecoyCooldownBot = 0.f;
+
 	// Difficulty-derived stats (set by SetDifficulty)
 	float AimAccuracy = 0.7f;
 	float ReactionTime = 0.3f;

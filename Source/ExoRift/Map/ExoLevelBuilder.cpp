@@ -66,6 +66,7 @@ void AExoLevelBuilder::BeginPlay()
 	BuildTunnels();
 	BuildCompoundLighting();
 	PlaceJumpPads();
+	PlaceDrones();
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),
 		LevelMeshes.Num());
