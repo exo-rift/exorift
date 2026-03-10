@@ -3,6 +3,7 @@
 
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoFootstepDust.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -222,5 +223,7 @@ void AExoCharacter::TickFootsteps(float DeltaTime)
 			}
 			Audio->PlayFootstepSound(FootLoc, bIsSprinting, Surface);
 		}
+		// Dust puff at feet when sprinting
+		AExoFootstepDust::SpawnFootstepDust(GetWorld(), GetActorLocation(), bIsSprinting);
 	}
 }

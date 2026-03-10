@@ -149,6 +149,55 @@ void AExoHUD::DrawDBNOOverlay()
 		FLinearColor(1.f, 0.3f, 0.3f, 1.f), 290.f, Canvas->SizeY - 59.f, HUDFont, 0.9f);
 }
 
+void AExoHUD::DrawSprintLines()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char) return;
+
+	float DeltaTime = GetWorld()->GetDeltaSeconds();
+	float TargetAlpha = Char->IsSprinting() ? 1.f : 0.f;
+	SprintLineAlpha = FMath::FInterpTo(SprintLineAlpha, TargetAlpha, DeltaTime, 6.f);
+	if (SprintLineAlpha < 0.02f) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+	float MaxR = FMath::Sqrt(CX * CX + CY * CY);
+	float Time = GetWorld()->GetTimeSeconds();
+
+	// Draw radial lines emanating from screen edges toward center
+	int32 NumLines = 24;
+	for (int32 i = 0; i < NumLines; i++)
+	{
+		float Angle = (float)i / (float)NumLines * 2.f * PI;
+		// Slight drift over time for motion feel
+		Angle += Time * 0.3f;
+
+		float Cos = FMath::Cos(Angle);
+		float Sin = FMath::Sin(Angle);
+
+		// Lines exist in the outer 30% of screen radius
+		float InnerR = MaxR * 0.70f;
+		float OuterR = MaxR * 1.05f;
+
+		// Animate: lines slide outward over time
+		float Slide = FMath::Fmod(Time * 200.f + i * 37.f, OuterR - InnerR);
+		float R0 = InnerR + Slide;
+		float R1 = FMath::Min(R0 + 40.f + FMath::RandRange(0.f, 20.f), OuterR);
+
+		float X0 = CX + Cos * R0;
+		float Y0 = CY + Sin * R0;
+		float X1 = CX + Cos * R1;
+		float Y1 = CY + Sin * R1;
+
+		// Fade based on distance from edge and overall alpha
+		float EdgeFade = (R0 - InnerR) / (OuterR - InnerR);
+		float Alpha = SprintLineAlpha * EdgeFade * 0.35f;
+
+		FLinearColor LineCol(0.7f, 0.85f, 1.f, Alpha);
+		DrawLine(X0, Y0, X1, Y1, LineCol);
+	}
+}
+
 void AExoHUD::DrawInteractionPrompt()
 {
 	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());

@@ -89,6 +89,7 @@ void AExoHUD::DrawHUD()
 	DrawInteractionPrompt();
 	DrawVehicleHUD();
 	DrawLocationBanner();
+	DrawSprintLines();
 
 	// Compass bar at top of screen
 	{

@@ -19,6 +19,7 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoCharacterModel.h"
 #include "Visual/ExoScreenShake.h"
+#include "Visual/ExoFootstepDust.h"
 #include "Map/ExoZoneSystem.h"
 #include "EngineUtils.h"
 #include "UI/ExoHitMarker.h"
@@ -339,6 +340,7 @@ void AExoCharacter::TickLandingImpact(float DeltaTime)
 		{
 			LandingImpact = FMath::Clamp(FallSpeed / 1500.f, 0.15f, 1.f);
 			FExoScreenShake::AddShake(LandingImpact * 0.3f, 0.15f);
+			AExoFootstepDust::SpawnLandingDust(GetWorld(), GetActorLocation(), FallSpeed);
 		}
 	}
 	bWasInAir = bInAir;

@@ -196,6 +196,10 @@ protected:
 	float RecoilRotation = 0.f;
 	float RecoilRecoverySpeed = 15.f;
 
+	// Movement bob (weapon bobs when walking/sprinting)
+	float MoveBobTimer = 0.f;
+	FVector MoveBobOffset = FVector::ZeroVector;
+
 	// Weapon inspect animation
 	bool bIsInspecting = false;
 	float InspectBlend = 0.f;

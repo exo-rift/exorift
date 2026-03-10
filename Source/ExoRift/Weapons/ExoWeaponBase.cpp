@@ -231,14 +231,36 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	float IdleY = FMath::Sin(Time * 1.2f) * 0.15f;
 	float IdleZ = FMath::Sin(Time * 0.8f + 0.7f) * 0.1f;
 
+	// Movement bob — weapon rocks when walking/sprinting
+	float MoveSpeed = OwnerPawn->GetVelocity().Size2D();
+	if (MoveSpeed > 50.f)
+	{
+		AExoCharacter* ExoChar = Cast<AExoCharacter>(OwnerPawn);
+		bool bSprint = ExoChar && ExoChar->IsSprinting();
+		float BobFreq = bSprint ? 10.f : 7.f;
+		float BobAmpY = bSprint ? 0.8f : 0.35f;
+		float BobAmpZ = bSprint ? 0.5f : 0.25f;
+		float SpeedFactor = FMath::Clamp(MoveSpeed / 600.f, 0.f, 1.f);
+		MoveBobTimer += DeltaTime * BobFreq;
+		FVector TargetBob(0.f,
+			FMath::Sin(MoveBobTimer) * BobAmpY * SpeedFactor,
+			FMath::Abs(FMath::Sin(MoveBobTimer)) * BobAmpZ * SpeedFactor);
+		MoveBobOffset = FMath::VInterpTo(MoveBobOffset, TargetBob, DeltaTime, 12.f);
+	}
+	else
+	{
+		MoveBobOffset = FMath::VInterpTo(MoveBobOffset, FVector::ZeroVector, DeltaTime, 8.f);
+	}
+
 	// ADS position: weapon centers and moves forward
 	FVector HipPos(20.f, 10.f, -8.f);
 	FVector ADSPos(30.f, 0.f, -2.f); // Centered, closer to eye
 	FVector BasePos = FMath::Lerp(HipPos, ADSPos, ADSBlend);
 
-	// Reduce sway/idle while ADS
+	// Reduce sway/idle/bob while ADS
 	float SwayScale = FMath::Lerp(1.f, 0.15f, ADSBlend);
 	float IdleScale = FMath::Lerp(1.f, 0.1f, ADSBlend);
+	float BobScale = FMath::Lerp(1.f, 0.05f, ADSBlend);
 
 	// Draw animation offset — weapon rises from below when equipped
 	FVector DrawOffset = FVector(0.f, 0.f, -30.f * (1.f - DrawBlend));
@@ -259,6 +281,7 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	ViewModel->SetRelativeLocation(BasePos
 		+ SwayOffset * SwayScale
 		+ RecoilOffset
+		+ MoveBobOffset * BobScale
 		+ FVector(0.f, IdleY * IdleScale, IdleZ * IdleScale)
 		+ DrawOffset
 		+ InspectOffset);

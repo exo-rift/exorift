@@ -75,8 +75,10 @@ protected:
 	static const FLinearColor ColorShieldBlue;
 
 	void DrawFPS();
+	void DrawSprintLines();
 
 	float CrosshairSpread = 0.f;
+	float SprintLineAlpha = 0.f;
 	bool bShowZoneWarning = false;
 	float SmoothedFPS = 60.f;
 

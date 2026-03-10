@@ -10,6 +10,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
+#include "Visual/ExoAmbientParticles.h"
 #include "ExoRift.h"
 
 AExoLevelBuilder::AExoLevelBuilder()
@@ -67,6 +68,10 @@ void AExoLevelBuilder::BeginPlay()
 	BuildCompoundLighting();
 	PlaceJumpPads();
 	PlaceDrones();
+
+	// Ambient floating particles (dust motes / energy wisps)
+	AExoAmbientParticles* Particles = AExoAmbientParticles::Get(GetWorld());
+	if (Particles) Particles->SetStyle(true); // Energy wisps for sci-fi
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),
 		LevelMeshes.Num());

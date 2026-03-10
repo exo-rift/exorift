@@ -2,6 +2,7 @@
 #include "Visual/ExoTracer.h"
 #include "Visual/ExoMuzzleFlash.h"
 #include "Visual/ExoImpactEffect.h"
+#include "Visual/ExoImpactDecal.h"
 #include "Visual/ExoExplosionEffect.h"
 #include "Visual/ExoShellCasing.h"
 
@@ -50,6 +51,13 @@ void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location
 	if (Impact)
 	{
 		Impact->InitEffect(HitNormal, bHitCharacter);
+	}
+
+	// Leave a scorch mark on surfaces (not on characters)
+	if (!bHitCharacter)
+	{
+		AExoImpactDecal::SpawnDecal(World, Location, HitNormal,
+			FLinearColor(0.3f, 0.6f, 1.f)); // Default energy blue
 	}
 }
 
