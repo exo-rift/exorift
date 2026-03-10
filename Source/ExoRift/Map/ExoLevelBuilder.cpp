@@ -4,6 +4,7 @@
 #include "Map/ExoTargetDummy.h"
 #include "Map/ExoPowerUpTerminal.h"
 #include "Map/ExoReactorCore.h"
+#include "Map/ExoCrashedCapitalShip.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -120,6 +121,18 @@ void AExoLevelBuilder::BeginPlay()
 			if (TD) TD->InitDummy(D.Color, 200.f);
 		}
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 6 target dummies"));
+	}
+
+	// Crashed capital ship — major landmark between hub and north compound
+	{
+		FActorSpawnParameters ShipP;
+		ShipP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AExoCrashedCapitalShip* Ship = GetWorld()->SpawnActor<AExoCrashedCapitalShip>(
+			AExoCrashedCapitalShip::StaticClass(),
+			FVector(30000.f, 40000.f, 0.f),
+			FRotator(0.f, -25.f, 0.f), ShipP);
+		if (Ship) Ship->BuildShip();
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed crashed capital ship landmark"));
 	}
 
 	// Energy reactor centerpiece at hub — visible from across the map
