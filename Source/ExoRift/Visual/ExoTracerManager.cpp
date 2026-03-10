@@ -3,6 +3,7 @@
 #include "Visual/ExoMuzzleFlash.h"
 #include "Visual/ExoImpactEffect.h"
 #include "Visual/ExoExplosionEffect.h"
+#include "Visual/ExoShellCasing.h"
 
 void FExoTracerManager::SpawnTracer(UWorld* World, const FVector& Start, const FVector& End,
 	bool bIsHit, EWeaponType WeaponType)
@@ -49,6 +50,24 @@ void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location
 	if (Impact)
 	{
 		Impact->InitEffect(HitNormal, bHitCharacter);
+	}
+}
+
+void FExoTracerManager::SpawnShellCasing(UWorld* World, const FVector& Location,
+	const FVector& EjectDir, EWeaponType WeaponType)
+{
+	if (!World) return;
+	// Melee and launcher don't eject casings
+	if (WeaponType == EWeaponType::Melee || WeaponType == EWeaponType::GrenadeLauncher) return;
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExoShellCasing* Casing = World->SpawnActor<AExoShellCasing>(
+		AExoShellCasing::StaticClass(), Location, FRotator::ZeroRotator, Params);
+	if (Casing)
+	{
+		Casing->InitCasing(EjectDir, GetWeaponTracerColor(WeaponType));
 	}
 }
 

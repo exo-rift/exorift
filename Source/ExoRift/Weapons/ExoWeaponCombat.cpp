@@ -106,6 +106,11 @@ void AExoWeaponBase::FireShot()
 			Hit.bBlockingHit, WeaponType);
 		FExoTracerManager::SpawnMuzzleFlash(GetWorld(), MuzzleLoc,
 			GetActorRotation(), WeaponType);
+
+		// Shell casing ejects to the right of the weapon
+		FVector EjectDir = GetActorRightVector();
+		FExoTracerManager::SpawnShellCasing(GetWorld(), MuzzleLoc + EjectDir * 5.f,
+			EjectDir, WeaponType);
 	}
 
 	if (!Hit.bBlockingHit) return;

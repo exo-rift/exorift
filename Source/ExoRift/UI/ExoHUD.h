@@ -10,6 +10,7 @@
 #include "UI/ExoCompass.h"
 #include "UI/ExoNotificationSystem.h"
 #include "UI/ExoLocationNames.h"
+#include "UI/ExoKillAnnouncer.h"
 #include "ExoHUD.generated.h"
 
 UCLASS()
@@ -100,6 +101,10 @@ protected:
 	// Toast notifications
 	FExoNotificationSystem Notifications;
 
+	// Kill announcements (First Blood, Double Kill, etc.)
+	FExoKillAnnouncer KillAnnouncer;
+
 public:
 	FExoNotificationSystem& GetNotifications() { return Notifications; }
+	FExoKillAnnouncer& GetKillAnnouncer() { return KillAnnouncer; }
 };

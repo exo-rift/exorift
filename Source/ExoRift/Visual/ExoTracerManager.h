@@ -22,6 +22,10 @@ public:
 	static void SpawnImpactEffect(UWorld* World, const FVector& Location,
 		const FVector& HitNormal, bool bHitCharacter);
 
+	/** Spawn an ejected shell casing from weapon fire. */
+	static void SpawnShellCasing(UWorld* World, const FVector& Location,
+		const FVector& EjectDir, EWeaponType WeaponType);
+
 	/** Spawn an explosion effect (grenade / projectile). */
 	static void SpawnExplosionEffect(UWorld* World, const FVector& Location, float Radius);
 

@@ -26,6 +26,7 @@ struct EXORIFT_API FExoInputSetup
 	UInputAction* DropWeapon = nullptr;
 	UInputAction* Grenade = nullptr;
 	UInputAction* Melee = nullptr;
+	UInputAction* Inspect = nullptr;
 	UInputAction* ScrollWeapon = nullptr;
 
 	// Interaction

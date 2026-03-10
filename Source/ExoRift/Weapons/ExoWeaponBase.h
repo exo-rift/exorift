@@ -32,6 +32,9 @@ public:
 	virtual void StopADS();
 	virtual void ToggleFireMode();
 	void PlayDrawAnimation();
+	void StartInspect();
+	void StopInspect();
+	bool IsInspecting() const { return bIsInspecting; }
 	bool IsADS() const { return bIsADS; }
 	float GetADSFOV() const { return ADSFOV; }
 	float GetADSSpreadMultiplier() const { return ADSSpreadMultiplier; }
@@ -192,4 +195,12 @@ protected:
 	FVector RecoilOffset = FVector::ZeroVector;
 	float RecoilRotation = 0.f;
 	float RecoilRecoverySpeed = 15.f;
+
+	// Weapon inspect animation
+	bool bIsInspecting = false;
+	float InspectBlend = 0.f;
+	float InspectPhase = 0.f;
+
+	// Heat glow on barrel
+	void TickHeatGlow();
 };

@@ -112,6 +112,10 @@ void AExoHUD::DrawHUD()
 	DrawSupplyDropMarkers();
 	DrawSupplyDropAnnouncement();
 
+	// Kill announcements (First Blood, Double Kill, etc.)
+	KillAnnouncer.Tick(DeltaTime);
+	KillAnnouncer.Draw(Canvas, HUDFont);
+
 	// Hit markers & damage indicators
 	FExoHitMarker::Draw(this, Canvas);
 	FExoHitDirectionIndicator::Draw(this, Canvas);

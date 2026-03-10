@@ -6,6 +6,7 @@
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "ExoRift.h"
 
 AExoWeaponBase::AExoWeaponBase()
@@ -86,6 +87,19 @@ void AExoWeaponBase::Tick(float DeltaTime)
 	}
 
 	TickWeaponSway(DeltaTime);
+	TickHeatGlow();
+
+	// Inspect animation
+	if (bIsInspecting)
+	{
+		InspectBlend = FMath::FInterpTo(InspectBlend, 1.f, DeltaTime, 4.f);
+		InspectPhase += DeltaTime;
+	}
+	else
+	{
+		InspectBlend = FMath::FInterpTo(InspectBlend, 0.f, DeltaTime, 6.f);
+		if (InspectBlend < 0.01f) InspectPhase = 0.f;
+	}
 
 	// Auto-fire
 	if (bWantsToFire && !bIsOverheated && CurrentEnergy >= EnergyPerShot)
@@ -107,6 +121,7 @@ void AExoWeaponBase::Tick(float DeltaTime)
 void AExoWeaponBase::StartFire()
 {
 	bWantsToFire = true;
+	if (bIsInspecting) StopInspect();
 }
 
 void AExoWeaponBase::StopFire()
@@ -117,6 +132,7 @@ void AExoWeaponBase::StopFire()
 void AExoWeaponBase::StartADS()
 {
 	bIsADS = true;
+	if (bIsInspecting) StopInspect();
 }
 
 void AExoWeaponBase::StopADS()
@@ -228,12 +244,69 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	FVector DrawOffset = FVector(0.f, 0.f, -30.f * (1.f - DrawBlend));
 	float DrawRotOffset = -25.f * (1.f - DrawBlend);
 
+	// Inspect animation — weapon tilts toward camera for examination
+	FVector InspectOffset = FVector::ZeroVector;
+	FRotator InspectRotOffset = FRotator::ZeroRotator;
+	if (InspectBlend > 0.01f)
+	{
+		// Bring weapon to center, tilt it
+		InspectOffset = FVector(8.f, -8.f, 3.f) * InspectBlend;
+		float RotAngle = FMath::Sin(InspectPhase * 0.8f) * 25.f;
+		float TiltAngle = FMath::Sin(InspectPhase * 0.5f + 1.f) * 10.f;
+		InspectRotOffset = FRotator(TiltAngle, RotAngle, 15.f) * InspectBlend;
+	}
+
 	ViewModel->SetRelativeLocation(BasePos
 		+ SwayOffset * SwayScale
 		+ RecoilOffset
 		+ FVector(0.f, IdleY * IdleScale, IdleZ * IdleScale)
-		+ DrawOffset);
-	ViewModel->SetRelativeRotation(FRotator(RecoilRotation + DrawRotOffset, 0.f, 0.f));
+		+ DrawOffset
+		+ InspectOffset);
+	ViewModel->SetRelativeRotation(
+		FRotator(RecoilRotation + DrawRotOffset, 0.f, 0.f) + InspectRotOffset);
+}
+
+void AExoWeaponBase::StartInspect()
+{
+	if (bWantsToFire || bIsADS) return;
+	bIsInspecting = true;
+}
+
+void AExoWeaponBase::StopInspect()
+{
+	bIsInspecting = false;
+}
+
+void AExoWeaponBase::TickHeatGlow()
+{
+	if (!ViewModel || !ViewModel->IsRegistered()) return;
+
+	// Update muzzle ready light based on heat — cool blue when ready, hot orange when hot
+	UPointLightComponent* Light = nullptr;
+	TArray<USceneComponent*> VMChildren;
+	ViewModel->GetChildrenComponents(false, VMChildren);
+	for (auto* Child : VMChildren)
+	{
+		if (UPointLightComponent* PL = Cast<UPointLightComponent>(Child))
+		{
+			Light = PL;
+			break;
+		}
+	}
+	if (!Light) return;
+
+	if (CurrentHeat > 0.3f)
+	{
+		float HeatAlpha = FMath::Clamp((CurrentHeat - 0.3f) / 0.7f, 0.f, 1.f);
+		FLinearColor CoolColor = Light->GetLightColor();
+		FLinearColor HotColor(1.f, 0.3f, 0.05f);
+		Light->SetLightColor(FMath::Lerp(CoolColor, HotColor, HeatAlpha));
+		Light->SetIntensity(FMath::Lerp(800.f, 3000.f, HeatAlpha));
+	}
+	else
+	{
+		Light->SetIntensity(800.f);
+	}
 }
 
 void AExoWeaponBase::ApplyRecoilKick()

@@ -68,6 +68,7 @@ void FExoInputSetup::Initialize()
 	DropWeapon   = MakeAction(TEXT("IA_Drop"),         B);
 	Grenade      = MakeAction(TEXT("IA_Grenade"),      B);
 	Melee        = MakeAction(TEXT("IA_Melee"),        B);
+	Inspect      = MakeAction(TEXT("IA_Inspect"),      B);
 	ScrollWeapon = MakeAction(TEXT("IA_ScrollWeapon"), A1);
 	Interact     = MakeAction(TEXT("IA_Interact"),     B);
 	Ping         = MakeAction(TEXT("IA_Ping"),         B);
@@ -112,6 +113,7 @@ void FExoInputSetup::Initialize()
 	MappingContext->MapKey(DropWeapon,   EKeys::G);
 	MappingContext->MapKey(Crouch,       EKeys::C);
 	MappingContext->MapKey(Melee,        EKeys::X);
+	MappingContext->MapKey(Inspect,      EKeys::T);
 	MappingContext->MapKey(Ping,         EKeys::MiddleMouseButton);
 	MappingContext->MapKey(Ability1,     EKeys::One);
 	MappingContext->MapKey(Ability2,     EKeys::Two);
@@ -131,5 +133,5 @@ void FExoInputSetup::Initialize()
 	MappingContext->MapKey(Restart,      EKeys::Enter);
 	MappingContext->MapKey(ReturnToMenu, EKeys::BackSpace);
 
-	UE_LOG(LogExoRift, Log, TEXT("Input setup: 31 actions, 35 key bindings"));
+	UE_LOG(LogExoRift, Log, TEXT("Input setup: 32 actions, 36 key bindings"));
 }

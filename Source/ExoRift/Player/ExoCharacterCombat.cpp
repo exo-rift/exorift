@@ -10,6 +10,7 @@
 #include "Visual/ExoCharacterModel.h"
 #include "Visual/ExoScreenShake.h"
 #include "UI/ExoPickupNotification.h"
+#include "UI/ExoKillAnnouncer.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ExoRift.h"
@@ -224,6 +225,12 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 		{
 			KillerChar->KillStreakComp->RegisterKill();
 			int32 Streak = KillerChar->KillStreakComp->GetCurrentStreak();
+
+			// Kill announcer (First Blood, Double Kill, etc.)
+			if (KillerChar->IsLocallyControlled())
+			{
+				FExoKillAnnouncer::RegisterKill();
+			}
 
 			// Streak audio and notification
 			if (KillerChar->IsLocallyControlled() && Streak >= 2)

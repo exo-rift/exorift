@@ -1,5 +1,6 @@
 #include "Player/ExoPlayerController.h"
 #include "Player/ExoCharacter.h"
+#include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoSpectatorPawn.h"
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoInventoryComponent.h"
@@ -74,6 +75,8 @@ void AExoPlayerController::SetupInputComponent()
 	EIC->BindAction(In.Ping, ETriggerEvent::Started, this, &AExoPlayerController::HandlePing);
 	EIC->BindAction(In.Grenade, ETriggerEvent::Started, this, &AExoPlayerController::HandleGrenade);
 	EIC->BindAction(In.Melee, ETriggerEvent::Started, this, &AExoPlayerController::HandleMelee);
+	EIC->BindAction(In.Inspect, ETriggerEvent::Started, this, &AExoPlayerController::HandleInspect);
+	EIC->BindAction(In.Inspect, ETriggerEvent::Completed, this, &AExoPlayerController::HandleInspectReleased);
 	EIC->BindAction(In.Ability1, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility1);
 	EIC->BindAction(In.Ability2, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility2);
 	EIC->BindAction(In.Ability3, ETriggerEvent::Started, this, &AExoPlayerController::HandleAbility3);
@@ -255,6 +258,19 @@ void AExoPlayerController::HandleMelee()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (C && C->GetInventoryComponent()) C->GetInventoryComponent()->SwitchToMelee();
+}
+
+void AExoPlayerController::HandleInspect()
+{
+	if (FExoSettingsMenu::bIsOpen) return;
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetCurrentWeapon()) C->GetCurrentWeapon()->StartInspect();
+}
+
+void AExoPlayerController::HandleInspectReleased()
+{
+	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
+	if (C && C->GetCurrentWeapon()) C->GetCurrentWeapon()->StopInspect();
 }
 
 void AExoPlayerController::HandleScrollWeapon(const FInputActionValue& Value)

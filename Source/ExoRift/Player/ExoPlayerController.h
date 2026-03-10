@@ -43,6 +43,8 @@ protected:
 	void HandleDropWeapon();
 	void HandleGrenade();
 	void HandleMelee();
+	void HandleInspect();
+	void HandleInspectReleased();
 	void HandleScrollWeapon(const FInputActionValue& Value);
 
 	// Interaction
