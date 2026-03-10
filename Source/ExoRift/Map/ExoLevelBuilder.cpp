@@ -94,6 +94,54 @@ void AExoLevelBuilder::BuildTerrain()
 			FRotator::ZeroRotator, CubeMesh,
 			FLinearColor(0.05f, 0.055f, 0.06f));
 	}
+
+	// Rocky ridgelines — stacked angular slabs for natural cover
+	struct FRidge { FVector Start; FVector End; float Height; float Width; };
+	TArray<FRidge> Ridges = {
+		{{30000.f, 20000.f, 0.f}, {50000.f, 35000.f, 0.f}, 400.f, 2000.f},
+		{{-40000.f, -10000.f, 0.f}, {-60000.f, -30000.f, 0.f}, 350.f, 1800.f},
+		{{70000.f, -80000.f, 0.f}, {90000.f, -60000.f, 0.f}, 500.f, 2500.f},
+		{{-90000.f, 70000.f, 0.f}, {-70000.f, 80000.f, 0.f}, 300.f, 1500.f},
+		{{100000.f, 30000.f, 0.f}, {110000.f, 50000.f, 0.f}, 450.f, 2200.f},
+	};
+	for (const auto& R : Ridges)
+	{
+		FVector Dir = R.End - R.Start;
+		float Len = Dir.Size();
+		FRotator Rot = Dir.Rotation();
+		int32 Segments = FMath::Max(2, FMath::RoundToInt32(Len / 5000.f));
+		for (int32 i = 0; i < Segments; i++)
+		{
+			float T = (float)i / (float)Segments;
+			FVector Pos = FMath::Lerp(R.Start, R.End, T + 0.5f / Segments);
+			float SegH = R.Height * (0.6f + 0.4f * FMath::Sin(T * PI));
+			float SegW = R.Width * (0.8f + 0.2f * FMath::Sin(T * 3.f));
+			SpawnStaticMesh(
+				FVector(Pos.X, Pos.Y, SegH * 0.5f),
+				FVector(Len / Segments / 100.f, SegW / 100.f, SegH / 100.f),
+				FRotator(FMath::RandRange(-3.f, 3.f), Rot.Yaw, 0.f),
+				CubeMesh, FLinearColor(0.04f, 0.045f, 0.055f));
+		}
+	}
+
+	// Hills — large rounded terrain bumps using spheres
+	struct FHill { FVector Pos; float Radius; float Height; };
+	TArray<FHill> Hills = {
+		{{-20000.f, 40000.f, -100.f}, 6000.f, 600.f},
+		{{50000.f, -20000.f, -100.f}, 5000.f, 500.f},
+		{{-60000.f, 70000.f, -100.f}, 7000.f, 400.f},
+		{{80000.f, 60000.f, -100.f}, 5500.f, 550.f},
+		{{-100000.f, -100000.f, -100.f}, 8000.f, 350.f},
+		{{110000.f, -30000.f, -100.f}, 4500.f, 450.f},
+	};
+	for (const auto& H : Hills)
+	{
+		float SR = H.Radius / 50.f;
+		float SH = H.Height / 50.f;
+		SpawnStaticMesh(H.Pos,
+			FVector(SR, SR, SH), FRotator::ZeroRotator, SphereMesh,
+			FLinearColor(0.045f, 0.05f, 0.055f));
+	}
 }
 
 void AExoLevelBuilder::BuildLighting()
