@@ -233,6 +233,27 @@ void AExoHUD::DrawProgressBar(float X, float Y, float Width, float Height,
 			EdgeCol.A = FMath::Min(EdgeCol.A + 0.3f, 1.f);
 			DrawRect(EdgeCol, X + FillW - 1.f, Y + 1.f, 2.f, Height - 2.f);
 		}
+
+		// Scanline overlay — horizontal lines for holographic feel
+		if (Height >= 10.f)
+		{
+			FLinearColor ScanCol(0.f, 0.f, 0.f, 0.12f);
+			for (float SY = Y + 3.f; SY < Y + Height - 1.f; SY += 3.f)
+			{
+				DrawRect(ScanCol, X + 1.f, SY, FillW, 1.f);
+			}
+		}
+
+		// Animated shimmer — bright band that sweeps across the bar
+		float Time = GetWorld()->GetTimeSeconds();
+		float ShimmerPos = FMath::Fmod(Time * 80.f, Width + 40.f) - 20.f;
+		if (ShimmerPos > 0.f && ShimmerPos < FillW)
+		{
+			float ShimW = FMath::Min(20.f, FillW - ShimmerPos);
+			FLinearColor ShimCol = FillColor;
+			ShimCol.A = 0.25f;
+			DrawRect(ShimCol, X + 1.f + ShimmerPos, Y + 1.f, ShimW, Height - 2.f);
+		}
 	}
 
 	// Border with subtle glow at fill level

@@ -60,10 +60,18 @@ void UExoCharacterModel::BuildModel(bool bIsBot)
 	VisorGlow->CastShadows = false;
 	VisorGlow->RegisterComponent();
 
+	// Helmet detail — ear plates
+	AddPart(FVector(0.f, 14.f, 55.f), FVector(0.06f, 0.04f, 0.08f), DarkGrey);
+	AddPart(FVector(0.f, -14.f, 55.f), FVector(0.06f, 0.04f, 0.08f), DarkGrey);
+	// Breath mask / jaw guard
+	AddPart(FVector(10.f, 0.f, 47.f), FVector(0.06f, 0.12f, 0.04f), DarkGrey);
+
 	// Antenna on right side of helmet
 	AddPart(FVector(-5.f, 10.f, 68.f), FVector(0.01f, 0.01f, 0.1f), DarkGrey);
-	// Antenna tip (small accent dot)
 	AddPart(FVector(-5.f, 10.f, 78.f), FVector(0.02f, 0.02f, 0.02f), Accent, SphereMesh);
+
+	// Collar / neck guard
+	AddPart(FVector(0.f, 0.f, 42.f), FVector(0.25f, 0.2f, 0.05f), Dark);
 
 	// Chest accent strip (glowing)
 	AccentPart = AddPart(FVector(18.f, 0.f, 22.f), FVector(0.02f, 0.18f, 0.06f), Accent);
@@ -91,13 +99,24 @@ void UExoCharacterModel::BuildModel(bool bIsBot)
 	AddPart(FVector(5.f, 34.f, -8.f), FVector(0.02f, 0.02f, 0.12f), Accent);
 	AddPart(FVector(5.f, -34.f, -8.f), FVector(0.02f, 0.02f, 0.12f), Accent);
 
+	// Wrist device on left forearm (tactical display)
+	AddPart(FVector(8.f, -32.f, -15.f), FVector(0.06f, 0.05f, 0.04f), DarkGrey);
+	AddPart(FVector(10.f, -32.f, -15.f), FVector(0.04f, 0.035f, 0.02f), Accent); // Screen
+
 	// Upper legs
 	AddPart(FVector(0.f, 10.f, -25.f), FVector(0.12f, 0.1f, 0.3f), Body, CylinderMesh);
 	AddPart(FVector(0.f, -10.f, -25.f), FVector(0.12f, 0.1f, 0.3f), Body, CylinderMesh);
 
+	// Thigh holster on right leg
+	AddPart(FVector(6.f, 14.f, -28.f), FVector(0.04f, 0.06f, 0.1f), DarkGrey);
+	AddPart(FVector(8.f, 14.f, -28.f), FVector(0.02f, 0.04f, 0.08f), Dark); // Holster strap
+
 	// Knee pads
 	AddPart(FVector(6.f, 10.f, -42.f), FVector(0.06f, 0.08f, 0.06f), DarkGrey);
 	AddPart(FVector(6.f, -10.f, -42.f), FVector(0.06f, 0.08f, 0.06f), DarkGrey);
+	// Knee accent lights
+	AddPart(FVector(8.f, 10.f, -42.f), FVector(0.015f, 0.04f, 0.015f), Accent);
+	AddPart(FVector(8.f, -10.f, -42.f), FVector(0.015f, 0.04f, 0.015f), Accent);
 
 	// Lower legs
 	AddPart(FVector(0.f, 10.f, -55.f), FVector(0.09f, 0.08f, 0.25f), Dark, CylinderMesh);
@@ -155,12 +174,12 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		// Bright accent colors get emissive glow
+		// Bright accent colors get strong emissive glow for visibility
 		float Luminance = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
 		if (Luminance > 0.15f)
 		{
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
+				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		}
 		Part->SetMaterial(0, Mat);
 	}
