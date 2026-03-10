@@ -168,6 +168,195 @@ void AExoLevelBuilder::BuildInteriors()
 		RL->CastShadows = false;
 		RL->RegisterComponent();
 	}
+
+	// === CHAIRS — near consoles and workstations ===
+	auto SpawnChair = [&](const FVector& Pos, float Yaw)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		// Seat
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 30.f),
+			FVector(0.4f, 0.4f, 0.04f), R, CubeMesh, DarkMetal);
+		// Backrest
+		SpawnStaticMesh(Pos + R.RotateVector(FVector(-18.f, 0.f, 55.f)),
+			FVector(0.04f, 0.35f, 0.5f), R, CubeMesh, DarkMetal);
+		// Pedestal leg
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 15.f),
+			FVector(0.06f, 0.06f, 0.3f), R, CylinderMesh, DarkMetal);
+		// Base star (cross shape)
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 3.f),
+			FVector(0.3f, 0.06f, 0.03f), R, CubeMesh, DarkMetal);
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 3.f),
+			FVector(0.06f, 0.3f, 0.03f), R, CubeMesh, DarkMetal);
+	};
+	// Hub chairs
+	SpawnChair(FVector(2000.f, 1500.f, 10.f) + FVector(100.f, 0.f, 0.f), 180.f);
+	SpawnChair(FVector(2000.f, -1500.f, 10.f) + FVector(100.f, 0.f, 0.f), 180.f);
+	SpawnChair(FVector(-1500.f, 0.f, 10.f) + FVector(0.f, 100.f, 0.f), -90.f);
+	// North compound
+	SpawnChair(FVector(-2000.f, 81000.f, 10.f) + FVector(100.f, 0.f, 0.f), 165.f);
+	// East power
+	SpawnChair(FVector(81000.f, 0.f, 10.f) + FVector(80.f, 80.f, 0.f), -135.f);
+
+	// === LOCKERS — barracks personal storage ===
+	auto SpawnLockerRow = [&](const FVector& Start, float Yaw, int32 Count)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		FVector Step = R.RotateVector(FVector(0.f, 60.f, 0.f));
+		for (int32 i = 0; i < Count; i++)
+		{
+			FVector Pos = Start + Step * (float)i;
+			// Locker body
+			SpawnStaticMesh(Pos + FVector(0.f, 0.f, 90.f),
+				FVector(0.5f, 0.45f, 1.8f), R, CubeMesh,
+				FLinearColor(0.06f, 0.065f, 0.07f));
+			// Door handle
+			SpawnStaticMesh(Pos + R.RotateVector(FVector(26.f, -8.f, 80.f)),
+				FVector(0.015f, 0.005f, 0.08f), R, CubeMesh,
+				FLinearColor(0.12f, 0.12f, 0.14f));
+		}
+	};
+	// West barracks locker rows
+	SpawnLockerRow(FVector(-81000.f, -8000.f, 10.f), 0.f, 5);
+	SpawnLockerRow(FVector(-79000.f, -8000.f, 10.f), 180.f, 5);
+	SpawnLockerRow(FVector(-81000.f, 6000.f, 10.f), 0.f, 4);
+
+	// === BUNK BEDS — barracks sleeping quarters ===
+	auto SpawnBunk = [&](const FVector& Pos, float Yaw)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		FLinearColor Frame(0.07f, 0.07f, 0.08f);
+		FLinearColor Mattress(0.12f, 0.1f, 0.08f);
+		// Lower bed frame
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 25.f),
+			FVector(2.f, 0.8f, 0.04f), R, CubeMesh, Frame);
+		// Lower mattress
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 30.f),
+			FVector(1.8f, 0.7f, 0.08f), R, CubeMesh, Mattress);
+		// Upper bed frame
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 120.f),
+			FVector(2.f, 0.8f, 0.04f), R, CubeMesh, Frame);
+		// Upper mattress
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 125.f),
+			FVector(1.8f, 0.7f, 0.08f), R, CubeMesh, Mattress);
+		// Corner posts
+		for (float BX : {-90.f, 90.f})
+			for (float BY : {-35.f, 35.f})
+				SpawnStaticMesh(Pos + R.RotateVector(FVector(BX, BY, 75.f)),
+					FVector(0.04f, 0.04f, 1.5f), R, CylinderMesh, Frame);
+	};
+	// Barracks bunks
+	SpawnBunk(FVector(-82000.f, -3000.f, 10.f), 0.f);
+	SpawnBunk(FVector(-82000.f, -1500.f, 10.f), 0.f);
+	SpawnBunk(FVector(-82000.f, 0.f, 10.f), 0.f);
+	SpawnBunk(FVector(-82000.f, 1500.f, 10.f), 0.f);
+
+	// === MONITOR ARRAY — multi-screen wall display in hub ===
+	{
+		FLinearColor ScreenFrame(0.04f, 0.04f, 0.05f);
+		FVector ArrayCenter(0.f, -4000.f, 200.f);
+		for (int32 Row = 0; Row < 2; Row++)
+		{
+			for (int32 Col = 0; Col < 3; Col++)
+			{
+				FVector Offset((Col - 1) * 200.f, 0.f, Row * 150.f);
+				// Frame
+				SpawnStaticMesh(ArrayCenter + Offset,
+					FVector(1.6f, 0.06f, 1.2f), FRotator::ZeroRotator,
+					CubeMesh, ScreenFrame);
+				// Screen face
+				FLinearColor ScreenCol;
+				switch ((Row * 3 + Col) % 4)
+				{
+				case 0: ScreenCol = FLinearColor(0.05f, 0.2f, 0.4f); break;
+				case 1: ScreenCol = FLinearColor(0.1f, 0.35f, 0.15f); break;
+				case 2: ScreenCol = FLinearColor(0.3f, 0.15f, 0.05f); break;
+				default: ScreenCol = FLinearColor(0.05f, 0.25f, 0.35f); break;
+				}
+				UStaticMeshComponent* MonScreen = SpawnStaticMesh(
+					ArrayCenter + Offset + FVector(0.f, -4.f, 0.f),
+					FVector(1.4f, 0.02f, 1.0f), FRotator::ZeroRotator,
+					CubeMesh, ScreenCol);
+				if (MonScreen && BaseMaterial)
+				{
+					UMaterialInstanceDynamic* MSM = Cast<UMaterialInstanceDynamic>(
+						MonScreen->GetMaterial(0));
+					if (MSM) MSM->SetVectorParameterValue(TEXT("EmissiveColor"),
+						FLinearColor(ScreenCol.R * 3.f, ScreenCol.G * 3.f,
+							ScreenCol.B * 3.f));
+				}
+			}
+		}
+		// Array frame border
+		SpawnStaticMesh(ArrayCenter + FVector(0.f, 2.f, 75.f),
+			FVector(3.5f, 0.04f, 3.2f), FRotator::ZeroRotator,
+			CubeMesh, ScreenFrame);
+		// Array ambient light
+		UPointLightComponent* ArrayLight = NewObject<UPointLightComponent>(this);
+		ArrayLight->SetupAttachment(RootComponent);
+		ArrayLight->SetWorldLocation(ArrayCenter + FVector(0.f, -50.f, 100.f));
+		ArrayLight->SetIntensity(2000.f);
+		ArrayLight->SetAttenuationRadius(600.f);
+		ArrayLight->SetLightColor(FLinearColor(0.15f, 0.3f, 0.5f));
+		ArrayLight->CastShadows = false;
+		ArrayLight->RegisterComponent();
+	}
+
+	// === LAB EQUIPMENT — south research compound ===
+	{
+		// Centrifuge — short cylinder with emissive ring
+		FVector CentPos(-3000.f, -80500.f, 10.f);
+		SpawnStaticMesh(CentPos + FVector(0.f, 0.f, 40.f),
+			FVector(0.5f, 0.5f, 0.4f), FRotator::ZeroRotator,
+			CylinderMesh, DarkMetal);
+		UStaticMeshComponent* CentRing = SpawnStaticMesh(
+			CentPos + FVector(0.f, 0.f, 60.f),
+			FVector(0.55f, 0.55f, 0.03f), FRotator::ZeroRotator,
+			CylinderMesh, FLinearColor(0.1f, 0.5f, 0.3f));
+		if (CentRing && BaseMaterial)
+		{
+			UMaterialInstanceDynamic* CRM = Cast<UMaterialInstanceDynamic>(
+				CentRing->GetMaterial(0));
+			if (CRM) CRM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.3f, 2.f, 1.f));
+		}
+
+		// Specimen containers — glass-like cylinders with glow
+		for (int32 i = 0; i < 3; i++)
+		{
+			FVector ContPos(-4000.f + i * 500.f, -81500.f, 10.f);
+			SpawnStaticMesh(ContPos + FVector(0.f, 0.f, 50.f),
+				FVector(0.2f, 0.2f, 1.0f), FRotator::ZeroRotator,
+				CylinderMesh, FLinearColor(0.08f, 0.12f, 0.15f));
+			// Glowing contents
+			FLinearColor ContGlow = (i == 0) ? FLinearColor(0.1f, 0.6f, 0.3f) :
+				(i == 1) ? FLinearColor(0.5f, 0.2f, 0.05f) :
+				FLinearColor(0.15f, 0.3f, 0.6f);
+			UPointLightComponent* CL = NewObject<UPointLightComponent>(this);
+			CL->SetupAttachment(RootComponent);
+			CL->SetWorldLocation(ContPos + FVector(0.f, 0.f, 50.f));
+			CL->SetIntensity(1500.f);
+			CL->SetAttenuationRadius(200.f);
+			CL->SetLightColor(ContGlow);
+			CL->CastShadows = false;
+			CL->RegisterComponent();
+		}
+	}
+
+	// === STORAGE SHELVES — generic throughout compounds ===
+	auto SpawnShelf = [&](const FVector& Pos, float Yaw, int32 Shelves)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		FLinearColor SC(0.065f, 0.065f, 0.075f);
+		for (int32 i = 0; i < Shelves; i++)
+			SpawnStaticMesh(Pos + FVector(0.f, 0.f, 20.f + i * 60.f),
+				FVector(1.8f, 0.5f, 0.03f), R, CubeMesh, SC);
+		for (float SY : {-22.f, 22.f})
+			SpawnStaticMesh(Pos + R.RotateVector(FVector(0.f, SY, Shelves * 30.f)),
+				FVector(1.8f, 0.04f, Shelves * 0.6f), R, CubeMesh, SC);
+	};
+	SpawnShelf(FVector(4000.f, 1000.f, 10.f), 0.f, 3);
+	SpawnShelf(FVector(4000.f, -1000.f, 10.f), 0.f, 3);
+	SpawnShelf(FVector(-5000.f, 79500.f, 10.f), 90.f, 4);
 }
 
 void AExoLevelBuilder::SpawnConsole(const FVector& Pos, float Yaw)
