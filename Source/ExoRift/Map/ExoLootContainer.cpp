@@ -79,7 +79,7 @@ void AExoLootContainer::BuildVisuals()
 		if (Lum > 0.15f)
 		{
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
+				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		}
 		C->SetMaterial(0, Mat);
 		return C;
@@ -91,9 +91,19 @@ void AExoLootContainer::BuildVisuals()
 	LidComp = MakePart(FVector(0.f, 0.f, 30.f), FVector(1.05f, 0.65f, 0.04f),
 		FLinearColor(0.09f, 0.11f, 0.07f));
 
-	// Accent stripes
+	// Accent stripes (brighter emissive)
 	MakePart(FVector(0.f, 32.f, 0.f), FVector(0.9f, 0.02f, 0.4f), AccentColor);
 	MakePart(FVector(0.f, -32.f, 0.f), FVector(0.9f, 0.02f, 0.4f), AccentColor);
+
+	// Corner braces — L-shaped brackets at each corner of the crate
+	FLinearColor BraceCol(0.12f, 0.12f, 0.14f);
+	for (float SX : {-1.f, 1.f})
+		for (float SY : {-1.f, 1.f})
+		{
+			FVector Corner(SX * 48.f, SY * 28.f, 0.f);
+			MakePart(Corner + FVector(0.f, 0.f, 24.f), FVector(0.04f, 0.04f, 0.15f), BraceCol);
+			MakePart(Corner + FVector(0.f, 0.f, -10.f), FVector(0.04f, 0.04f, 0.15f), BraceCol);
+		}
 
 	// Lock hasp on front
 	MakePart(FVector(52.f, 0.f, 20.f), FVector(0.04f, 0.08f, 0.06f),
@@ -106,6 +116,9 @@ void AExoLootContainer::BuildVisuals()
 	FLinearColor TrimCol(0.15f, 0.35f, 0.7f);
 	MakePart(FVector(50.f, 0.f, 25.f), FVector(0.02f, 0.55f, 0.02f), TrimCol);
 	MakePart(FVector(-50.f, 0.f, 25.f), FVector(0.02f, 0.55f, 0.02f), TrimCol);
+
+	// Bottom accent stripe (glowing indicator of contents)
+	MakePart(FVector(0.f, 0.f, -22.f), FVector(0.8f, 0.5f, 0.015f), AccentColor);
 
 	// Interior glow light
 	ContainerGlow = NewObject<UPointLightComponent>(this);

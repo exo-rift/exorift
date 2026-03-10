@@ -63,4 +63,17 @@ protected:
 
 	UPROPERTY()
 	class UMaterialInstanceDynamic* AccentMat = nullptr;
+
+	// Holographic pedestal and rarity ring
+	UPROPERTY()
+	class UStaticMeshComponent* PedestalPlate = nullptr;
+
+	UPROPERTY()
+	class UStaticMeshComponent* RarityRing = nullptr;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* PedestalMat = nullptr;
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* RingMat = nullptr;
 };

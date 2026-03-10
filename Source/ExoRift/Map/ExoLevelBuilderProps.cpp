@@ -161,7 +161,76 @@ void AExoLevelBuilder::BuildProps()
 	SpawnWreck(FVector(45000.f, 45000.f, GroundZ), 70.f, 5.f);
 	SpawnWreck(FVector(-60000.f, -50000.f, GroundZ), 140.f, -4.f);
 
-	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Props, containers, and vehicles placed"));
+	// === BARRICADES — tactical cover between compounds ===
+	auto SpawnBarricade = [&](const FVector& Pos, float Yaw, float Width)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		FLinearColor BarricadeCol(0.07f, 0.07f, 0.08f);
+		FLinearColor StripeCol(0.6f, 0.4f, 0.05f);
+
+		// Main barrier wall
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 120.f),
+			FVector(Width / 100.f, 0.4f, 2.4f), R, CubeMesh, BarricadeCol);
+		// Top rail
+		SpawnStaticMesh(Pos + R.RotateVector(FVector(0.f, 0.f, 250.f)),
+			FVector(Width / 100.f * 1.05f, 0.5f, 0.15f), R, CubeMesh,
+			FLinearColor(0.09f, 0.09f, 0.1f));
+		// Warning stripe
+		SpawnStaticMesh(Pos + R.RotateVector(FVector(0.f, 22.f, 180.f)),
+			FVector(Width / 100.f * 0.8f, 0.02f, 0.08f), R, CubeMesh, StripeCol);
+		// Support feet
+		for (float FX : {-Width * 0.4f, Width * 0.4f})
+		{
+			SpawnStaticMesh(Pos + R.RotateVector(FVector(FX, 0.f, 15.f)),
+				FVector(0.6f, 1.f, 0.15f), R, CubeMesh, BarricadeCol);
+		}
+	};
+
+	// Road checkpoint barricades
+	SpawnBarricade(FVector(30000.f, 2000.f, GroundZ), 0.f, 600.f);
+	SpawnBarricade(FVector(30000.f, -2000.f, GroundZ), 0.f, 600.f);
+	SpawnBarricade(FVector(-30000.f, 1500.f, GroundZ), 10.f, 500.f);
+	SpawnBarricade(FVector(-30000.f, -1500.f, GroundZ), -5.f, 500.f);
+	// North approach
+	SpawnBarricade(FVector(2500.f, 40000.f, GroundZ), 85.f, 700.f);
+	SpawnBarricade(FVector(-2500.f, 40000.f, GroundZ), 95.f, 500.f);
+	// South approach
+	SpawnBarricade(FVector(1500.f, -45000.f, GroundZ), 90.f, 600.f);
+	SpawnBarricade(FVector(-1500.f, -45000.f, GroundZ), 80.f, 600.f);
+
+	// === DAMAGED WALL SECTIONS — battle-scarred concrete ===
+	auto SpawnDamagedWall = [&](const FVector& Pos, float Yaw)
+	{
+		FRotator R(0.f, Yaw, 0.f);
+		FLinearColor WallCol(0.06f, 0.06f, 0.065f);
+		// Main wall section (lower half intact)
+		SpawnStaticMesh(Pos + FVector(0.f, 0.f, 100.f),
+			FVector(4.f, 0.3f, 2.f), R, CubeMesh, WallCol);
+		// Broken top — jagged smaller blocks
+		SpawnStaticMesh(Pos + R.RotateVector(FVector(-120.f, 0.f, 250.f)),
+			FVector(1.5f, 0.3f, 0.8f), R + FRotator(0.f, 0.f, 5.f), CubeMesh, WallCol);
+		SpawnStaticMesh(Pos + R.RotateVector(FVector(80.f, 0.f, 230.f)),
+			FVector(1.f, 0.3f, 0.5f), R + FRotator(0.f, 0.f, -8.f), CubeMesh, WallCol);
+		// Rubble chunks at base
+		for (int32 D = 0; D < 3; D++)
+		{
+			float Ox = FMath::RandRange(-200.f, 200.f);
+			float Oy = FMath::RandRange(30.f, 80.f);
+			float S = FMath::RandRange(0.3f, 0.8f);
+			SpawnStaticMesh(Pos + R.RotateVector(FVector(Ox, Oy, S * 25.f)),
+				FVector(S, S * 0.7f, S * 0.5f),
+				R + FRotator(FMath::RandRange(-10.f, 10.f), FMath::RandRange(0.f, 45.f), 0.f),
+				CubeMesh, FLinearColor(0.05f, 0.05f, 0.055f));
+		}
+	};
+
+	SpawnDamagedWall(FVector(20000.f, 20000.f, GroundZ), 30.f);
+	SpawnDamagedWall(FVector(-40000.f, 30000.f, GroundZ), -15.f);
+	SpawnDamagedWall(FVector(60000.f, -20000.f, GroundZ), 75.f);
+	SpawnDamagedWall(FVector(-20000.f, -60000.f, GroundZ), 120.f);
+	SpawnDamagedWall(FVector(35000.f, -55000.f, GroundZ), 45.f);
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Props, containers, barricades, and vehicles placed"));
 }
 
 void AExoLevelBuilder::SpawnLightPost(const FVector& Base, float Height, const FLinearColor& Color)

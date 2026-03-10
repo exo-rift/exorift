@@ -57,6 +57,17 @@ void AExoWeaponPickup::BuildPickupModel()
 
 	FLinearColor RarityColor = AExoWeaponBase::GetRarityColor(Rarity);
 
+	// Emissive multiplier scales by rarity — all rarities glow now
+	float EmMul;
+	switch (Rarity)
+	{
+	case EWeaponRarity::Common:    EmMul = 0.5f; break;
+	case EWeaponRarity::Rare:      EmMul = 1.2f; break;
+	case EWeaponRarity::Epic:      EmMul = 2.0f; break;
+	case EWeaponRarity::Legendary: EmMul = 4.0f; break;
+	default:                       EmMul = 0.5f; break;
+	}
+
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator,
 		bool bIsAccent = false) -> UMaterialInstanceDynamic*
@@ -75,9 +86,8 @@ void AExoWeaponPickup::BuildPickupModel()
 		{
 			Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-			if (bIsAccent && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
+			if (bIsAccent)
 			{
-				float EmMul = (Rarity == EWeaponRarity::Legendary) ? 3.f : 1.5f;
 				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 					FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
 			}
@@ -153,6 +163,48 @@ void AExoWeaponPickup::BuildPickupModel()
 	}
 	RarityGlow->SetIntensity(GlowIntensity);
 	RarityGlow->SetAttenuationRadius(GlowRadius);
+
+	// --- Holographic pedestal plate under the weapon ---
+	PedestalPlate = NewObject<UStaticMeshComponent>(this);
+	PedestalPlate->SetupAttachment(RootComponent);
+	PedestalPlate->SetStaticMesh(CylMesh ? CylMesh : CubeMesh);
+	PedestalPlate->SetRelativeLocation(FVector(0.f, 0.f, -25.f));
+	PedestalPlate->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.01f));
+	PedestalPlate->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PedestalPlate->CastShadow = false;
+	PedestalPlate->RegisterComponent();
+	if (BaseMat)
+	{
+		PedestalMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		PedestalMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(RarityColor.R * 0.15f, RarityColor.G * 0.15f, RarityColor.B * 0.15f));
+		PedestalMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(RarityColor.R * EmMul * 0.3f, RarityColor.G * EmMul * 0.3f,
+				RarityColor.B * EmMul * 0.3f));
+		PedestalPlate->SetMaterial(0, PedestalMat);
+	}
+
+	// --- Rarity ring — thin spinning halo ---
+	if (CylMesh)
+	{
+		RarityRing = NewObject<UStaticMeshComponent>(this);
+		RarityRing->SetupAttachment(RootComponent);
+		RarityRing->SetStaticMesh(CylMesh);
+		RarityRing->SetRelativeLocation(FVector(0.f, 0.f, -20.f));
+		RarityRing->SetRelativeScale3D(FVector(0.65f, 0.65f, 0.005f));
+		RarityRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		RarityRing->CastShadow = false;
+		RarityRing->RegisterComponent();
+		if (BaseMat)
+		{
+			RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			RingMat->SetVectorParameterValue(TEXT("BaseColor"), RarityColor * 0.3f);
+			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(RarityColor.R * EmMul * 0.6f, RarityColor.G * EmMul * 0.6f,
+					RarityColor.B * EmMul * 0.6f));
+			RarityRing->SetMaterial(0, RingMat);
+		}
+	}
 }
 
 void AExoWeaponPickup::Tick(float DeltaTime)
@@ -177,14 +229,42 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 			RarityGlow->SetIntensity(Base * Pulse);
 		}
 
-		// Pulse emissive accent strip
-		if (AccentMat && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
+		// Pulse emissive accent strip — all rarities pulse now
+		if (AccentMat)
 		{
 			FLinearColor RC = AExoWeaponBase::GetRarityColor(Rarity);
-			float EmPulse = 1.5f + 1.5f * FMath::Sin(BobPhase * 1.5f);
-			if (Rarity == EWeaponRarity::Legendary) EmPulse *= 1.5f;
+			float BaseEm;
+			switch (Rarity)
+			{
+			case EWeaponRarity::Common:    BaseEm = 0.5f; break;
+			case EWeaponRarity::Rare:      BaseEm = 1.2f; break;
+			case EWeaponRarity::Epic:      BaseEm = 2.0f; break;
+			case EWeaponRarity::Legendary: BaseEm = 4.0f; break;
+			default:                       BaseEm = 0.5f; break;
+			}
+			float EmPulse = BaseEm * (0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f));
 			AccentMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(RC.R * EmPulse, RC.G * EmPulse, RC.B * EmPulse));
+		}
+
+		// Animate pedestal glow pulse
+		if (PedestalMat)
+		{
+			FLinearColor RC = AExoWeaponBase::GetRarityColor(Rarity);
+			float PedPulse = 0.2f + 0.15f * FMath::Sin(BobPhase * 2.f);
+			PedestalMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(RC.R * PedPulse, RC.G * PedPulse, RC.B * PedPulse));
+		}
+
+		// Spin rarity ring independently
+		if (RarityRing)
+		{
+			FRotator RingRot = RarityRing->GetRelativeRotation();
+			RingRot.Yaw += DeltaTime * 90.f;
+			RarityRing->SetRelativeRotation(RingRot);
+			// Breathe ring scale
+			float RingBreath = 0.65f + 0.05f * FMath::Sin(BobPhase * 1.2f);
+			RarityRing->SetRelativeScale3D(FVector(RingBreath, RingBreath, 0.005f));
 		}
 	}
 	else if (bRespawns)
