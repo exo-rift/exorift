@@ -1,5 +1,6 @@
 // ExoLevelBuilderAtmosphere.cpp — Holographic displays, spotlights, energy conduits, neon
 #include "Map/ExoLevelBuilder.h"
+#include "Map/ExoForceFieldGate.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
@@ -199,6 +200,35 @@ void AExoLevelBuilder::BuildAtmosphere()
 			if (Prop) Prop->InitProp(P.Type, P.Color, P.Speed, P.Scale);
 		}
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d rotating props"), PropDefs.Num());
+	}
+
+	// === FORCE FIELD GATES at compound entrances ===
+	{
+		FActorSpawnParameters GateP;
+		GateP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		struct FGateDef { FVector Pos; float Yaw; float Width; float Height; FLinearColor Color; };
+		FGateDef Gates[] = {
+			// Hub entrance (south-facing)
+			{{4000.f, -3000.f, 10.f}, 0.f, 600.f, 350.f, FLinearColor(0.2f, 0.5f, 1.f)},
+			// North compound main entry
+			{{-10000.f, 76000.f, 10.f}, 0.f, 800.f, 400.f, FLinearColor(1.f, 0.5f, 0.1f)},
+			// South research lab entry
+			{{-9000.f, -80000.f, 10.f}, 90.f, 600.f, 350.f, FLinearColor(0.3f, 1.f, 0.4f)},
+			// East power station entry
+			{{80000.f, -4000.f, 10.f}, 90.f, 700.f, 400.f, FLinearColor(1.f, 0.3f, 0.1f)},
+			// West barracks entry (between guard posts)
+			{{-80000.f, 6000.f, 10.f}, 0.f, 800.f, 350.f, FLinearColor(0.2f, 0.4f, 1.f)},
+		};
+
+		for (const FGateDef& G : Gates)
+		{
+			AExoForceFieldGate* Gate = GetWorld()->SpawnActor<AExoForceFieldGate>(
+				AExoForceFieldGate::StaticClass(), G.Pos,
+				FRotator(0.f, G.Yaw, 0.f), GateP);
+			if (Gate) Gate->InitGate(G.Width, G.Height, G.Color);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 5 force field gates"));
 	}
 }
 
