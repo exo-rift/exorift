@@ -59,10 +59,10 @@ AExoImpactEffect::AExoImpactEffect()
 
 void AExoImpactEffect::InitEffect(const FVector& HitNormal, bool bHitCharacter)
 {
-	// Color scheme: red/orange for characters, bright cyan-white for surfaces
+	// Color scheme: red/orange for characters, bright cyan-white for surfaces (bloom boosted)
 	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(20.f, 4.f, 1.f, 1.f)
-		: FLinearColor(10.f, 18.f, 25.f, 1.f);
+		? FLinearColor(35.f, 8.f, 2.f, 1.f)
+		: FLinearColor(18.f, 30.f, 45.f, 1.f);
 
 	FLinearColor LightColor = bHitCharacter
 		? FLinearColor(1.f, 0.3f, 0.1f)

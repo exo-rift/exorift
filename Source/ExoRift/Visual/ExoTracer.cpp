@@ -120,16 +120,16 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 	SetActorRotation(BeamRot);
 
 	float HitBoost = bIsHit ? 4.f : 1.f;
-	// Core: white-hot center with extreme emissive
+	// Core: white-hot center with extreme emissive (boosted for bloom)
 	CoreColor = FLinearColor(
-		WeaponColor.R * 25.f * HitBoost + 8.f,
-		WeaponColor.G * 25.f * HitBoost + 8.f,
-		WeaponColor.B * 25.f * HitBoost + 8.f);
+		WeaponColor.R * 40.f * HitBoost + 15.f,
+		WeaponColor.G * 40.f * HitBoost + 15.f,
+		WeaponColor.B * 40.f * HitBoost + 15.f);
 	// Glow: heavily saturated weapon color
 	GlowColor = FLinearColor(
-		WeaponColor.R * 12.f,
-		WeaponColor.G * 12.f,
-		WeaponColor.B * 12.f);
+		WeaponColor.R * 20.f,
+		WeaponColor.G * 20.f,
+		WeaponColor.B * 20.f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
@@ -154,16 +154,16 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 	TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.4f);
 	BeamTrail->SetMaterial(0, TrailMat);
 
-	// Corona — large soft outer halo (dim but wide)
+	// Corona — large soft outer halo (visible with bloom)
 	CoronaMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor CoronaColor = GlowColor * 0.15f;
+	FLinearColor CoronaColor = GlowColor * 0.25f;
 	CoronaMat->SetVectorParameterValue(TEXT("BaseColor"), CoronaColor);
 	CoronaMat->SetVectorParameterValue(TEXT("EmissiveColor"), CoronaColor);
 	Corona->SetMaterial(0, CoronaMat);
 
 	// Head — blazing energy ball leading the bolt
 	HeadMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor HeadColor = CoreColor * 2.f;
+	FLinearColor HeadColor = CoreColor * 3.f;
 	HeadMat->SetVectorParameterValue(TEXT("BaseColor"), HeadColor);
 	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), HeadColor);
 	HeadMesh->SetMaterial(0, HeadMat);

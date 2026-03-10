@@ -91,19 +91,19 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	FlashFlare->SetRelativeScale3D(FVector(0.04f, 0.03f, FlareScale));
 	FlashRing->SetRelativeScale3D(FVector(RingScale * 0.3f, RingScale * 0.3f, 0.005f));
 
-	// Blazing emissive energy burst
+	// Blazing emissive energy burst (boosted for bloom)
 	FLinearColor HotCenter(
-		WeaponColor.R * 20.f + 10.f,
-		WeaponColor.G * 20.f + 10.f,
-		WeaponColor.B * 20.f + 10.f);
+		WeaponColor.R * 35.f + 20.f,
+		WeaponColor.G * 35.f + 20.f,
+		WeaponColor.B * 35.f + 20.f);
 	FLinearColor FlareColor(
-		WeaponColor.R * 30.f,
-		WeaponColor.G * 30.f,
-		WeaponColor.B * 30.f);
+		WeaponColor.R * 50.f,
+		WeaponColor.G * 50.f,
+		WeaponColor.B * 50.f);
 	FLinearColor RingColor(
-		WeaponColor.R * 15.f,
-		WeaponColor.G * 15.f,
-		WeaponColor.B * 15.f);
+		WeaponColor.R * 25.f,
+		WeaponColor.G * 25.f,
+		WeaponColor.B * 25.f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
