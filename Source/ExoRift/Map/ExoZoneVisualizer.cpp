@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
 
@@ -52,34 +53,29 @@ void AExoZoneVisualizer::BeginPlay()
 	Super::BeginPlay();
 
 	// Create dynamic materials for each component
-	if (BaseMaterial && ZoneWallMesh)
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+	if (ZoneWallMesh)
 	{
-		ZoneMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		ZoneMaterial->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(ZoneColor.R, ZoneColor.G, ZoneColor.B, ZoneColor.A));
+		ZoneMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(ZoneColor.R * 2.f, ZoneColor.G * 2.f, ZoneColor.B * 2.f));
 		ZoneWallMesh->SetMaterial(0, ZoneMaterial);
 	}
 
-	if (BaseMaterial && TargetRingMesh)
+	if (TargetRingMesh)
 	{
-		TargetMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		TargetMaterial->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(TargetColor.R, TargetColor.G, TargetColor.B, TargetColor.A));
+		TargetMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		TargetRingMesh->SetMaterial(0, TargetMaterial);
 	}
 
-	if (BaseMaterial && GroundGlowMesh)
+	if (GroundGlowMesh)
 	{
-		GlowMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		GlowMaterial->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(ZoneColor.R * 0.5f, ZoneColor.G * 0.5f, ZoneColor.B, 0.4f));
+		GlowMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		GroundGlowMesh->SetMaterial(0, GlowMaterial);
 	}
 
 	// Create lightning arc segments along the zone edge
-	if (CubeMesh && BaseMaterial)
+	if (CubeMesh)
 	{
 		for (int32 i = 0; i < NumLightningArcs; i++)
 		{
@@ -89,9 +85,7 @@ void AExoZoneVisualizer::BeginPlay()
 			Arc->CastShadow = false;
 			Arc->RegisterComponent();
 
-			UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			ArcMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.5f, 0.7f, 1.f));
+			UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 			ArcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(1.f, 2.f, 4.f));
 			Arc->SetMaterial(0, ArcMat);

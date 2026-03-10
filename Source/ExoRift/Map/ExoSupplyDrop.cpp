@@ -9,6 +9,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 AExoSupplyDrop::AExoSupplyDrop()
@@ -280,7 +281,7 @@ void AExoSupplyDrop::TransitionToState(ESupplyDropState NewState)
 		if (TrailLight) { TrailLight->DestroyComponent(); TrailLight = nullptr; }
 
 		// Spawn impact ring — expanding dust cloud
-		if (CylinderMeshRef && BaseMaterialRef)
+		if (CylinderMeshRef)
 		{
 			ImpactRing = NewObject<UStaticMeshComponent>(this);
 			ImpactRing->SetupAttachment(RootComponent);
@@ -290,9 +291,8 @@ void AExoSupplyDrop::TransitionToState(ESupplyDropState NewState)
 			ImpactRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			ImpactRing->CastShadow = false;
 			ImpactRing->RegisterComponent();
-			ImpactRingMat = UMaterialInstanceDynamic::Create(BaseMaterialRef, this);
-			ImpactRingMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.6f, 0.4f, 0.15f));
+			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			ImpactRingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 			ImpactRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(1.5f, 0.8f, 0.2f));
 			ImpactRing->SetMaterial(0, ImpactRingMat);

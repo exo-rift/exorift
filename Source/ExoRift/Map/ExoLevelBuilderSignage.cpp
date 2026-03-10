@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildSignage()
@@ -93,30 +94,26 @@ void AExoLevelBuilder::SpawnCompoundSign(const FVector& Pos, float Yaw,
 	UStaticMeshComponent* TextBar = SpawnStaticMesh(
 		Pos + Forward,
 		FVector(0.02f, 3.2f, 0.3f), Rot, CubeMesh, Color);
-	if (TextBar && BaseMaterial)
+	if (TextBar)
 	{
-		UMaterialInstanceDynamic* TBMat = Cast<UMaterialInstanceDynamic>(
-			TextBar->GetMaterial(0));
-		if (TBMat)
-		{
-			TBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 4.f, Color.G * 4.f, Color.B * 4.f));
-		}
+		UMaterialInterface* SignEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* TBMat = UMaterialInstanceDynamic::Create(SignEmissiveMat, this);
+		TBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 4.f, Color.G * 4.f, Color.B * 4.f));
+		TextBar->SetMaterial(0, TBMat);
 	}
 
 	// Top accent line
 	UStaticMeshComponent* TopLine = SpawnStaticMesh(
 		Pos + FVector(0.f, 0.f, 65.f) + Forward * 0.5f,
 		FVector(0.02f, 3.8f, 0.04f), Rot, CubeMesh, Color);
-	if (TopLine && BaseMaterial)
+	if (TopLine)
 	{
-		UMaterialInstanceDynamic* TLMat = Cast<UMaterialInstanceDynamic>(
-			TopLine->GetMaterial(0));
-		if (TLMat)
-		{
-			TLMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
-		}
+		UMaterialInterface* LineEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* TLMat = UMaterialInstanceDynamic::Create(LineEmissiveMat, this);
+		TLMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+		TopLine->SetMaterial(0, TLMat);
 	}
 
 	// Support posts on each side
@@ -151,16 +148,19 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 	float HSize = Radius * 0.3f;
 	float BarW = HSize * 0.15f;
 
+	UMaterialInterface* PadEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	// Left vertical bar of H
 	UStaticMeshComponent* HL = SpawnStaticMesh(
 		Center + FVector(-HSize * 0.3f, 0.f, 2.f),
 		FVector(BarW / 100.f, 0.08f, HSize / 100.f),
 		FRotator(90.f, 0.f, 0.f), CubeMesh, LineColor);
-	if (HL && BaseMaterial)
+	if (HL)
 	{
-		UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(HL->GetMaterial(0));
-		if (M) M->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+		HL->SetMaterial(0, M);
 	}
 
 	// Right vertical bar of H
@@ -168,11 +168,12 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 		Center + FVector(HSize * 0.3f, 0.f, 2.f),
 		FVector(BarW / 100.f, 0.08f, HSize / 100.f),
 		FRotator(90.f, 0.f, 0.f), CubeMesh, LineColor);
-	if (HR && BaseMaterial)
+	if (HR)
 	{
-		UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(HR->GetMaterial(0));
-		if (M) M->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+		HR->SetMaterial(0, M);
 	}
 
 	// Crossbar of H
@@ -180,11 +181,12 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 		Center + FVector(0.f, 0.f, 2.f),
 		FVector(HSize * 0.5f / 100.f, 0.08f, BarW / 100.f),
 		FRotator(90.f, 0.f, 0.f), CubeMesh, LineColor);
-	if (HX && BaseMaterial)
+	if (HX)
 	{
-		UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(HX->GetMaterial(0));
-		if (M) M->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		M->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+		HX->SetMaterial(0, M);
 	}
 
 	// Corner markers (4 L-shaped brackets at cardinal points)
@@ -240,17 +242,15 @@ void AExoLevelBuilder::SpawnDirectionMarker(const FVector& Pos, float Yaw,
 		FRotator(0.f, Yaw - 30.f, 0.f), CubeMesh, Color);
 
 	// Emissive on chevron tips
+	UMaterialInterface* ChevEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	for (UStaticMeshComponent* Chev : {ChevL, ChevR})
 	{
-		if (Chev && BaseMaterial)
+		if (Chev)
 		{
-			UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(
-				Chev->GetMaterial(0));
-			if (M)
-			{
-				M->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
-			}
+			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(ChevEmissiveMat, this);
+			M->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+			Chev->SetMaterial(0, M);
 		}
 	}
 }

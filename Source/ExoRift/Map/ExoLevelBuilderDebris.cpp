@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::BuildEnvironmentalDebris()
 {
@@ -100,12 +101,13 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 				GC.Pos + FVector(0.f, 0.f, -30.f),
 				FVector(GC.Radius * 0.5f / 50.f, GC.Radius * 0.5f / 50.f, 0.03f),
 				FRotator::ZeroRotator, CylinderMesh, GC.GlowCol);
-			if (Pool && BaseMaterial)
+			if (Pool)
 			{
-				UMaterialInstanceDynamic* GM = Cast<UMaterialInstanceDynamic>(
-					Pool->GetMaterial(0));
-				if (GM) GM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				UMaterialInterface* PoolEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+				UMaterialInstanceDynamic* GM = UMaterialInstanceDynamic::Create(PoolEmissiveMat, this);
+				GM->SetVectorParameterValue(TEXT("EmissiveColor"),
 					FLinearColor(GC.GlowCol.R * 3.f, GC.GlowCol.G * 3.f, GC.GlowCol.B * 3.f));
+				Pool->SetMaterial(0, GM);
 			}
 			// Eerie glow light
 			UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
@@ -189,12 +191,13 @@ void AExoLevelBuilder::SpawnCrashedShip(const FVector& Center, float Yaw, float 
 		Center + Rot.RotateVector(FVector(300.f * S, 0.f, 350.f * S)),
 		FVector(5.f * S, 3.f * S, 0.08f * S), Rot, CubeMesh,
 		FLinearColor(0.8f, 0.3f, 0.05f));
-	if (Breach && BaseMaterial)
+	if (Breach)
 	{
-		UMaterialInstanceDynamic* BM = Cast<UMaterialInstanceDynamic>(
-			Breach->GetMaterial(0));
-		if (BM) BM->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* BreachEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+		UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BreachEmissiveMat, this);
+		BM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(4.f, 1.5f, 0.3f));
+		Breach->SetMaterial(0, BM);
 	}
 }
 

@@ -9,6 +9,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 AExoPowerUpTerminal::AExoPowerUpTerminal()
@@ -81,19 +82,22 @@ void AExoPowerUpTerminal::BuildVisuals()
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
 	if (!BaseMat) return;
 
-	auto ApplyMat = [&](UStaticMeshComponent* C, const FLinearColor& Color, float Em)
+	auto ApplyStructMat = [&](UStaticMeshComponent* C, const FLinearColor& Color)
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMat, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		M->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * Em, Color.G * Em, Color.B * Em));
 		C->SetMaterial(0, M);
-		return M;
 	};
 
-	ApplyMat(BaseMesh, FLinearColor(0.05f, 0.05f, 0.07f), 0.f);
-	ApplyMat(PillarMesh, FLinearColor(0.06f, 0.06f, 0.08f), 0.f);
-	ScreenMat = ApplyMat(ScreenMesh, TypeColor * 0.3f, 4.f);
+	ApplyStructMat(BaseMesh, FLinearColor(0.05f, 0.05f, 0.07f));
+	ApplyStructMat(PillarMesh, FLinearColor(0.06f, 0.06f, 0.08f));
+
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+	ScreenMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+	FLinearColor ScreenColor = TypeColor * 0.3f;
+	ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+		FLinearColor(ScreenColor.R * 4.f, ScreenColor.G * 4.f, ScreenColor.B * 4.f));
+	ScreenMesh->SetMaterial(0, ScreenMat);
 	TerminalLight->SetLightColor(TypeColor);
 }
 

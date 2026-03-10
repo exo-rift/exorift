@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoTargetDummy::AExoTargetDummy()
 {
@@ -71,27 +72,21 @@ void AExoTargetDummy::InitDummy(const FLinearColor& Color, float InHealth)
 
 void AExoTargetDummy::BuildVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 
 	// Dark body with colored emissive edges
-	TorsoMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	TorsoMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.1f));
+	TorsoMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	FLinearColor Em(AccentColor.R * 2.f, AccentColor.G * 2.f, AccentColor.B * 2.f);
 	TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	TorsoMesh->SetMaterial(0, TorsoMat);
 
-	HeadMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	HeadMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.1f, 0.1f, 0.12f));
+	HeadMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	FLinearColor HeadEm(AccentColor.R * 3.f, AccentColor.G * 3.f, AccentColor.B * 3.f);
 	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), HeadEm);
 	HeadMesh->SetMaterial(0, HeadMat);
 
 	// Base plate
-	UMaterialInstanceDynamic* PlateMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	PlateMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.05f, 0.05f, 0.07f));
+	UMaterialInstanceDynamic* PlateMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	FLinearColor PlateEm(AccentColor.R * 0.5f, AccentColor.G * 0.5f, AccentColor.B * 0.5f);
 	PlateMat->SetVectorParameterValue(TEXT("EmissiveColor"), PlateEm);
 	BasePlateMesh->SetMaterial(0, PlateMat);

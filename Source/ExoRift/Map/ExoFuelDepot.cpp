@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoFuelDepot::AExoFuelDepot()
 {
@@ -96,7 +97,7 @@ void AExoFuelDepot::BuildDepot()
 		}
 
 		// Glowing level indicator strip
-		if (Body && BaseMaterial)
+		if (Body)
 		{
 			UStaticMeshComponent* Strip = AddPart(
 				T.Pos + FVector(T.Radius * 50.f + 5.f, 0.f, 0.f),
@@ -105,13 +106,12 @@ void AExoFuelDepot::BuildDepot()
 				FLinearColor(0.1f, 0.6f, 0.3f));
 			if (Strip)
 			{
-				UMaterialInstanceDynamic* SM = Cast<UMaterialInstanceDynamic>(Strip->GetMaterial(0));
-				if (SM)
-				{
-					SM->SetVectorParameterValue(TEXT("EmissiveColor"),
-						FLinearColor(0.5f, 4.f, 1.5f));
-					TankGlowMats.Add(SM);
-				}
+				UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+				UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+				SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.5f, 4.f, 1.5f));
+				Strip->SetMaterial(0, SM);
+				TankGlowMats.Add(SM);
 			}
 		}
 	}
@@ -159,9 +159,11 @@ void AExoFuelDepot::BuildDepot()
 			FVector(0.2f, 0.2f, 0.2f), FRotator::ZeroRotator, SphereMesh, Amber);
 		if (Bulb)
 		{
-			UMaterialInstanceDynamic* BM = Cast<UMaterialInstanceDynamic>(Bulb->GetMaterial(0));
-			if (BM) BM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Amber.R * 20.f, Amber.G * 20.f, Amber.B * 20.f));
+			Bulb->SetMaterial(0, BM);
 		}
 
 		UPointLightComponent* WL = NewObject<UPointLightComponent>(this);

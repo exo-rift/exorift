@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::BuildInteriors()
 {
@@ -43,12 +44,13 @@ void AExoLevelBuilder::BuildInteriors()
 			Pos + R.RotateVector(FVector(38.f, 0.f, 100.f)),
 			FVector(0.02f, 1.6f, 0.08f), R, CubeMesh,
 			FLinearColor(0.05f, 0.4f, 0.1f));
-		if (Strip && BaseMaterial)
+		if (Strip)
 		{
-			UMaterialInstanceDynamic* SM = Cast<UMaterialInstanceDynamic>(
-				Strip->GetMaterial(0));
-			if (SM) SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* StripEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripEmissiveMat, this);
+			SM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.2f, 2.f, 0.4f));
+			Strip->SetMaterial(0, SM);
 		}
 	};
 	// Hub server room
@@ -75,12 +77,13 @@ void AExoLevelBuilder::BuildInteriors()
 		UStaticMeshComponent* Tray = SpawnStaticMesh(
 			Pos + R.RotateVector(FVector(50.f, 0.f, 52.f)),
 			FVector(0.6f, 0.3f, 0.04f), R, CubeMesh, ToolCol);
-		if (Tray && BaseMaterial)
+		if (Tray)
 		{
-			UMaterialInstanceDynamic* TM = Cast<UMaterialInstanceDynamic>(
-				Tray->GetMaterial(0));
-			if (TM) TM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* TrayEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* TM = UMaterialInstanceDynamic::Create(TrayEmissiveMat, this);
+			TM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(ToolCol.R * 2.f, ToolCol.G * 2.f, ToolCol.B * 2.f));
+			Tray->SetMaterial(0, TM);
 		}
 	};
 	// North warehouse workbenches
@@ -110,14 +113,15 @@ void AExoLevelBuilder::BuildInteriors()
 			Pos + R.RotateVector(FVector(0.f, 26.f, 80.f)),
 			FVector(0.08f, 0.02f, 0.6f), R, CubeMesh,
 			FLinearColor(0.5f, 0.05f, 0.05f));
+		UMaterialInterface* CrossEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		for (UStaticMeshComponent* C : {CrossH, CrossV})
 		{
-			if (C && BaseMaterial)
+			if (C)
 			{
-				UMaterialInstanceDynamic* CM = Cast<UMaterialInstanceDynamic>(
-					C->GetMaterial(0));
-				if (CM) CM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CrossEmissiveMat, this);
+				CM->SetVectorParameterValue(TEXT("EmissiveColor"),
 					FLinearColor(3.f, 0.3f, 0.2f));
+				C->SetMaterial(0, CM);
 			}
 		}
 		// Status light
@@ -276,13 +280,14 @@ void AExoLevelBuilder::BuildInteriors()
 					ArrayCenter + Offset + FVector(0.f, -4.f, 0.f),
 					FVector(1.4f, 0.02f, 1.0f), FRotator::ZeroRotator,
 					CubeMesh, ScreenCol);
-				if (MonScreen && BaseMaterial)
+				if (MonScreen)
 				{
-					UMaterialInstanceDynamic* MSM = Cast<UMaterialInstanceDynamic>(
-						MonScreen->GetMaterial(0));
-					if (MSM) MSM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					UMaterialInterface* MonEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+					UMaterialInstanceDynamic* MSM = UMaterialInstanceDynamic::Create(MonEmissiveMat, this);
+					MSM->SetVectorParameterValue(TEXT("EmissiveColor"),
 						FLinearColor(ScreenCol.R * 3.f, ScreenCol.G * 3.f,
 							ScreenCol.B * 3.f));
+					MonScreen->SetMaterial(0, MSM);
 				}
 			}
 		}
@@ -312,12 +317,13 @@ void AExoLevelBuilder::BuildInteriors()
 			CentPos + FVector(0.f, 0.f, 60.f),
 			FVector(0.55f, 0.55f, 0.03f), FRotator::ZeroRotator,
 			CylinderMesh, FLinearColor(0.1f, 0.5f, 0.3f));
-		if (CentRing && BaseMaterial)
+		if (CentRing)
 		{
-			UMaterialInstanceDynamic* CRM = Cast<UMaterialInstanceDynamic>(
-				CentRing->GetMaterial(0));
-			if (CRM) CRM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* CentEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* CRM = UMaterialInstanceDynamic::Create(CentEmissiveMat, this);
+			CRM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.3f, 2.f, 1.f));
+			CentRing->SetMaterial(0, CRM);
 		}
 
 		// Specimen containers — glass-like cylinders with glow
@@ -375,15 +381,13 @@ void AExoLevelBuilder::SpawnConsole(const FVector& Pos, float Yaw)
 		FVector(1.2f, 0.6f, 0.03f),
 		Rot + FRotator(20.f, 0.f, 0.f), // Tilted toward user
 		CubeMesh, ScreenGlow);
-	if (Screen && BaseMaterial)
+	if (Screen)
 	{
-		UMaterialInstanceDynamic* ScrMat = Cast<UMaterialInstanceDynamic>(
-			Screen->GetMaterial(0));
-		if (ScrMat)
-		{
-			ScrMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.1f, 0.5f, 1.0f));
-		}
+		UMaterialInterface* ScrEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* ScrMat = UMaterialInstanceDynamic::Create(ScrEmissiveMat, this);
+		ScrMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.1f, 0.5f, 1.0f));
+		Screen->SetMaterial(0, ScrMat);
 	}
 
 	// Small light above the console

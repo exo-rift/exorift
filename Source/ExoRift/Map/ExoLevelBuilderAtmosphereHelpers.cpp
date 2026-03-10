@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, float Scale)
 {
@@ -24,11 +25,13 @@ void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, fl
 		FVector(2.5f, 0.02f, 1.5f) * Scale,
 		Rot + FRotator(5.f, 0.f, 0.f),
 		CubeMesh, FLinearColor(0.03f, 0.15f, 0.25f));
-	if (Screen && BaseMaterial)
+	if (Screen)
 	{
-		UMaterialInstanceDynamic* SM = Cast<UMaterialInstanceDynamic>(Screen->GetMaterial(0));
-		if (SM) SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+		UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		SM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.5f, 2.f, 4.f));
+		Screen->SetMaterial(0, SM);
 	}
 
 	// Scanline bars (3 horizontal lines on screen)
@@ -39,11 +42,13 @@ void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, fl
 		UStaticMeshComponent* Bar = SpawnStaticMesh(BarPos,
 			FVector(2.2f, 0.01f, 0.05f) * Scale, Rot,
 			CubeMesh, FLinearColor(0.1f, 0.4f, 0.6f));
-		if (Bar && BaseMaterial)
+		if (Bar)
 		{
-			UMaterialInstanceDynamic* BM = Cast<UMaterialInstanceDynamic>(Bar->GetMaterial(0));
-			if (BM) BM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* BarEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BarEmissiveMat, this);
+			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(1.f, 3.f, 5.f));
+			Bar->SetMaterial(0, BM);
 		}
 	}
 
@@ -101,11 +106,13 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 		Base + FVector(20.f, 0.f, Height - 10.f),
 		FVector(0.04f, 0.04f, 0.04f), FRotator::ZeroRotator,
 		SphereMesh, Color);
-	if (LED && BaseMaterial)
+	if (LED)
 	{
-		UMaterialInstanceDynamic* LM = Cast<UMaterialInstanceDynamic>(LED->GetMaterial(0));
-		if (LM) LM->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* LEDEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* LM = UMaterialInstanceDynamic::Create(LEDEmissiveMat, this);
+		LM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+		LED->SetMaterial(0, LM);
 	}
 }
 
@@ -126,11 +133,13 @@ void AExoLevelBuilder::SpawnEnergyConduit(const FVector& Start, const FVector& E
 	UStaticMeshComponent* Core = SpawnStaticMesh(Mid,
 		FVector(0.12f, 0.12f, Len / 100.f + 0.1f),
 		FRotator(0.f, Rot.Yaw, 90.f), CylinderMesh, Color);
-	if (Core && BaseMaterial)
+	if (Core)
 	{
-		UMaterialInstanceDynamic* CM = Cast<UMaterialInstanceDynamic>(Core->GetMaterial(0));
-		if (CM) CM->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* CoreEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CoreEmissiveMat, this);
+		CM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 6.f, Color.G * 6.f, Color.B * 6.f));
+		Core->SetMaterial(0, CM);
 	}
 
 	// Junction nodes at start and end
@@ -167,11 +176,13 @@ void AExoLevelBuilder::SpawnNeonTube(const FVector& Pos, const FVector& Scale,
 	FRotator Rot(0.f, Yaw, 0.f);
 
 	UStaticMeshComponent* Tube = SpawnStaticMesh(Pos, Scale, Rot, CylinderMesh, Color);
-	if (Tube && BaseMaterial)
+	if (Tube)
 	{
-		UMaterialInstanceDynamic* TM = Cast<UMaterialInstanceDynamic>(Tube->GetMaterial(0));
-		if (TM) TM->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* TubeEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+		UMaterialInstanceDynamic* TM = UMaterialInstanceDynamic::Create(TubeEmissiveMat, this);
+		TM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 10.f, Color.G * 10.f, Color.B * 10.f));
+		Tube->SetMaterial(0, TM);
 	}
 
 	// Neon glow light

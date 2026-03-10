@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoCrashedCapitalShip::AExoCrashedCapitalShip()
 {
@@ -56,7 +57,7 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddHullSection(
 UStaticMeshComponent* AExoCrashedCapitalShip::AddDamageGlow(
 	const FVector& Pos, const FVector& Scale, const FLinearColor& Color)
 {
-	if (!SphereMesh || !BaseMaterial) return nullptr;
+	if (!SphereMesh) return nullptr;
 
 	UStaticMeshComponent* Glow = NewObject<UStaticMeshComponent>(this);
 	Glow->SetupAttachment(RootComponent);
@@ -67,12 +68,13 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddDamageGlow(
 	Glow->CastShadow = false;
 	Glow->RegisterComponent();
 
-	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Color);
 	Glow->SetMaterial(0, Mat);
 	DamageGlows.Add(Glow);
 	DamageMats.Add(Mat);
+	DamageBaseColors.Add(Color);
 
 	// Light at damage point
 	UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
@@ -205,8 +207,7 @@ void AExoCrashedCapitalShip::Tick(float DeltaTime)
 		float Flicker = 0.6f + 0.4f * FMath::Abs(FMath::Sin(Phase))
 			+ 0.2f * FMath::Sin(Phase * 3.7f);
 
-		FLinearColor Base;
-		DamageMats[i]->GetVectorParameterValue(TEXT("BaseColor"), Base);
+		FLinearColor Base = DamageBaseColors.IsValidIndex(i) ? DamageBaseColors[i] : FLinearColor::White;
 		DamageMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Base.R * Flicker, Base.G * Flicker, Base.B * Flicker));
 

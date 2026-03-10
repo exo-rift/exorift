@@ -9,6 +9,7 @@
 #include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoJumpPad::AExoJumpPad()
 {
@@ -80,16 +81,14 @@ void AExoJumpPad::BeginPlay()
 		BasePlatform->SetMaterial(0, BaseMat);
 	}
 
-	if (MatFind.Succeeded())
 	{
-		RingMat = UMaterialInstanceDynamic::Create(MatFind.Object, this);
-		RingMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			AccentColor * 6.f);
 		GlowRing->SetMaterial(0, RingMat);
 
-		LensMat = UMaterialInstanceDynamic::Create(MatFind.Object, this);
-		LensMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
+		LensMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		LensMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			AccentColor * 10.f);
 		CenterLens->SetMaterial(0, LensMat);

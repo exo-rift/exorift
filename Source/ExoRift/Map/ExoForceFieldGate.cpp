@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoForceFieldGate::AExoForceFieldGate()
 {
@@ -64,10 +65,18 @@ void AExoForceFieldGate::InitGate(float Width, float Height, const FLinearColor&
 
 	if (!BaseMaterial) return;
 
-	auto MakeMat = [&](const FLinearColor& Base, const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
+	auto MakeStructMat = [&](const FLinearColor& Base) -> UMaterialInstanceDynamic*
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), Base);
+		return M;
+	};
+
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
+	auto MakeEmissiveMat = [&](const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
+	{
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 		return M;
 	};
@@ -78,23 +87,22 @@ void AExoForceFieldGate::InitGate(float Width, float Height, const FLinearColor&
 	// Left pillar
 	LeftPillar->SetRelativeScale3D(FVector(1.f, 1.f, Height / 100.f));
 	LeftPillar->SetRelativeLocation(FVector(0.f, 0.f, Height * 0.5f));
-	LeftPillar->SetMaterial(0, MakeMat(PillarCol, PillarEm));
+	LeftPillar->SetMaterial(0, MakeEmissiveMat(PillarEm));
 
 	// Right pillar
 	RightPillar->SetRelativeLocation(FVector(0.f, Width, 0.f));
 	RightPillar->SetRelativeScale3D(FVector(1.f, 1.f, Height / 100.f));
-	RightPillar->SetMaterial(0, MakeMat(PillarCol, PillarEm));
+	RightPillar->SetMaterial(0, MakeEmissiveMat(PillarEm));
 
 	// Top beam connecting pillars
 	TopBeam->SetRelativeLocation(FVector(0.f, Width * 0.5f, Height * 0.5f));
 	TopBeam->SetRelativeScale3D(FVector(0.5f, Width / 100.f, 0.3f));
-	TopBeam->SetMaterial(0, MakeMat(PillarCol, PillarEm));
+	TopBeam->SetMaterial(0, MakeEmissiveMat(PillarEm));
 
 	// Energy barrier — thin, glowing plane filling the gate
 	BarrierMesh->SetRelativeLocation(FVector(0.f, Width * 0.5f, 0.f));
 	BarrierMesh->SetRelativeScale3D(FVector(0.01f, Width / 100.f, Height / 100.f));
-	BarrierMat = MakeMat(
-		FLinearColor(Color.R * 0.3f, Color.G * 0.3f, Color.B * 0.3f, 0.3f),
+	BarrierMat = MakeEmissiveMat(
 		FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
 	BarrierMesh->SetMaterial(0, BarrierMat);
 

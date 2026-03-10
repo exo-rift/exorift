@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildRoads()
@@ -65,15 +66,13 @@ void AExoLevelBuilder::BuildRoads()
 		FVector(0.f, 0.f, GroundZ + 35.f),
 		FVector(85.f, 85.f, 0.06f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.05f, 0.2f, 0.4f));
-	if (CenterRing && BaseMaterial)
+	if (CenterRing)
 	{
-		UMaterialInstanceDynamic* RingMat = Cast<UMaterialInstanceDynamic>(
-			CenterRing->GetMaterial(0));
-		if (RingMat)
-		{
-			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.08f, 0.3f, 0.6f));
-		}
+		UMaterialInterface* RingEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(RingEmissiveMat, this);
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.08f, 0.3f, 0.6f));
+		CenterRing->SetMaterial(0, RingMat);
 	}
 
 	// Center monument — tall pylon with glow
@@ -197,15 +196,13 @@ void AExoLevelBuilder::BuildWaterFeatures()
 		UStaticMeshComponent* Water = SpawnStaticMesh(Mid,
 			FVector(Len / 100.f, RiverWidth / 100.f, 0.05f),
 			Rot, CubeMesh, WaterColor);
-		if (Water && BaseMaterial)
+		if (Water)
 		{
-			UMaterialInstanceDynamic* WMat = Cast<UMaterialInstanceDynamic>(
-				Water->GetMaterial(0));
-			if (WMat)
-			{
-				WMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(0.005f, 0.015f, 0.03f));
-			}
+			UMaterialInterface* WaterEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* WMat = UMaterialInstanceDynamic::Create(WaterEmissiveMat, this);
+			WMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.005f, 0.015f, 0.03f));
+			Water->SetMaterial(0, WMat);
 		}
 	}
 
@@ -214,15 +211,13 @@ void AExoLevelBuilder::BuildWaterFeatures()
 		FVector(85000.f, 10000.f, GroundZ - 50.f),
 		FVector(60.f, 40.f, 0.1f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.03f, 0.06f, 0.08f));
-	if (Pond && BaseMaterial)
+	if (Pond)
 	{
-		UMaterialInstanceDynamic* PMat = Cast<UMaterialInstanceDynamic>(
-			Pond->GetMaterial(0));
-		if (PMat)
-		{
-			PMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.008f, 0.02f, 0.03f));
-		}
+		UMaterialInterface* PondEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* PMat = UMaterialInstanceDynamic::Create(PondEmissiveMat, this);
+		PMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.008f, 0.02f, 0.03f));
+		Pond->SetMaterial(0, PMat);
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Water features placed"));
@@ -264,15 +259,13 @@ void AExoLevelBuilder::BuildFoliage()
 				FRotator(FMath::RandRange(-20.f, 20.f), FMath::RandRange(0.f, 360.f),
 					FMath::RandRange(-15.f, 15.f)),
 				CubeMesh, CrystalColor);
-			if (Crystal && BaseMaterial)
+			if (Crystal)
 			{
-				UMaterialInstanceDynamic* CrysMat = Cast<UMaterialInstanceDynamic>(
-					Crystal->GetMaterial(0));
-				if (CrysMat)
-				{
-					CrysMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-						FLinearColor(0.1f, 0.3f, 0.6f));
-				}
+				UMaterialInterface* CrysEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+				UMaterialInstanceDynamic* CrysMat = UMaterialInstanceDynamic::Create(CrysEmissiveMat, this);
+				CrysMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.1f, 0.3f, 0.6f));
+				Crystal->SetMaterial(0, CrysMat);
 			}
 		}
 

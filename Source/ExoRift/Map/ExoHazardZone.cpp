@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/DamageEvents.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
 
@@ -48,6 +49,8 @@ void AExoHazardZone::BeginPlay()
 
 	FLinearColor Col = GetHazardColor();
 
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	// Scale ground disk to hazard radius
 	if (GroundDisk)
 	{
@@ -55,16 +58,10 @@ void AExoHazardZone::BeginPlay()
 		GroundDisk->SetRelativeScale3D(FVector(DiskScale, DiskScale, 0.02f));
 		GroundDisk->SetRelativeLocation(FVector(0.f, 0.f, 5.f)); // Just above ground
 
-		UMaterialInterface* Base = GroundDisk->GetMaterial(0);
-		if (Base)
-		{
-			DiskMat = UMaterialInstanceDynamic::Create(Base, this);
-			DiskMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(Col.R * 0.15f, Col.G * 0.15f, Col.B * 0.15f));
-			DiskMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Col.R * 0.5f, Col.G * 0.5f, Col.B * 0.5f));
-			GroundDisk->SetMaterial(0, DiskMat);
-		}
+		DiskMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		DiskMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Col.R * 0.5f, Col.G * 0.5f, Col.B * 0.5f));
+		GroundDisk->SetMaterial(0, DiskMat);
 	}
 
 	// Boundary ring — slightly larger, thin
@@ -76,16 +73,10 @@ void AExoHazardZone::BeginPlay()
 		BoundaryRing->SetRelativeScale3D(FVector(RingOuter, RingOuter, 0.5f));
 		BoundaryRing->SetRelativeLocation(FVector(0.f, 0.f, 25.f));
 
-		UMaterialInterface* Base = BoundaryRing->GetMaterial(0);
-		if (Base)
-		{
-			RingMat = UMaterialInstanceDynamic::Create(Base, this);
-			RingMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(Col.R * 0.3f, Col.G * 0.3f, Col.B * 0.3f));
-			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Col.R * 2.f, Col.G * 2.f, Col.B * 2.f));
-			BoundaryRing->SetMaterial(0, RingMat);
-		}
+		RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Col.R * 2.f, Col.G * 2.f, Col.B * 2.f));
+		BoundaryRing->SetMaterial(0, RingMat);
 	}
 
 	// Light color

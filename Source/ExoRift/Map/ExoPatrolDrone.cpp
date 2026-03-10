@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoPatrolDrone::AExoPatrolDrone()
 {
@@ -71,19 +72,13 @@ void AExoPatrolDrone::InitDrone(const TArray<FVector>& InWaypoints,
 	// Dark metallic body with accent
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded())
 	{
-		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(
-			MatFind.Object, this);
-		BodyMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.05f, 0.055f, 0.07f));
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 2.f);
 		BodyMesh->SetMaterial(0, BodyMat);
 
-		UMaterialInstanceDynamic* RotorMat = UMaterialInstanceDynamic::Create(
-			MatFind.Object, this);
-		RotorMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.1f, 0.1f, 0.12f));
+		UMaterialInstanceDynamic* RotorMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		RotorMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 0.5f);
 		RotorL->SetMaterial(0, RotorMat);
 		RotorR->SetMaterial(0, RotorMat);

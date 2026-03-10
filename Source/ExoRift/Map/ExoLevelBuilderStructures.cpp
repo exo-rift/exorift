@@ -1,6 +1,7 @@
 // ExoLevelBuilderStructures.cpp — Compound layouts, towers, walls, ramps
 // SpawnBuilding is in ExoLevelBuilderBuildings.cpp
 #include "Map/ExoLevelBuilder.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -194,19 +195,17 @@ void AExoLevelBuilder::SpawnTower(const FVector& Base, float Radius, float Heigh
 	Beacon->RegisterComponent();
 
 	// Beacon bulb (small emissive sphere)
-	UStaticMeshComponent* Bulb = SpawnStaticMesh(
-		Base + FVector(0.f, 0.f, Height + 80.f),
+	SpawnStaticMesh(Base + FVector(0.f, 0.f, Height + 80.f),
 		FVector(0.25f, 0.25f, 0.25f), FRotator::ZeroRotator, SphereMesh,
 		FLinearColor(1.f, 0.2f, 0.1f));
-	if (Bulb && BaseMaterial)
+	UMaterialInterface* BulbEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+	if (BulbEmissive)
 	{
-		UMaterialInstanceDynamic* BulbMat = Cast<UMaterialInstanceDynamic>(
-			Bulb->GetMaterial(0));
-		if (BulbMat)
-		{
-			BulbMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(5.f, 0.5f, 0.2f));
-		}
+		UStaticMeshComponent* Bulb = LevelMeshes.Last();
+		UMaterialInstanceDynamic* BulbMat = UMaterialInstanceDynamic::Create(BulbEmissive, this);
+		BulbMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(5.f, 0.5f, 0.2f));
+		Bulb->SetMaterial(0, BulbMat);
 	}
 }
 

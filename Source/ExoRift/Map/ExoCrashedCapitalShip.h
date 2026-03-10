@@ -42,6 +42,8 @@ private:
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*> DamageMats;
 
+	TArray<FLinearColor> DamageBaseColors;
+
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;

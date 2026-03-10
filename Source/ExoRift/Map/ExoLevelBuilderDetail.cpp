@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::BuildGroundDetail()
 {
@@ -92,12 +93,13 @@ void AExoLevelBuilder::BuildGroundDetail()
 			G.Pos - FVector(0.f, 0.f, 15.f),
 			FVector(G.Radius / 2000.f, G.Radius / 2000.f, 0.02f),
 			FRotator::ZeroRotator, CylinderMesh, G.Color);
-		if (Disk && BaseMaterial)
+		if (Disk)
 		{
-			UMaterialInstanceDynamic* DM = Cast<UMaterialInstanceDynamic>(
-				Disk->GetMaterial(0));
-			if (DM) DM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* DiskEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DiskEmissiveMat, this);
+			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(G.Color.R * 0.3f, G.Color.G * 0.3f, G.Color.B * 0.3f));
+			Disk->SetMaterial(0, DM);
 		}
 	}
 
@@ -147,7 +149,7 @@ void AExoLevelBuilder::SpawnFloorPanels(const FVector& Center, float Radius, int
 			CubeMesh, Col);
 
 		// Thin glowing seam line on every other panel
-		if (i % 3 == 0 && BaseMaterial)
+		if (i % 3 == 0)
 		{
 			UStaticMeshComponent* Seam = SpawnStaticMesh(
 				Pos + FVector(0.f, 0.f, 1.f),
@@ -156,13 +158,11 @@ void AExoLevelBuilder::SpawnFloorPanels(const FVector& Center, float Radius, int
 				CubeMesh, SeamGlow);
 			if (Seam)
 			{
-				UMaterialInstanceDynamic* SeamMat = Cast<UMaterialInstanceDynamic>(
-					Seam->GetMaterial(0));
-				if (SeamMat)
-				{
-					SeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-						FLinearColor(0.1f, 0.4f, 0.8f));
-				}
+				UMaterialInterface* SeamEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+				UMaterialInstanceDynamic* SeamMat = UMaterialInstanceDynamic::Create(SeamEmissiveMat, this);
+				SeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.1f, 0.4f, 0.8f));
+				Seam->SetMaterial(0, SeamMat);
 			}
 		}
 	}
@@ -184,15 +184,13 @@ void AExoLevelBuilder::SpawnEnergyPylon(const FVector& Base, float Height,
 		Base + FVector(0.f, 0.f, Height * 0.85f),
 		FVector(1.0f, 1.0f, 0.06f),
 		FRotator::ZeroRotator, CylinderMesh, Color);
-	if (Ring && BaseMaterial)
+	if (Ring)
 	{
-		UMaterialInstanceDynamic* RingMat = Cast<UMaterialInstanceDynamic>(
-			Ring->GetMaterial(0));
-		if (RingMat)
-		{
-			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
-		}
+		UMaterialInterface* RingEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(RingEmissiveMat, this);
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+		Ring->SetMaterial(0, RingMat);
 	}
 
 	// Energy ring at mid
@@ -200,15 +198,13 @@ void AExoLevelBuilder::SpawnEnergyPylon(const FVector& Base, float Height,
 		Base + FVector(0.f, 0.f, Height * 0.45f),
 		FVector(0.8f, 0.8f, 0.04f),
 		FRotator::ZeroRotator, CylinderMesh, Color);
-	if (MidRing && BaseMaterial)
+	if (MidRing)
 	{
-		UMaterialInstanceDynamic* MidMat = Cast<UMaterialInstanceDynamic>(
-			MidRing->GetMaterial(0));
-		if (MidMat)
-		{
-			MidMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
-		}
+		UMaterialInterface* MidEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* MidMat = UMaterialInstanceDynamic::Create(MidEmissiveMat, this);
+		MidMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+		MidRing->SetMaterial(0, MidMat);
 	}
 
 	// Cap sphere

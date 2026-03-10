@@ -2,24 +2,25 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ExoMiningExcavation.generated.h"
+#include "ExoGuardTower.generated.h"
 
 class UStaticMeshComponent;
 class UPointLightComponent;
 
 /**
- * Mining excavation site — a quarry-like depression with exposed mineral
- * veins, drilling equipment, and conveyors. Call BuildSite() after spawn.
+ * Climbable guard tower — provides vantage points for sniping.
+ * Has a ramp/stairway, observation deck, searchlight.
+ * Call BuildTower() after spawn.
  */
 UCLASS()
-class AExoMiningExcavation : public AActor
+class AExoGuardTower : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	AExoMiningExcavation();
+	AExoGuardTower();
 
-	void BuildSite();
+	void BuildTower();
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -28,18 +29,15 @@ private:
 		const FRotator& Rot, UStaticMesh* Mesh, const FLinearColor& Color);
 
 	UPROPERTY()
-	TArray<UStaticMeshComponent*> SiteParts;
+	TArray<UStaticMeshComponent*> Parts;
 
 	UPROPERTY()
-	TArray<UMaterialInstanceDynamic*> MineralMats;
-
-	TArray<FLinearColor> MineralBaseColors;
-
-	UPROPERTY()
-	TArray<UPointLightComponent*> MineralLights;
+	UPointLightComponent* SearchLight = nullptr;
 
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
 	UMaterialInterface* BaseMaterial = nullptr;
+
+	float SearchAngle = 0.f;
 };

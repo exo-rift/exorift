@@ -1,6 +1,7 @@
 // ExoLevelBuilderBuildings.cpp — SpawnBuilding with walls, emissives, windows
 #include "Map/ExoLevelBuilder.h"
 #include "Map/ExoAutoSlidingDoor.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -57,15 +58,15 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 
 	// Emissive accent strips on front/back walls
 	float StripZ = Size.Z * 0.6f;
-	FLinearColor StripCol(0.05f, 0.15f, 0.3f);
+	UMaterialInterface* StripMat = FExoMaterialFactory::GetEmissiveOpaque();
 	auto MakeStrip = [&](const FVector& Offset, const FVector& Scale)
 	{
 		UStaticMeshComponent* S = SpawnStaticMesh(
-			Center + Rot.RotateVector(Offset), Scale, Rot, CubeMesh, StripCol);
-		if (S && BaseMaterial)
+			Center + Rot.RotateVector(Offset), Scale, Rot, CubeMesh,
+			FLinearColor(0.05f, 0.15f, 0.3f));
+		if (S && StripMat)
 		{
-			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			SM->SetVectorParameterValue(TEXT("BaseColor"), StripCol);
+			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripMat, this);
 			SM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.1f, 0.5f, 1.2f));
 			S->SetMaterial(0, SM);
 		}
@@ -107,11 +108,11 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 			FVector(1.3f, 0.8f, 0.05f), Rot, CubeMesh, FLinearColor(0.06f, 0.06f, 0.07f));
 	}
 
-	// Window panels along walls
+	// Window panels along walls — emissive glow from interior lighting
 	int32 NumWindows = FMath::Max(1, FMath::RoundToInt32(Size.X / 1500.f));
 	float WinSpacing = Size.X / (NumWindows + 1);
 	float WinZ = Size.Z * 0.4f;
-	FLinearColor WinGlow(0.03f, 0.06f, 0.12f);
+	UMaterialInterface* WinMat = FExoMaterialFactory::GetEmissiveOpaque();
 	for (int32 w = 0; w < NumWindows; w++)
 	{
 		float WX = -HalfX + WinSpacing * (w + 1);
@@ -119,12 +120,14 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 		{
 			UStaticMeshComponent* WC = SpawnStaticMesh(
 				Center + Rot.RotateVector(FVector(WX, Side, WinZ)),
-				FVector(0.8f, 0.015f, 0.6f), Rot, CubeMesh, WinGlow);
-			if (WC && BaseMaterial)
+				FVector(0.8f, 0.015f, 0.6f), Rot, CubeMesh,
+				FLinearColor(0.03f, 0.06f, 0.12f));
+			if (WC && WinMat)
 			{
-				UMaterialInstanceDynamic* WM = Cast<UMaterialInstanceDynamic>(WC->GetMaterial(0));
-				if (WM) WM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				UMaterialInstanceDynamic* WM = UMaterialInstanceDynamic::Create(WinMat, this);
+				WM->SetVectorParameterValue(TEXT("EmissiveColor"),
 					FLinearColor(0.06f, 0.15f, 0.35f));
+				WC->SetMaterial(0, WM);
 			}
 		}
 	}

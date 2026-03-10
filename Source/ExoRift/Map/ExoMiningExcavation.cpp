@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoMiningExcavation::AExoMiningExcavation()
 {
@@ -105,19 +106,20 @@ void AExoMiningExcavation::BuildSite()
 		{{200.f, -500.f, -370.f}, {1.f, 0.8f, 0.8f}, {-5.f, 40.f, 5.f}, CrystalGold},
 	};
 
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	for (const auto& V : Veins)
 	{
 		UStaticMeshComponent* Crystal = AddPart(V.Pos, V.Scale, V.Rot, CubeMesh, V.Color);
 		if (Crystal)
 		{
 			Crystal->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			UMaterialInstanceDynamic* CM = Cast<UMaterialInstanceDynamic>(Crystal->GetMaterial(0));
-			if (CM)
-			{
-				CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(V.Color.R * 12.f, V.Color.G * 12.f, V.Color.B * 12.f));
-				MineralMats.Add(CM);
-			}
+			UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			CM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(V.Color.R * 12.f, V.Color.G * 12.f, V.Color.B * 12.f));
+			Crystal->SetMaterial(0, CM);
+			MineralMats.Add(CM);
+			MineralBaseColors.Add(V.Color);
 		}
 
 		UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
@@ -206,8 +208,7 @@ void AExoMiningExcavation::Tick(float DeltaTime)
 		float Phase = Time * 1.2f + i * 0.9f;
 		float Pulse = 0.6f + 0.4f * FMath::Sin(Phase);
 
-		FLinearColor Base;
-		MineralMats[i]->GetVectorParameterValue(TEXT("BaseColor"), Base);
+		FLinearColor Base = MineralBaseColors.IsValidIndex(i) ? MineralBaseColors[i] : FLinearColor::White;
 		MineralMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Base.R * 12.f * Pulse, Base.G * 12.f * Pulse,
 				Base.B * 12.f * Pulse));

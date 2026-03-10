@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::BuildSkybox()
 {
@@ -18,12 +19,10 @@ void AExoLevelBuilder::BuildSkybox()
 	SkySphere->CastShadow = false;
 	SkySphere->RegisterComponent();
 
-	if (BaseMaterial)
 	{
-		UMaterialInstanceDynamic* SkyMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* SkyMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		// Deep space blue-purple gradient
-		SkyMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.015f, 0.02f, 0.05f));
 		SkyMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.01f, 0.015f, 0.04f));
 		SkySphere->SetMaterial(0, SkyMat);
@@ -53,8 +52,9 @@ void AExoLevelBuilder::BuildSkybox()
 	Nebula2->RegisterComponent();
 
 	// Star field — small bright spheres scattered across the sky
-	if (SphereMesh && BaseMaterial)
+	if (SphereMesh)
 	{
+		UMaterialInterface* StarEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 		int32 NumStars = 60;
 		for (int32 i = 0; i < NumStars; i++)
 		{
@@ -87,8 +87,7 @@ void AExoLevelBuilder::BuildSkybox()
 			else if (ColorType < 9) StarCol = FLinearColor(15.f, 10.f, 4.f);
 			else StarCol = FLinearColor(12.f, 12.f, 6.f);
 
-			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			StarMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.9f, 1.f));
+			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(StarEmissiveMat, this);
 			StarMat->SetVectorParameterValue(TEXT("EmissiveColor"), StarCol);
 			Star->SetMaterial(0, StarMat);
 		}
@@ -108,11 +107,9 @@ void AExoLevelBuilder::BuildSkybox()
 	Planet->CastShadow = false;
 	Planet->RegisterComponent();
 
-	if (BaseMaterial)
 	{
-		UMaterialInstanceDynamic* PlanetMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		PlanetMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.12f, 0.08f, 0.04f));
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* PlanetMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		PlanetMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.04f, 0.025f, 0.015f));
 		Planet->SetMaterial(0, PlanetMat);
@@ -131,11 +128,9 @@ void AExoLevelBuilder::BuildSkybox()
 		PlanetRing->CastShadow = false;
 		PlanetRing->RegisterComponent();
 
-		if (BaseMaterial)
 		{
-			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			RingMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.08f, 0.06f, 0.04f));
+			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.02f, 0.015f, 0.01f));
 			PlanetRing->SetMaterial(0, RingMat);
@@ -164,23 +159,22 @@ void AExoLevelBuilder::BuildSkybox()
 	Moon->CastShadow = false;
 	Moon->RegisterComponent();
 
-	if (BaseMaterial)
 	{
-		UMaterialInstanceDynamic* MoonMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		MoonMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.5f, 0.55f, 0.6f));
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* MoonMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		MoonMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.15f, 0.16f, 0.2f));
 		Moon->SetMaterial(0, MoonMat);
 	}
 
 	// === ORBITAL SPACE STATION — visible structure in orbit ===
-	if (CubeMesh && CylinderMesh && BaseMaterial)
+	if (CubeMesh && CylinderMesh)
 	{
 		float StationDist = 280000.f;
 		FVector StationPos(StationDist * 0.1f, StationDist * 0.3f, StationDist * 0.55f);
 		FLinearColor StationHull(0.08f, 0.08f, 0.1f);
 		FLinearColor StationAccent(0.06f, 0.06f, 0.08f);
+		UMaterialInterface* StationEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 
 		// Central hub module
 		auto AddStationPart = [&](const FVector& Offset, const FVector& Scale,
@@ -195,8 +189,7 @@ void AExoLevelBuilder::BuildSkybox()
 			P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			P->CastShadow = false;
 			P->RegisterComponent();
-			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			M->SetVectorParameterValue(TEXT("BaseColor"), Col);
+			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(StationEmissiveMat, this);
 			M->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Col.R * 0.3f, Col.G * 0.3f, Col.B * 0.4f));
 			P->SetMaterial(0, M);
@@ -234,8 +227,9 @@ void AExoLevelBuilder::BuildSkybox()
 	}
 
 	// === ORBITAL DEBRIS — broken ship hulls from a recent battle ===
-	if (CubeMesh && BaseMaterial)
+	if (CubeMesh)
 	{
+		UMaterialInterface* DebrisEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		struct FDebris { FVector Pos; FVector Scale; FRotator Rot; FLinearColor Col; };
 		float OrbDist = 300000.f;
 		TArray<FDebris> Debris = {
@@ -269,8 +263,7 @@ void AExoLevelBuilder::BuildSkybox()
 			Frag->CastShadow = false;
 			Frag->RegisterComponent();
 
-			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			DM->SetVectorParameterValue(TEXT("BaseColor"), D.Col);
+			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DebrisEmissiveMat, this);
 			// Faint edge glow from reflected planet light
 			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(D.Col.R * 0.2f, D.Col.G * 0.15f, D.Col.B * 0.1f));

@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Kismet/GameplayStatics.h"
 
 AExoFloatingDust::AExoFloatingDust()
@@ -42,15 +43,21 @@ void AExoFloatingDust::Tick(float DeltaTime)
 			M.Mesh->RegisterComponent();
 
 			// Random emissive tint — some catch ambient light, some glow faintly
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 			float Brightness = FMath::RandRange(0.1f, 0.4f);
 			FLinearColor Col(Brightness, Brightness * 1.1f, Brightness * 1.3f);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Col);
 			if (FMath::RandBool()) // ~50% have subtle emissive
 			{
+				UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+				UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * 0.3f);
+				M.Mesh->SetMaterial(0, Mat);
 			}
-			M.Mesh->SetMaterial(0, Mat);
+			else
+			{
+				UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+				Mat->SetVectorParameterValue(TEXT("BaseColor"), Col);
+				M.Mesh->SetMaterial(0, Mat);
+			}
 
 			// Random position in sphere around origin
 			float Radius = 3000.f;

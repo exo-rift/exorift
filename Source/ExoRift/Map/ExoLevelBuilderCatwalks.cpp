@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildCatwalks()
@@ -214,10 +215,11 @@ void AExoLevelBuilder::SpawnZiplineAnchor(const FVector& Top)
 		FLinearColor(0.1f, 0.8f, 0.3f));
 	if (Anchor)
 	{
-		UMaterialInstanceDynamic* Mat = Cast<UMaterialInstanceDynamic>(
-			Anchor->GetMaterial(0));
-		if (Mat) Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* AnchorEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(AnchorEmissiveMat, this);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(1.f, 4.f, 1.5f));
+		Anchor->SetMaterial(0, Mat);
 	}
 
 	// Anchor light

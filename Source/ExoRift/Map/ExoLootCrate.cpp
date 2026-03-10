@@ -8,6 +8,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 AExoLootCrate::AExoLootCrate()
@@ -92,14 +93,13 @@ void AExoLootCrate::BuildVisuals()
 	CrateLid->SetMaterial(0, LidMat);
 
 	// Glowing accent strips
-	StripMat1 = UMaterialInstanceDynamic::Create(BaseMat, this);
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	FLinearColor StripEm(CrateColor.R * 5.f, CrateColor.G * 5.f, CrateColor.B * 5.f);
-	StripMat1->SetVectorParameterValue(TEXT("BaseColor"), CrateColor);
+	StripMat1 = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	StripMat1->SetVectorParameterValue(TEXT("EmissiveColor"), StripEm);
 	GlowStrip1->SetMaterial(0, StripMat1);
 
-	StripMat2 = UMaterialInstanceDynamic::Create(BaseMat, this);
-	StripMat2->SetVectorParameterValue(TEXT("BaseColor"), CrateColor);
+	StripMat2 = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 	StripMat2->SetVectorParameterValue(TEXT("EmissiveColor"), StripEm);
 	GlowStrip2->SetMaterial(0, StripMat2);
 

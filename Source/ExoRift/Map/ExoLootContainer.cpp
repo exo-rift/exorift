@@ -11,6 +11,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "Core/ExoTypes.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 AExoLootContainer::AExoLootContainer()
@@ -62,6 +63,8 @@ void AExoLootContainer::BuildVisuals()
 
 	if (!CubeMesh || !BaseMat) return;
 
+	UMaterialInterface* EmissiveBaseMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	auto MakePart = [&](const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color) -> UStaticMeshComponent*
 	{
@@ -73,15 +76,20 @@ void AExoLootContainer::BuildVisuals()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = true;
 		C->RegisterComponent();
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
 		if (Lum > 0.15f)
 		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveBaseMat, this);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			C->SetMaterial(0, Mat);
 		}
-		C->SetMaterial(0, Mat);
+		else
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			C->SetMaterial(0, Mat);
+		}
 		return C;
 	};
 

@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoRelayTower::AExoRelayTower()
 {
@@ -125,9 +126,11 @@ void AExoRelayTower::BuildTower()
 			FVector(0.15f, 0.15f, 0.15f), FRotator::ZeroRotator, SphereMesh, Color);
 		if (Bulb)
 		{
-			UMaterialInstanceDynamic* BM = Cast<UMaterialInstanceDynamic>(Bulb->GetMaterial(0));
-			if (BM) BM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Color.R * 30.f, Color.G * 30.f, Color.B * 30.f));
+			Bulb->SetMaterial(0, BM);
 		}
 
 		UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
@@ -154,7 +157,7 @@ void AExoRelayTower::BuildTower()
 	AddBeacon(FVector(-200.f, 0.f, 2200.f), White, 8000.f);
 
 	// === ENERGY CONDUIT along shaft — glowing cable ===
-	if (CylinderMesh && BaseMaterial)
+	if (CylinderMesh)
 	{
 		UStaticMeshComponent* Conduit = NewObject<UStaticMeshComponent>(this);
 		Conduit->SetupAttachment(RootComponent);
@@ -165,9 +168,9 @@ void AExoRelayTower::BuildTower()
 		Conduit->CastShadow = false;
 		Conduit->RegisterComponent();
 
-		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FLinearColor ConduitCol(0.1f, 0.5f, 0.8f);
-		CM->SetVectorParameterValue(TEXT("BaseColor"), ConduitCol);
 		CM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(ConduitCol.R * 8.f, ConduitCol.G * 8.f, ConduitCol.B * 8.f));
 		Conduit->SetMaterial(0, CM);

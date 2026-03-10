@@ -4,6 +4,7 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildCompoundLighting()
@@ -76,18 +77,17 @@ void AExoLevelBuilder::SpawnCompoundGroundMarker(const FVector& Center,
 	float RingRadius = 2000.f;
 	float RingScale = RingRadius / 50.f;
 
+	UMaterialInterface* MarkerEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
 	UStaticMeshComponent* Ring = SpawnStaticMesh(Center + FVector(0.f, 0.f, 5.f),
 		FVector(RingScale, RingScale, 0.01f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(Color.R * 0.1f, Color.G * 0.1f, Color.B * 0.1f));
 	if (Ring)
 	{
-		UMaterialInstanceDynamic* Mat = Cast<UMaterialInstanceDynamic>(
-			Ring->GetMaterial(0));
-		if (Mat)
-		{
-			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
-		}
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MarkerEmissiveMat, this);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
+		Ring->SetMaterial(0, Mat);
 	}
 
 	// Inner solid circle (darker)
@@ -110,13 +110,10 @@ void AExoLevelBuilder::SpawnCompoundGroundMarker(const FVector& Center,
 			FLinearColor(Color.R * 0.08f, Color.G * 0.08f, Color.B * 0.08f));
 		if (Line)
 		{
-			UMaterialInstanceDynamic* LMat = Cast<UMaterialInstanceDynamic>(
-				Line->GetMaterial(0));
-			if (LMat)
-			{
-				LMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(Color.R * 0.3f, Color.G * 0.3f, Color.B * 0.3f));
-			}
+			UMaterialInstanceDynamic* LMat = UMaterialInstanceDynamic::Create(MarkerEmissiveMat, this);
+			LMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * 0.3f, Color.G * 0.3f, Color.B * 0.3f));
+			Line->SetMaterial(0, LMat);
 		}
 	}
 

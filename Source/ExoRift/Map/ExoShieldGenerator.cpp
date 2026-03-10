@@ -7,6 +7,7 @@
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoScreenShake.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoShieldGenerator::AExoShieldGenerator()
 {
@@ -67,22 +68,17 @@ void AExoShieldGenerator::BeginPlay()
 			FLinearColor(0.06f, 0.065f, 0.08f));
 		BaseMesh->SetMaterial(0, BM);
 	}
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	if (PylonMesh->GetStaticMesh())
 	{
-		UMaterialInstanceDynamic* PM = UMaterialInstanceDynamic::Create(
-			PylonMesh->GetMaterial(0), this);
-		PM->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.08f, 0.085f, 0.1f));
+		UMaterialInstanceDynamic* PM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		PM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			ShieldColor * 3.f);
 		PylonMesh->SetMaterial(0, PM);
 	}
 	if (ShieldDome->GetStaticMesh())
 	{
-		DomeMat = UMaterialInstanceDynamic::Create(
-			ShieldDome->GetMaterial(0), this);
-		DomeMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(ShieldColor.R * 0.1f, ShieldColor.G * 0.1f, ShieldColor.B * 0.1f));
+		DomeMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			ShieldColor * 2.f);
 		ShieldDome->SetMaterial(0, DomeMat);

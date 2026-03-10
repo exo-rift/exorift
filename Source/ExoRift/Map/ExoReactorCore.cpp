@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Visual/ExoMaterialFactory.h"
 
 AExoReactorCore::AExoReactorCore()
 {
@@ -85,49 +86,47 @@ void AExoReactorCore::InitReactor()
 {
 	if (!BaseMaterial) return;
 
-	auto MakeMat = [&](const FLinearColor& Base, const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
+	auto MakeStructMat = [&](const FLinearColor& Base) -> UMaterialInstanceDynamic*
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 		M->SetVectorParameterValue(TEXT("BaseColor"), Base);
+		return M;
+	};
+
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+
+	auto MakeEmissiveMat = [&](const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
+	{
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 		return M;
 	};
 
 	// Base plate — dark metallic platform
 	BasePlate->SetRelativeScale3D(FVector(30.f, 30.f, 1.f));
-	BasePlate->SetMaterial(0, MakeMat(
-		FLinearColor(0.04f, 0.04f, 0.06f),
-		FLinearColor(0.01f, 0.02f, 0.04f)));
+	BasePlate->SetMaterial(0, MakeStructMat(FLinearColor(0.04f, 0.04f, 0.06f)));
 
 	// Central pillar
 	Pillar->SetRelativeLocation(FVector(0.f, 0.f, 1500.f));
 	Pillar->SetRelativeScale3D(FVector(4.f, 4.f, 30.f));
-	Pillar->SetMaterial(0, MakeMat(
-		FLinearColor(0.06f, 0.06f, 0.08f),
-		FLinearColor(0.02f, 0.04f, 0.08f)));
+	Pillar->SetMaterial(0, MakeStructMat(FLinearColor(0.06f, 0.06f, 0.08f)));
 
 	// Core sphere — bright pulsing energy ball
 	CoreSphere->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	CoreSphere->SetRelativeScale3D(FVector(8.f));
-	CoreMat = MakeMat(
-		FLinearColor(0.3f, 0.6f, 1.f),
-		FLinearColor(15.f, 25.f, 50.f));
+	CoreMat = MakeEmissiveMat(FLinearColor(15.f, 25.f, 50.f));
 	CoreSphere->SetMaterial(0, CoreMat);
 
 	// Inner ring — tilted, orbiting close to core
 	InnerRing->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	InnerRing->SetRelativeScale3D(FVector(14.f, 14.f, 0.4f));
-	InnerRingMat = MakeMat(
-		FLinearColor(0.1f, 0.2f, 0.4f),
-		FLinearColor(3.f, 6.f, 15.f));
+	InnerRingMat = MakeEmissiveMat(FLinearColor(3.f, 6.f, 15.f));
 	InnerRing->SetMaterial(0, InnerRingMat);
 
 	// Outer ring — opposite tilt, wider orbit
 	OuterRing->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	OuterRing->SetRelativeScale3D(FVector(20.f, 20.f, 0.3f));
-	OuterRingMat = MakeMat(
-		FLinearColor(0.08f, 0.15f, 0.3f),
-		FLinearColor(2.f, 4.f, 10.f));
+	OuterRingMat = MakeEmissiveMat(FLinearColor(2.f, 4.f, 10.f));
 	OuterRing->SetMaterial(0, OuterRingMat);
 
 	// Energy conduit beams — vertical beams around the core
@@ -140,9 +139,7 @@ void AExoReactorCore::InitReactor()
 		Conduits[i]->SetRelativeLocation(Pos);
 		Conduits[i]->SetRelativeScale3D(FVector(0.3f, 0.3f, 40.f));
 
-		ConduitMats[i] = MakeMat(
-			FLinearColor(0.1f, 0.3f, 0.7f),
-			FLinearColor(5.f, 10.f, 25.f));
+		ConduitMats[i] = MakeEmissiveMat(FLinearColor(5.f, 10.f, 25.f));
 		Conduits[i]->SetMaterial(0, ConduitMats[i]);
 	}
 

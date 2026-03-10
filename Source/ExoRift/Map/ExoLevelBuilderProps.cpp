@@ -3,6 +3,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildProps()
@@ -105,12 +106,13 @@ void AExoLevelBuilder::BuildProps()
 				BPos + FVector(0.f, 0.f, 125.f),
 				FVector(0.2f, 0.2f, 0.06f), FRotator::ZeroRotator,
 				CylinderMesh, FLinearColor(0.8f, 0.5f, 0.1f));
-			if (Cap && BaseMaterial)
+			if (Cap)
 			{
-				UMaterialInstanceDynamic* CM = Cast<UMaterialInstanceDynamic>(
-					Cap->GetMaterial(0));
-				if (CM) CM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				UMaterialInterface* CapEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+				UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CapEmissiveMat, this);
+				CM->SetVectorParameterValue(TEXT("EmissiveColor"),
 					FLinearColor(2.f, 1.2f, 0.3f));
+				Cap->SetMaterial(0, CM);
 			}
 		}
 	}

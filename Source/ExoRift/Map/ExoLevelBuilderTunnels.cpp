@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::BuildTunnels()
@@ -97,10 +98,11 @@ void AExoLevelBuilder::SpawnTunnelEntrance(const FVector& Pos, float Yaw)
 		FLinearColor(0.8f, 0.4f, 0.05f));
 	if (Stripe)
 	{
-		UMaterialInstanceDynamic* StMat = Cast<UMaterialInstanceDynamic>(
-			Stripe->GetMaterial(0));
-		if (StMat) StMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+		UMaterialInterface* StripeEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* StMat = UMaterialInstanceDynamic::Create(StripeEmissiveMat, this);
+		StMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(2.f, 0.8f, 0.1f));
+		Stripe->SetMaterial(0, StMat);
 	}
 }
 
@@ -134,6 +136,7 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 	}
 
 	// Overhead lights every 4000 units
+	UMaterialInterface* PanelEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	FVector Forward = Dir.GetSafeNormal();
 	int32 LightCount = FMath::Max(2, FMath::RoundToInt32(Length / 4000.f));
 	for (int32 i = 0; i < LightCount; i++)
@@ -153,10 +156,10 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 			FLinearColor(0.7f, 0.8f, 1.f));
 		if (LightPanel)
 		{
-			UMaterialInstanceDynamic* LPMat = Cast<UMaterialInstanceDynamic>(
-				LightPanel->GetMaterial(0));
-			if (LPMat) LPMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			UMaterialInstanceDynamic* LPMat = UMaterialInstanceDynamic::Create(PanelEmissiveMat, this);
+			LPMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(3.f, 3.5f, 5.f));
+			LightPanel->SetMaterial(0, LPMat);
 		}
 
 		// Point light

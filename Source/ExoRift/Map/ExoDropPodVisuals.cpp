@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Engine/StaticMesh.h"
 
 void AExoDropPod::BuildPodMesh()
@@ -58,7 +59,8 @@ void AExoDropPod::BuildPodMesh()
 		FVector(0.02f, 0.02f, 1.2f), AccentColor);
 
 	// Thruster flame
-	if (CylinderMesh && BaseMaterial)
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
+	if (CylinderMesh)
 	{
 		ThrusterFlame = NewObject<UStaticMeshComponent>(this);
 		ThrusterFlame->SetupAttachment(RootComponent);
@@ -68,14 +70,13 @@ void AExoDropPod::BuildPodMesh()
 		ThrusterFlame->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ThrusterFlame->CastShadow = false;
 		ThrusterFlame->RegisterComponent();
-		FlameMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		FlameMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(2.f, 4.f, 10.f));
+		FlameMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FlameMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.f, 4.f, 10.f));
 		ThrusterFlame->SetMaterial(0, FlameMat);
 	}
 
 	// Heat shield glow
-	if (SphereMesh && BaseMaterial)
+	if (SphereMesh)
 	{
 		HeatShield = NewObject<UStaticMeshComponent>(this);
 		HeatShield->SetupAttachment(RootComponent);
@@ -85,8 +86,7 @@ void AExoDropPod::BuildPodMesh()
 		HeatShield->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		HeatShield->CastShadow = false;
 		HeatShield->RegisterComponent();
-		HeatMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		HeatMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.3f, 0.05f));
+		HeatMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		HeatMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(3.f, 0.8f, 0.15f));
 		HeatShield->SetMaterial(0, HeatMat);
 
@@ -103,7 +103,7 @@ void AExoDropPod::BuildPodMesh()
 
 void AExoDropPod::SpawnLandingDust()
 {
-	if (!CylinderMesh || !BaseMaterial) return;
+	if (!CylinderMesh) return;
 
 	// Expanding dust ring at ground level
 	DustRing = NewObject<UStaticMeshComponent>(this);
@@ -113,8 +113,8 @@ void AExoDropPod::SpawnLandingDust()
 	DustRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DustRing->CastShadow = false;
 	DustRing->RegisterComponent();
-	DustMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	DustMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.15f, 0.12f, 0.08f, 0.3f));
+	UMaterialInterface* EmissiveDustMat = FExoMaterialFactory::GetEmissiveOpaque();
+	DustMat = UMaterialInstanceDynamic::Create(EmissiveDustMat, this);
 	DustMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.3f, 0.25f, 0.15f));
 	DustRing->SetMaterial(0, DustMat);
 	DustAge = 0.f;
