@@ -47,6 +47,21 @@ static UMaterial* BuildRuntimeMaterial(EBlendMode Blend, EMaterialShadingModel S
 		BaseParam->DefaultValue = FLinearColor(0.5f, 0.5f, 0.5f, 1.f);
 		Mat->GetExpressionCollection().Expressions.Add(BaseParam);
 		Mat->GetEditorOnlyData()->BaseColor.Connect(0, BaseParam);
+
+		// Metallic + Roughness for PBR surfaces
+		UMaterialExpressionScalarParameter* MetallicParam =
+			NewObject<UMaterialExpressionScalarParameter>(Mat);
+		MetallicParam->ParameterName = TEXT("Metallic");
+		MetallicParam->DefaultValue = 0.85f;
+		Mat->GetExpressionCollection().Expressions.Add(MetallicParam);
+		Mat->GetEditorOnlyData()->Metallic.Connect(0, MetallicParam);
+
+		UMaterialExpressionScalarParameter* RoughnessParam =
+			NewObject<UMaterialExpressionScalarParameter>(Mat);
+		RoughnessParam->ParameterName = TEXT("Roughness");
+		RoughnessParam->DefaultValue = 0.25f;
+		Mat->GetExpressionCollection().Expressions.Add(RoughnessParam);
+		Mat->GetEditorOnlyData()->Roughness.Connect(0, RoughnessParam);
 	}
 
 	// Opacity for non-opaque blends (fading support)
