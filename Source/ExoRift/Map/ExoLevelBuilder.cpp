@@ -177,13 +177,13 @@ void AExoLevelBuilder::BuildLighting()
 	Sky->SetIntensity(1.5f);
 	Sky->SetLightColor(FLinearColor(0.4f, 0.5f, 0.7f));
 
-	// Atmospheric fog
+	// Atmospheric fog — denser for moody sci-fi atmosphere
 	UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this);
 	Fog->SetupAttachment(RootComponent);
 	Fog->RegisterComponent();
-	Fog->SetFogDensity(0.001f);
-	Fog->SetFogHeightFalloff(0.2f);
-	Fog->SetFogInscatteringColor(FLinearColor(0.15f, 0.2f, 0.3f));
+	Fog->SetFogDensity(0.0015f);
+	Fog->SetFogHeightFalloff(0.15f);
+	Fog->SetFogInscatteringColor(FLinearColor(0.1f, 0.13f, 0.22f));
 
 	// Global post-process — lower priority than ExoPostProcess actor (priority 0 < 1)
 	UPostProcessComponent* PP = NewObject<UPostProcessComponent>(this);
@@ -191,11 +191,15 @@ void AExoLevelBuilder::BuildLighting()
 	PP->bUnbound = true;
 	PP->Priority = 0.f;
 	PP->Settings.bOverride_AutoExposureBias = true;
-	PP->Settings.AutoExposureBias = 0.3f;
+	PP->Settings.AutoExposureBias = 0.5f;
 	PP->Settings.bOverride_BloomIntensity = true;
-	PP->Settings.BloomIntensity = 1.5f;
+	PP->Settings.BloomIntensity = 2.0f;
 	PP->Settings.bOverride_BloomThreshold = true;
-	PP->Settings.BloomThreshold = 0.8f;
+	PP->Settings.BloomThreshold = 0.3f; // Low threshold for dramatic emissive bloom
+	PP->Settings.bOverride_VignetteIntensity = true;
+	PP->Settings.VignetteIntensity = 0.25f;
+	PP->Settings.bOverride_FilmGrainIntensity = true;
+	PP->Settings.FilmGrainIntensity = 0.04f;
 	PP->RegisterComponent();
 
 	// Nav mesh bounds for bot navigation
