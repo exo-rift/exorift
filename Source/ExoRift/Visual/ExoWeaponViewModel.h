@@ -7,6 +7,7 @@
 
 class UStaticMeshComponent;
 class UPointLightComponent;
+class UExoFPArms;
 
 /**
  * Procedural first-person weapon model built from basic shapes.
@@ -43,6 +44,9 @@ private:
 
 	UPROPERTY()
 	UPointLightComponent* MuzzleReadyLight;
+
+	UPROPERTY()
+	UExoFPArms* Arms = nullptr;
 
 	UStaticMesh* CubeMesh = nullptr;
 	UStaticMesh* CylinderMesh = nullptr;

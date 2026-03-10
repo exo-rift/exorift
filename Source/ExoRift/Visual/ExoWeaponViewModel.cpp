@@ -1,4 +1,5 @@
 #include "Visual/ExoWeaponViewModel.h"
+#include "Visual/ExoFPArms.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -32,6 +33,12 @@ void UExoWeaponViewModel::BuildModel(EWeaponType Type, const FLinearColor& Rarit
 	case EWeaponType::Melee:          BuildMeleeModel(RarityColor); break;
 	default: BuildRifleModel(RarityColor); break;
 	}
+
+	// First-person arms
+	Arms = NewObject<UExoFPArms>(GetOwner());
+	Arms->SetupAttachment(this);
+	Arms->RegisterComponent();
+	Arms->BuildArms(FLinearColor(0.08f, 0.1f, 0.12f)); // Dark tactical suit
 
 	// Muzzle ready indicator light
 	MuzzleReadyLight = NewObject<UPointLightComponent>(GetOwner());
