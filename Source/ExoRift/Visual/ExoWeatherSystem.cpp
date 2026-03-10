@@ -1,6 +1,5 @@
 #include "Visual/ExoWeatherSystem.h"
 #include "Visual/ExoPostProcess.h"
-#include "Visual/ExoScreenShake.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -328,68 +327,4 @@ void AExoWeatherSystem::SpawnRainParticles(float DeltaTime)
 	UpdateRainMeshes();
 }
 
-// ---------------------------------------------------------------------------
-// Lightning — multi-flash bursts with screen integration
-// ---------------------------------------------------------------------------
-
-void AExoWeatherSystem::UpdateLightning(float DeltaTime)
-{
-	bool bStormActive = (CurrentWeather == EExoWeatherState::Storm
-		|| TargetWeather == EExoWeatherState::Storm);
-
-	if (bStormActive)
-	{
-		// Handle multi-flash burst sequence
-		if (LightningFlashesRemaining > 0)
-		{
-			MultiFlashDelay -= DeltaTime;
-			if (MultiFlashDelay <= 0.f)
-			{
-				LightningAlpha = FMath::RandRange(0.6f, 1.f);
-				LightningBoltAlpha = LightningAlpha;
-				LightningFlashesRemaining--;
-				MultiFlashDelay = FMath::RandRange(0.05f, 0.15f);
-
-				// Directional light flash for environment illumination
-				if (WeatherLightComp)
-				{
-					WeatherLightComp->SetIntensity(8.f * LightningAlpha);
-					WeatherLightComp->SetLightColor(FLinearColor(0.8f, 0.85f, 1.f));
-				}
-
-				// Screen shake for nearby strikes
-				if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
-				{
-					FExoScreenShake::AddShake(0.3f * LightningAlpha, 0.15f);
-				}
-			}
-		}
-		else if (LightningCooldown > 0.f)
-		{
-			LightningCooldown -= DeltaTime;
-		}
-		else if (LightningAlpha <= 0.01f)
-		{
-			// Start a new lightning burst (1-3 rapid flashes)
-			LightningFlashesRemaining = FMath::RandRange(1, 3);
-			MultiFlashDelay = 0.f;
-			LightningCooldown = FMath::RandRange(3.f, 10.f);
-		}
-	}
-
-	// Decay lightning alpha (fast decay for sharp flashes)
-	LightningAlpha = FMath::Max(LightningAlpha - DeltaTime * 5.f, 0.f);
-	LightningBoltAlpha = FMath::Max(LightningBoltAlpha - DeltaTime * 8.f, 0.f);
-
-	// Restore directional light after flash
-	if (!bStormActive || LightningAlpha < 0.01f)
-	{
-		if (WeatherLightComp)
-		{
-			float FillIntensity = (1.f - CurrentVisibility) * 0.5f;
-			WeatherLightComp->SetIntensity(
-				FMath::FInterpTo(WeatherLightComp->Intensity, FillIntensity, DeltaTime, 5.f));
-			WeatherLightComp->SetLightColor(FLinearColor(0.3f, 0.35f, 0.5f));
-		}
-	}
-}
+// UpdateLightning is in ExoWeatherRain.cpp

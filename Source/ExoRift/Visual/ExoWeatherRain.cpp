@@ -1,7 +1,11 @@
-// ExoWeatherRain.cpp — Mesh-based rain drop rendering
+// ExoWeatherRain.cpp — Rain rendering + lightning bolt integration
 #include "Visual/ExoWeatherSystem.h"
+#include "Visual/ExoLightningBolt.h"
+#include "Visual/ExoPostProcess.h"
+#include "Visual/ExoScreenShake.h"
 #include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -82,6 +86,84 @@ void AExoWeatherSystem::UpdateRainMeshes()
 		else
 		{
 			RainMeshes[i]->SetVisibility(false);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Lightning — multi-flash bursts with bolt mesh spawning
+// ---------------------------------------------------------------------------
+
+void AExoWeatherSystem::UpdateLightning(float DeltaTime)
+{
+	bool bStormActive = (CurrentWeather == EExoWeatherState::Storm
+		|| TargetWeather == EExoWeatherState::Storm);
+
+	if (bStormActive)
+	{
+		if (LightningFlashesRemaining > 0)
+		{
+			MultiFlashDelay -= DeltaTime;
+			if (MultiFlashDelay <= 0.f)
+			{
+				LightningAlpha = FMath::RandRange(0.6f, 1.f);
+				LightningBoltAlpha = LightningAlpha;
+				LightningFlashesRemaining--;
+				MultiFlashDelay = FMath::RandRange(0.05f, 0.15f);
+
+				if (WeatherLightComp)
+				{
+					WeatherLightComp->SetIntensity(8.f * LightningAlpha);
+					WeatherLightComp->SetLightColor(FLinearColor(0.8f, 0.85f, 1.f));
+				}
+
+				if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+				{
+					FExoScreenShake::AddShake(0.3f * LightningAlpha, 0.15f);
+				}
+
+				// Spawn a visible lightning bolt mesh near the player
+				if (LightningFlashesRemaining == 0)
+				{
+					APlayerController* LPC = GetWorld()->GetFirstPlayerController();
+					if (LPC && LPC->GetPawn())
+					{
+						FVector PLoc = LPC->GetPawn()->GetActorLocation();
+						FVector StrikePos = PLoc + FVector(
+							FMath::RandRange(-8000.f, 8000.f),
+							FMath::RandRange(-8000.f, 8000.f), 0.f);
+						AExoLightningBolt* Bolt = GetWorld()->SpawnActor<AExoLightningBolt>(
+							AExoLightningBolt::StaticClass(), StrikePos,
+							FRotator::ZeroRotator);
+						if (Bolt) Bolt->InitBolt(StrikePos);
+					}
+				}
+			}
+		}
+		else if (LightningCooldown > 0.f)
+		{
+			LightningCooldown -= DeltaTime;
+		}
+		else if (LightningAlpha <= 0.01f)
+		{
+			LightningFlashesRemaining = FMath::RandRange(1, 3);
+			MultiFlashDelay = 0.f;
+			LightningCooldown = FMath::RandRange(3.f, 10.f);
+		}
+	}
+
+	LightningAlpha = FMath::Max(LightningAlpha - DeltaTime * 5.f, 0.f);
+	LightningBoltAlpha = FMath::Max(LightningBoltAlpha - DeltaTime * 8.f, 0.f);
+
+	if (!bStormActive || LightningAlpha < 0.01f)
+	{
+		if (WeatherLightComp)
+		{
+			float FillIntensity = (1.f - CurrentVisibility) * 0.5f;
+			WeatherLightComp->SetIntensity(
+				FMath::FInterpTo(WeatherLightComp->Intensity, FillIntensity,
+					DeltaTime, 5.f));
+			WeatherLightComp->SetLightColor(FLinearColor(0.3f, 0.35f, 0.5f));
 		}
 	}
 }
