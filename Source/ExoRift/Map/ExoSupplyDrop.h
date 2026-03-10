@@ -61,6 +61,21 @@ protected:
 	UPROPERTY()
 	UPointLightComponent* CrateGlow;
 
+	// Descent trail and landing effects
+	UPROPERTY()
+	UStaticMeshComponent* SmokeTrail = nullptr;
+
+	UPROPERTY()
+	UPointLightComponent* TrailLight = nullptr;
+
+	UPROPERTY()
+	UStaticMeshComponent* ImpactRing = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* ImpactRingMat = nullptr;
+
+	float ImpactRingTimer = 0.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
 	float DropSpeed = 1500.f;
 

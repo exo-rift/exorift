@@ -82,16 +82,10 @@ void AExoSupplyDrop::BuildCrateMesh()
 	MakePart(CubeMeshRef, FVector(0.f, -42.f, 0.f), FVector(1.0f, 0.02f, 0.45f), AccentColor);
 
 	// Corner reinforcements
-	for (int32 x = -1; x <= 1; x += 2)
-	{
-		for (int32 y = -1; y <= 1; y += 2)
-		{
-			MakePart(CubeMeshRef,
-				FVector(x * 55.f, y * 35.f, -20.f),
-				FVector(0.08f, 0.08f, 0.15f),
-				FLinearColor(0.15f, 0.15f, 0.15f));
-		}
-	}
+	for (float cx : {-55.f, 55.f})
+		for (float cy : {-35.f, 35.f})
+			MakePart(CubeMeshRef, FVector(cx, cy, -20.f),
+				FVector(0.08f, 0.08f, 0.15f), FLinearColor(0.15f, 0.15f, 0.15f));
 
 	// Parachute dome (half sphere above)
 	ParachuteDome = MakePart(SphereMeshRef, FVector(0.f, 0.f, 350.f),
@@ -105,6 +99,18 @@ void AExoSupplyDrop::BuildCrateMesh()
 		FVector(0.02f, 0.02f, 2.f), FLinearColor(0.3f, 0.3f, 0.3f),
 		FRotator(0.f, 0.f, -8.f));
 
+	// Top edge trim (gold lines)
+	MakePart(CubeMeshRef, FVector(60.f, 0.f, 32.f), FVector(0.02f, 0.7f, 0.02f), AccentColor);
+	MakePart(CubeMeshRef, FVector(-60.f, 0.f, 32.f), FVector(0.02f, 0.7f, 0.02f), AccentColor);
+
+	// Hazard stripe on front face
+	MakePart(CubeMeshRef, FVector(62.f, 0.f, 0.f), FVector(0.02f, 0.5f, 0.1f),
+		FLinearColor(0.6f, 0.5f, 0.05f));
+
+	// Lock hasp (front center)
+	MakePart(CubeMeshRef, FVector(62.f, 0.f, 25.f), FVector(0.04f, 0.08f, 0.06f),
+		FLinearColor(0.15f, 0.15f, 0.15f));
+
 	// Inner crate glow
 	CrateGlow = NewObject<UPointLightComponent>(this);
 	CrateGlow->SetupAttachment(RootComponent);
@@ -113,6 +119,21 @@ void AExoSupplyDrop::BuildCrateMesh()
 	CrateGlow->SetAttenuationRadius(500.f);
 	CrateGlow->SetLightColor(FColor(255, 200, 50));
 	CrateGlow->RegisterComponent();
+
+	// Smoke trail — elongated cylinder trailing above during descent
+	SmokeTrail = MakePart(CylinderMeshRef, FVector(0.f, 0.f, 500.f),
+		FVector(0.8f, 0.8f, 5.f), FLinearColor(0.15f, 0.12f, 0.08f));
+	if (SmokeTrail) SmokeTrail->CastShadow = false;
+
+	// Trail light — warm glow from engine exhaust
+	TrailLight = NewObject<UPointLightComponent>(this);
+	TrailLight->SetupAttachment(RootComponent);
+	TrailLight->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	TrailLight->SetIntensity(15000.f);
+	TrailLight->SetAttenuationRadius(2000.f);
+	TrailLight->SetLightColor(FLinearColor(1.f, 0.5f, 0.1f));
+	TrailLight->CastShadows = false;
+	TrailLight->RegisterComponent();
 }
 
 void AExoSupplyDrop::BeginPlay()
@@ -138,6 +159,19 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 			float Pulse = 0.6f + 0.4f * FMath::Abs(FMath::Sin(Time * 2.f));
 			BeaconLight->SetIntensity(BeaconIntensity * 0.3f * Pulse);
 		}
+
+		// Animate smoke trail — flickering exhaust
+		if (SmokeTrail)
+		{
+			float TrailFlicker = 4.5f + 1.5f * FMath::Sin(Time * 25.f)
+				+ 0.5f * FMath::Sin(Time * 61.f);
+			SmokeTrail->SetRelativeScale3D(FVector(0.8f, 0.8f, TrailFlicker));
+		}
+		if (TrailLight)
+		{
+			float TLPulse = 12000.f + 6000.f * FMath::Sin(Time * 18.f);
+			TrailLight->SetIntensity(TLPulse);
+		}
 	}
 	else if (CurrentState == ESupplyDropState::Landed)
 	{
@@ -146,6 +180,26 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 		{
 			float Pulse = 0.7f + 0.3f * FMath::Abs(FMath::Sin(Time * 1.5f));
 			BeaconLight->SetIntensity(BeaconIntensity * Pulse);
+		}
+
+		// Expand and fade the impact ring
+		if (ImpactRing)
+		{
+			ImpactRingTimer += DeltaTime;
+			float T01 = FMath::Clamp(ImpactRingTimer / 2.f, 0.f, 1.f);
+			float Expand = FMath::Lerp(0.5f, 8.f, T01);
+			float Alpha = 1.f - T01;
+			ImpactRing->SetRelativeScale3D(FVector(Expand, Expand, 0.02f * Alpha));
+			if (ImpactRingMat)
+			{
+				ImpactRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(1.5f * Alpha, 0.8f * Alpha, 0.2f * Alpha));
+			}
+			if (T01 >= 1.f)
+			{
+				ImpactRing->DestroyComponent();
+				ImpactRing = nullptr;
+			}
 		}
 	}
 
@@ -218,10 +272,33 @@ void AExoSupplyDrop::TransitionToState(ESupplyDropState NewState)
 
 	case ESupplyDropState::Landed:
 		BeaconLight->SetIntensity(BeaconIntensity);
-		// Remove parachute on landing
+		// Remove parachute and smoke trail on landing
 		if (ParachuteDome) { ParachuteDome->DestroyComponent(); ParachuteDome = nullptr; }
 		if (ParachuteStrut1) { ParachuteStrut1->DestroyComponent(); ParachuteStrut1 = nullptr; }
 		if (ParachuteStrut2) { ParachuteStrut2->DestroyComponent(); ParachuteStrut2 = nullptr; }
+		if (SmokeTrail) { SmokeTrail->DestroyComponent(); SmokeTrail = nullptr; }
+		if (TrailLight) { TrailLight->DestroyComponent(); TrailLight = nullptr; }
+
+		// Spawn impact ring — expanding dust cloud
+		if (CylinderMeshRef && BaseMaterialRef)
+		{
+			ImpactRing = NewObject<UStaticMeshComponent>(this);
+			ImpactRing->SetupAttachment(RootComponent);
+			ImpactRing->SetStaticMesh(CylinderMeshRef);
+			ImpactRing->SetRelativeLocation(FVector(0.f, 0.f, 5.f));
+			ImpactRing->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.02f));
+			ImpactRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			ImpactRing->CastShadow = false;
+			ImpactRing->RegisterComponent();
+			ImpactRingMat = UMaterialInstanceDynamic::Create(BaseMaterialRef, this);
+			ImpactRingMat->SetVectorParameterValue(TEXT("BaseColor"),
+				FLinearColor(0.6f, 0.4f, 0.15f));
+			ImpactRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(1.5f, 0.8f, 0.2f));
+			ImpactRing->SetMaterial(0, ImpactRingMat);
+			ImpactRingTimer = 0.f;
+		}
+
 		// Landing sound
 		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 		{

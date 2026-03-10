@@ -47,10 +47,24 @@ protected:
 	UPROPERTY()
 	UMaterialInstanceDynamic* BaseMat = nullptr;
 
+	// Runtime detail parts
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> DetailParts;
+
+	UPROPERTY()
+	UStaticMeshComponent* ScanLineMesh = nullptr;
+
+	UPROPERTY()
+	UPointLightComponent* ScanLight = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* ScanMat = nullptr;
+
 private:
 	float Age = 0.f;
 	float FlickerSeed = 0.f;
 	FVector SpawnLocation = FVector::ZeroVector;
 
 	void UpdateHologram(float DeltaTime);
+	void BuildDetailParts();
 };
