@@ -5,6 +5,7 @@
 #include "Components/SpotLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoFlickerLight.h"
+#include "Visual/ExoHoloBillboard.h"
 
 void AExoLevelBuilder::BuildAtmosphere()
 {
@@ -91,6 +92,34 @@ void AExoLevelBuilder::BuildAtmosphere()
 		AExoFlickerLight* FL = GetWorld()->SpawnActor<AExoFlickerLight>(
 			AExoFlickerLight::StaticClass(), F.Pos, FRotator::ZeroRotator, FlickerParams);
 		if (FL) FL->InitLight(F.Color, F.Intensity);
+	}
+
+	// === HOLOGRAPHIC BILLBOARDS — large animated screens at compounds ===
+	{
+		FActorSpawnParameters BP;
+		BP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		struct FBoardDef { FVector Pos; float Yaw; FLinearColor Color; float W; float H; };
+		TArray<FBoardDef> Boards = {
+			// Hub — large central display
+			{{0.f, -6000.f, 1200.f}, 0.f, FLinearColor(0.1f, 0.6f, 1.f), 5000.f, 2500.f},
+			// North compound — industrial amber
+			{{-5000.f, 80000.f, 800.f}, 90.f, FLinearColor(1.f, 0.6f, 0.1f), 3500.f, 1800.f},
+			// East power station — electric blue
+			{{80000.f, -5000.f, 900.f}, 0.f, FLinearColor(0.15f, 0.4f, 1.f), 3000.f, 1500.f},
+			// South labs — green data
+			{{4000.f, -80000.f, 700.f}, 180.f, FLinearColor(0.2f, 0.9f, 0.4f), 3500.f, 2000.f},
+			// West barracks — red alert
+			{{-80000.f, 4000.f, 800.f}, 270.f, FLinearColor(1.f, 0.25f, 0.15f), 3000.f, 1500.f},
+		};
+
+		for (const FBoardDef& B : Boards)
+		{
+			AExoHoloBillboard* BB = GetWorld()->SpawnActor<AExoHoloBillboard>(
+				AExoHoloBillboard::StaticClass(), B.Pos,
+				FRotator(0.f, B.Yaw, 0.f), BP);
+			if (BB) BB->InitBillboard(B.Color, B.W, B.H);
+		}
 	}
 }
 

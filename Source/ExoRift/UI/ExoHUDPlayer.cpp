@@ -112,6 +112,7 @@ void AExoHUD::DrawEnergyBar()
 	AExoWeaponBase* W = Char->GetCurrentWeapon();
 	float Pct = W->GetEnergyPercent();
 	bool bLow = Pct < 0.2f;
+	bool bEmpty = Pct < 0.01f;
 	FLinearColor EC(0.3f, 0.9f, 0.4f, 0.9f);
 	if (bLow)
 	{
@@ -123,6 +124,19 @@ void AExoHUD::DrawEnergyBar()
 	FString EL = FString::Printf(TEXT("ENERGY: %d/%d"), FMath::CeilToInt(W->GetCurrentEnergy()), FMath::CeilToInt(W->GetMaxEnergy()));
 	float TW, TH; GetTextSize(EL, TW, TH, HUDFont, 0.7f);
 	DrawText(EL, bLow ? EC : ColorWhite, X + (BarW - TW) * 0.5f, Y - TH - 2.f, HUDFont, 0.7f);
+
+	// Dramatic "NO ENERGY" warning when empty
+	if (bEmpty)
+	{
+		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 6.f));
+		FLinearColor Warn(1.f, 0.15f, 0.1f, 0.5f + 0.5f * Pulse);
+		FString NoAmmo = TEXT("NO ENERGY — SWAP WEAPON");
+		float NW, NH; GetTextSize(NoAmmo, NW, NH, HUDFont, 1.1f);
+		float NX = (Canvas->SizeX - NW) * 0.5f;
+		float NY = Canvas->SizeY * 0.6f;
+		DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Pulse), NX - 10.f, NY - 4.f, NW + 20.f, NH + 8.f);
+		DrawText(NoAmmo, Warn, NX, NY, HUDFont, 1.1f);
+	}
 }
 
 void AExoHUD::DrawDBNOOverlay()
