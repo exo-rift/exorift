@@ -97,6 +97,10 @@ private:
 	void SpawnTunnelEntrance(const FVector& Pos, float Yaw);
 	void SpawnTunnelSegment(const FVector& Start, const FVector& End);
 
+	// --- Compound ambient lighting (in ExoLevelBuilderLighting.cpp) ---
+	void BuildCompoundLighting();
+	void SpawnCompoundGroundMarker(const FVector& Center, const FLinearColor& Color);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);
