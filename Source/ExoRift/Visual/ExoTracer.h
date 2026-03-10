@@ -58,6 +58,18 @@ private:
 	TArray<FVector> SparkOffsets;
 	TArray<FVector> SparkVelocities;
 
+	// Helix orbiters — small spheres spiraling around the beam
+	static constexpr int32 NUM_HELIX = 2;
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> HelixOrbs;
+	float HelixAngle = 0.f;
+	float HelixSpeed = 28.f;  // Revolutions per second (radians)
+	float HelixRadius = 0.f;  // Set per-weapon
+
+	// Head shockwave ring — expanding ring at the bolt front
+	UPROPERTY()
+	UStaticMeshComponent* HeadRing;
+
 	UPROPERTY()
 	UMaterialInstanceDynamic* CoreMat;
 

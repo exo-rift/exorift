@@ -92,6 +92,14 @@ protected:
 	TArray<FRainDrop> RainDrops;
 	float RainSpawnAccum = 0.f;
 
+	// Rain mesh rendering pool
+	void InitRainMeshes();
+	void UpdateRainMeshes();
+	static constexpr int32 RAIN_MESH_POOL = 80;
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> RainMeshes;
+	bool bRainMeshesInitialized = false;
+
 private:
 	EExoWeatherState CurrentWeather = EExoWeatherState::Clear;
 	EExoWeatherState TargetWeather = EExoWeatherState::Clear;

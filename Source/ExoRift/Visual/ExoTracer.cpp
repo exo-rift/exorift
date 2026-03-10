@@ -57,6 +57,19 @@ AExoTracer::AExoTracer()
 		SparkMeshes.Add(S);
 	}
 
+	// Helix orbiters — small energy spheres spiraling around the beam
+	for (int32 i = 0; i < NUM_HELIX; i++)
+	{
+		FName HName = *FString::Printf(TEXT("HelixOrb_%d"), i);
+		UStaticMeshComponent* H = MakeMesh(*HName.ToString(), SphereMesh);
+		H->SetupAttachment(BeamCore);
+		HelixOrbs.Add(H);
+	}
+
+	// Head shockwave ring
+	HeadRing = MakeMesh(TEXT("HeadRing"), CylinderMesh);
+	HeadRing->SetupAttachment(BeamCore);
+
 	HeadLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("HeadLight"));
 	HeadLight->SetupAttachment(BeamCore);
 	HeadLight->SetIntensity(55000.f);
@@ -85,34 +98,40 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 	switch (WeaponType)
 	{
 	case EWeaponType::Rifle:
-		CoreRadius = 0.25f; GlowRadius = 0.65f; TrailRadius = 0.12f;
-		CoronaRadius = 1.2f; HeadScale = 1.4f; BeamLength = 2800.f;
-		TravelSpeed = 80000.f; LightIntensity = 160000.f; FadeTime = 0.55f;
+		CoreRadius = 0.40f; GlowRadius = 1.0f; TrailRadius = 0.20f;
+		CoronaRadius = 2.0f; HeadScale = 2.0f; BeamLength = 3200.f;
+		TravelSpeed = 80000.f; LightIntensity = 200000.f; FadeTime = 0.55f;
+		HelixRadius = 60.f; HelixSpeed = 30.f;
 		break;
 	case EWeaponType::SMG:
-		CoreRadius = 0.18f; GlowRadius = 0.45f; TrailRadius = 0.08f;
-		CoronaRadius = 0.85f; HeadScale = 1.0f; BeamLength = 2000.f;
-		TravelSpeed = 95000.f; LightIntensity = 120000.f; FadeTime = 0.35f;
+		CoreRadius = 0.28f; GlowRadius = 0.70f; TrailRadius = 0.14f;
+		CoronaRadius = 1.3f; HeadScale = 1.4f; BeamLength = 2200.f;
+		TravelSpeed = 95000.f; LightIntensity = 150000.f; FadeTime = 0.35f;
+		HelixRadius = 40.f; HelixSpeed = 40.f;
 		break;
 	case EWeaponType::Pistol:
-		CoreRadius = 0.22f; GlowRadius = 0.55f; TrailRadius = 0.10f;
-		CoronaRadius = 1.0f; HeadScale = 1.2f; BeamLength = 2400.f;
-		TravelSpeed = 75000.f; LightIntensity = 140000.f; FadeTime = 0.45f;
+		CoreRadius = 0.35f; GlowRadius = 0.85f; TrailRadius = 0.16f;
+		CoronaRadius = 1.6f; HeadScale = 1.7f; BeamLength = 2800.f;
+		TravelSpeed = 75000.f; LightIntensity = 180000.f; FadeTime = 0.45f;
+		HelixRadius = 50.f; HelixSpeed = 32.f;
 		break;
 	case EWeaponType::Shotgun:
-		CoreRadius = 0.30f; GlowRadius = 0.80f; TrailRadius = 0.15f;
-		CoronaRadius = 1.5f; HeadScale = 1.6f; BeamLength = 1400.f;
-		TravelSpeed = 55000.f; LightIntensity = 200000.f; FadeTime = 0.30f;
+		CoreRadius = 0.50f; GlowRadius = 1.2f; TrailRadius = 0.25f;
+		CoronaRadius = 2.4f; HeadScale = 2.2f; BeamLength = 1600.f;
+		TravelSpeed = 55000.f; LightIntensity = 280000.f; FadeTime = 0.30f;
+		HelixRadius = 80.f; HelixSpeed = 22.f;
 		break;
 	case EWeaponType::Sniper:
-		CoreRadius = 0.28f; GlowRadius = 0.70f; TrailRadius = 0.18f;
-		CoronaRadius = 1.4f; HeadScale = 1.8f; BeamLength = 5000.f;
-		TravelSpeed = 120000.f; LightIntensity = 250000.f; FadeTime = 0.80f;
+		CoreRadius = 0.45f; GlowRadius = 1.1f; TrailRadius = 0.28f;
+		CoronaRadius = 2.2f; HeadScale = 2.5f; BeamLength = 5500.f;
+		TravelSpeed = 120000.f; LightIntensity = 350000.f; FadeTime = 0.80f;
+		HelixRadius = 70.f; HelixSpeed = 25.f;
 		break;
 	default:
-		CoreRadius = 0.25f; GlowRadius = 0.60f; TrailRadius = 0.12f;
-		CoronaRadius = 1.1f; HeadScale = 1.3f; BeamLength = 2600.f;
-		TravelSpeed = 70000.f; LightIntensity = 150000.f; FadeTime = 0.50f;
+		CoreRadius = 0.38f; GlowRadius = 0.95f; TrailRadius = 0.18f;
+		CoronaRadius = 1.8f; HeadScale = 1.8f; BeamLength = 3000.f;
+		TravelSpeed = 70000.f; LightIntensity = 190000.f; FadeTime = 0.50f;
+		HelixRadius = 55.f; HelixSpeed = 28.f;
 		break;
 	}
 
@@ -187,6 +206,27 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 		SparkMeshes[i]->SetMaterial(0, SM);
 	}
 
+	// Helix orbiters — weapon-colored plasma spheres that spiral around the bolt
+	for (int32 i = 0; i < NUM_HELIX; i++)
+	{
+		float OrbS = CoreRadius * 0.5f;
+		HelixOrbs[i]->SetRelativeScale3D(FVector(OrbS, OrbS, OrbS * 1.5f));
+		UMaterialInstanceDynamic* HM = UMaterialInstanceDynamic::Create(BaseMat, this);
+		FLinearColor HColor = GlowColor * 1.5f;
+		HM->SetVectorParameterValue(TEXT("BaseColor"), HColor);
+		HM->SetVectorParameterValue(TEXT("EmissiveColor"), HColor);
+		HelixOrbs[i]->SetMaterial(0, HM);
+	}
+
+	// Head shockwave ring — flat, expanding cylinder at bolt front
+	float RingS = HeadScale * 0.3f;
+	HeadRing->SetRelativeScale3D(FVector(RingS, RingS, 0.01f));
+	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+	FLinearColor RingColor = GlowColor * 0.8f;
+	RingMat->SetVectorParameterValue(TEXT("BaseColor"), RingColor);
+	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"), RingColor);
+	HeadRing->SetMaterial(0, RingMat);
+
 	// Lights — strong illumination that lights up the environment
 	HeadLight->SetLightColor(WeaponColor);
 	HeadLight->SetIntensity(LightIntensity);
@@ -204,134 +244,4 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 	Corona->SetRelativeScale3D(FVector(CoronaRadius, CoronaRadius, 0.01f));
 }
 
-void AExoTracer::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (!bReachedEnd)
-		UpdateTraveling(DeltaTime);
-	else
-		UpdateFading(DeltaTime);
-}
-
-void AExoTracer::UpdateTraveling(float DeltaTime)
-{
-	TraveledDist += TravelSpeed * DeltaTime;
-	if (TraveledDist >= TotalDistance)
-	{
-		TraveledDist = TotalDistance;
-		bReachedEnd = true;
-		FadeAge = 0.f;
-	}
-
-	float VisibleLen = FMath::Min(TraveledDist, BeamLength);
-	float TailDist = FMath::Max(TraveledDist - BeamLength, 0.f);
-	FVector HeadPos = StartPos + Direction * TraveledDist;
-	FVector TailPos = StartPos + Direction * TailDist;
-	SetActorLocation((HeadPos + TailPos) * 0.5f);
-
-	float LenScale = VisibleLen / 100.f;
-	float Time = GetWorld()->GetTimeSeconds();
-
-	// Multi-frequency flicker for organic energy bolt feel
-	float F1 = FMath::Sin(Time * 95.f) * 0.12f;
-	float F2 = FMath::Sin(Time * 61.f) * 0.08f;
-	float F3 = FMath::Sin(Time * 137.f) * 0.05f; // High freq shimmer
-	float CoreFlicker = 1.f + F1 + F2 + F3;
-
-	BeamCore->SetRelativeScale3D(FVector(
-		CoreRadius * CoreFlicker, CoreRadius * CoreFlicker, LenScale));
-
-	// Glow: slower organic pulse with breathing
-	float GlowPulse = 1.f + 0.18f * FMath::Sin(Time * 28.f)
-		+ 0.08f * FMath::Cos(Time * 47.f);
-	BeamGlow->SetRelativeScale3D(FVector(
-		GlowRadius * GlowPulse, GlowRadius * GlowPulse, LenScale * 0.95f));
-
-	// Corona: large soft outer halo with slow drift
-	float CoronaPulse = 1.f + 0.25f * FMath::Sin(Time * 18.f);
-	Corona->SetRelativeScale3D(FVector(
-		CoronaRadius * CoronaPulse, CoronaRadius * CoronaPulse, LenScale * 0.85f));
-
-	// Trail: extends further back
-	float TrailLen = FMath::Min(TraveledDist, BeamLength * 2.2f);
-	BeamTrail->SetRelativeScale3D(FVector(TrailRadius, TrailRadius, TrailLen / 100.f));
-
-	// Head: elongated energy ball at front, pulsing
-	float HeadHalf = VisibleLen * 0.5f;
-	float HeadPulse = HeadScale * (1.f + 0.25f * FMath::Sin(Time * 55.f));
-	HeadMesh->SetRelativeLocation(FVector(0.f, 0.f, HeadHalf));
-	HeadMesh->SetRelativeScale3D(FVector(
-		HeadPulse, HeadPulse * 0.65f, HeadPulse * 1.4f));
-
-	// Dynamic emissive pulses on core
-	float EmissivePulse = 1.f + 0.3f * FMath::Sin(Time * 70.f);
-	if (CoreMat)
-		CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), CoreColor * EmissivePulse);
-	if (GlowMat)
-	{
-		float GP = 1.f + 0.2f * FMath::Sin(Time * 40.f);
-		GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * GP);
-	}
-
-	// Lights: strong with flicker
-	float LightFlicker = 1.f + 0.2f * FMath::Sin(Time * 35.f)
-		+ 0.1f * FMath::Sin(Time * 73.f);
-	HeadLight->SetRelativeLocation(FVector(0.f, 0.f, HeadHalf));
-	HeadLight->SetIntensity(LightIntensity * LightFlicker);
-	TailLight->SetRelativeLocation(FVector(0.f, 0.f, -VisibleLen * 0.4f));
-
-	// Trailing sparks: scatter outward from the beam wake
-	for (int32 i = 0; i < SparkMeshes.Num(); i++)
-	{
-		SparkOffsets[i] += SparkVelocities[i] * DeltaTime;
-		// Position along the trailing half of the beam
-		float SparkZ = -VisibleLen * (0.2f + 0.15f * i);
-		SparkMeshes[i]->SetRelativeLocation(
-			FVector(SparkOffsets[i].X, SparkOffsets[i].Y, SparkZ));
-		// Tumble rotation
-		float R = Time * (200.f + i * 80.f);
-		SparkMeshes[i]->SetRelativeRotation(FRotator(R, R * 0.7f, R * 0.5f));
-	}
-}
-
-void AExoTracer::UpdateFading(float DeltaTime)
-{
-	FadeAge += DeltaTime;
-	float Alpha = 1.f - FMath::Clamp(FadeAge / FadeTime, 0.f, 1.f);
-	float AlphaSq = Alpha * Alpha;
-
-	HeadLight->SetIntensity(LightIntensity * AlphaSq);
-	TailLight->SetIntensity(LightIntensity * 0.35f * Alpha);
-
-	HeadMesh->SetRelativeScale3D(FVector(HeadScale * Alpha));
-
-	FVector CoreScale = BeamCore->GetRelativeScale3D();
-	float Z = CoreScale.Z;
-	BeamCore->SetRelativeScale3D(FVector(CoreRadius * Alpha, CoreRadius * Alpha, Z));
-	BeamGlow->SetRelativeScale3D(FVector(
-		GlowRadius * AlphaSq, GlowRadius * AlphaSq, Z * 0.95f));
-	Corona->SetRelativeScale3D(FVector(
-		CoronaRadius * AlphaSq * 0.5f, CoronaRadius * AlphaSq * 0.5f, Z * 0.8f));
-
-	// Trail lingers longest
-	float TrailAlpha = FMath::Clamp(Alpha * 1.8f, 0.f, 1.f);
-	FVector TS = BeamTrail->GetRelativeScale3D();
-	BeamTrail->SetRelativeScale3D(FVector(
-		TrailRadius * TrailAlpha, TrailRadius * TrailAlpha, TS.Z));
-
-	if (TrailMat)
-		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.4f * TrailAlpha);
-	if (CoronaMat)
-		CoronaMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			GlowColor * 0.15f * AlphaSq);
-
-	// Sparks scatter outward and fade
-	for (int32 i = 0; i < SparkMeshes.Num(); i++)
-	{
-		SparkOffsets[i] += SparkVelocities[i] * DeltaTime * 3.f;
-		float S = FMath::Max(0.01f, 0.03f * Alpha);
-		SparkMeshes[i]->SetRelativeScale3D(FVector(S, S * 0.4f, S * 2.f));
-	}
-
-	if (FadeAge >= FadeTime) Destroy();
-}
+// Tick, UpdateTraveling, UpdateFading are in ExoTracerTick.cpp

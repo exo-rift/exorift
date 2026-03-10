@@ -25,10 +25,10 @@ AExoProjectile::AExoProjectile()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
 		TEXT("/Engine/BasicShapes/Cylinder"));
-	// Core energy sphere — stretched along travel direction
+	// Core energy sphere — stretched along travel direction, larger for visibility
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(CollisionSphere);
-	ProjectileMesh->SetRelativeScale3D(FVector(0.9f, 0.5f, 0.5f));
+	ProjectileMesh->SetRelativeScale3D(FVector(1.4f, 0.8f, 0.8f));
 	ProjectileMesh->CastShadow = false;
 	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	if (SphereFinder.Succeeded()) ProjectileMesh->SetStaticMesh(SphereFinder.Object);
@@ -36,7 +36,7 @@ AExoProjectile::AExoProjectile()
 	// Outer glow — large soft halo sphere
 	OuterGlow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OuterGlow"));
 	OuterGlow->SetupAttachment(CollisionSphere);
-	OuterGlow->SetRelativeScale3D(FVector(1.6f, 1.0f, 1.0f));
+	OuterGlow->SetRelativeScale3D(FVector(2.8f, 1.8f, 1.8f));
 	OuterGlow->CastShadow = false;
 	OuterGlow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	OuterGlow->SetGenerateOverlapEvents(false);
@@ -45,48 +45,48 @@ AExoProjectile::AExoProjectile()
 	// Trail wake — cylinder stretching behind the projectile
 	TrailWake = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrailWake"));
 	TrailWake->SetupAttachment(CollisionSphere);
-	TrailWake->SetRelativeLocation(FVector(-300.f, 0.f, 0.f));
+	TrailWake->SetRelativeLocation(FVector(-400.f, 0.f, 0.f));
 	TrailWake->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
-	TrailWake->SetRelativeScale3D(FVector(0.15f, 0.15f, 6.f));
+	TrailWake->SetRelativeScale3D(FVector(0.25f, 0.25f, 8.f));
 	TrailWake->CastShadow = false;
 	TrailWake->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TrailWake->SetGenerateOverlapEvents(false);
 	if (CylFinder.Succeeded()) TrailWake->SetStaticMesh(CylFinder.Object);
 
-	// Dynamic materials — energy glow overlays (additive, unlit)
+	// Dynamic materials — extreme emissive for massive bloom and visibility
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 	if (EmissiveMat)
 	{
 		ProjectileMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(25.f, 10.f, 2.5f));
+			FLinearColor(60.f, 24.f, 6.f));
 		ProjectileMesh->SetMaterial(0, ProjectileMat);
 
 		OuterGlowMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		OuterGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(8.f, 3.f, 0.8f));
+			FLinearColor(18.f, 7.f, 2.f));
 		OuterGlow->SetMaterial(0, OuterGlowMat);
 
 		TrailMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(5.f, 2.f, 0.5f));
+			FLinearColor(12.f, 5.f, 1.2f));
 		TrailWake->SetMaterial(0, TrailMat);
 	}
 
-	// Main glow light — intense, far-reaching
+	// Main glow light — intense, far-reaching for dramatic environment lighting
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
 	GlowLight->SetupAttachment(CollisionSphere);
-	GlowLight->SetIntensity(80000.f);
-	GlowLight->SetAttenuationRadius(2500.f);
+	GlowLight->SetIntensity(200000.f);
+	GlowLight->SetAttenuationRadius(4000.f);
 	GlowLight->SetLightColor(FLinearColor(1.f, 0.4f, 0.1f));
 	GlowLight->CastShadows = false;
 
 	// Trail light — follows behind
 	TrailLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("TrailLight"));
 	TrailLight->SetupAttachment(CollisionSphere);
-	TrailLight->SetRelativeLocation(FVector(-400.f, 0.f, 0.f));
-	TrailLight->SetIntensity(35000.f);
-	TrailLight->SetAttenuationRadius(1200.f);
+	TrailLight->SetRelativeLocation(FVector(-500.f, 0.f, 0.f));
+	TrailLight->SetIntensity(80000.f);
+	TrailLight->SetAttenuationRadius(2500.f);
 	TrailLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
 	TrailLight->CastShadows = false;
 
@@ -108,17 +108,17 @@ void AExoProjectile::SetProjectileColor(const FLinearColor& Color)
 	if (ProjectileMat)
 	{
 		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 12.f, Color.G * 12.f, Color.B * 12.f));
+			FLinearColor(Color.R * 60.f, Color.G * 60.f, Color.B * 60.f));
 	}
 	if (OuterGlowMat)
 	{
 		OuterGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 18.f, Color.G * 18.f, Color.B * 18.f));
 	}
 	if (TrailMat)
 	{
 		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+			FLinearColor(Color.R * 12.f, Color.G * 12.f, Color.B * 12.f));
 	}
 	if (GlowLight) GlowLight->SetLightColor(Color);
 	if (TrailLight) TrailLight->SetLightColor(Color);
@@ -138,8 +138,8 @@ void AExoProjectile::Tick(float DeltaTime)
 
 	if (GlowLight)
 	{
-		GlowLight->SetIntensity(80000.f * Flicker);
-		float WhiteShift = FMath::Max(0.f, Flicker - 1.15f) * 6.f;
+		GlowLight->SetIntensity(200000.f * Flicker);
+		float WhiteShift = FMath::Max(0.f, Flicker - 1.15f) * 8.f;
 		GlowLight->SetLightColor(FLinearColor(
 			GlowColor.R + WhiteShift,
 			GlowColor.G + WhiteShift * 0.5f,
@@ -147,13 +147,13 @@ void AExoProjectile::Tick(float DeltaTime)
 	}
 	if (TrailLight)
 	{
-		TrailLight->SetIntensity(35000.f * (0.7f + 0.3f * Flicker));
+		TrailLight->SetIntensity(80000.f * (0.7f + 0.3f * Flicker));
 	}
 
 	// Pulsing emissive with high-frequency shimmer
 	if (ProjectileMat)
 	{
-		float Em = (16.f + 8.f * FMath::Sin(Time * 18.f))
+		float Em = (40.f + 20.f * FMath::Sin(Time * 18.f))
 			* (1.f + 0.3f * FMath::Sin(Time * 55.f));
 		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(GlowColor.R * Em, GlowColor.G * Em, GlowColor.B * Em));
@@ -162,7 +162,7 @@ void AExoProjectile::Tick(float DeltaTime)
 	// Outer glow breathes
 	if (OuterGlowMat)
 	{
-		float OG = 5.f + 3.f * FMath::Sin(Time * 12.f);
+		float OG = 12.f + 6.f * FMath::Sin(Time * 12.f);
 		OuterGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(GlowColor.R * OG, GlowColor.G * OG, GlowColor.B * OG));
 	}
@@ -170,28 +170,28 @@ void AExoProjectile::Tick(float DeltaTime)
 	// Trail emissive fades toward tail
 	if (TrailMat)
 	{
-		float TE = 3.f + 1.5f * FMath::Sin(Time * 20.f);
+		float TE = 8.f + 4.f * FMath::Sin(Time * 20.f);
 		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(GlowColor.R * TE, GlowColor.G * TE, GlowColor.B * TE));
 	}
 
-	// Wobble — unstable warhead
-	float Wx = 1.f + 0.10f * FMath::Sin(Time * 30.f);
-	float Wy = 1.f + 0.10f * FMath::Sin(Time * 30.f + 2.1f);
-	float Wz = 1.f + 0.08f * FMath::Sin(Time * 35.f + 4.2f);
+	// Wobble — unstable warhead, more dramatic deformation
+	float Wx = 1.f + 0.15f * FMath::Sin(Time * 30.f);
+	float Wy = 1.f + 0.15f * FMath::Sin(Time * 30.f + 2.1f);
+	float Wz = 1.f + 0.12f * FMath::Sin(Time * 35.f + 4.2f);
 	if (ProjectileMesh)
-		ProjectileMesh->SetRelativeScale3D(FVector(0.9f * Wx, 0.5f * Wy, 0.5f * Wz));
+		ProjectileMesh->SetRelativeScale3D(FVector(1.4f * Wx, 0.8f * Wy, 0.8f * Wz));
 	if (OuterGlow)
 	{
-		float GP = 1.f + 0.12f * FMath::Sin(Time * 15.f);
-		OuterGlow->SetRelativeScale3D(FVector(1.6f * GP, 1.0f * GP, 1.0f * GP));
+		float GP = 1.f + 0.18f * FMath::Sin(Time * 15.f);
+		OuterGlow->SetRelativeScale3D(FVector(2.8f * GP, 1.8f * GP, 1.8f * GP));
 	}
 
 	// Trail stretches with speed variation
 	if (TrailWake)
 	{
-		float TrailStretch = 6.f + 2.f * Flicker;
-		TrailWake->SetRelativeScale3D(FVector(0.12f * Flicker, 0.12f * Flicker, TrailStretch));
+		float TrailStretch = 8.f + 3.f * Flicker;
+		TrailWake->SetRelativeScale3D(FVector(0.2f * Flicker, 0.2f * Flicker, TrailStretch));
 	}
 }
 

@@ -311,8 +311,7 @@ void AExoWeatherSystem::SpawnRainParticles(float DeltaTime)
 		RainDrops.Add(Drop);
 	}
 
-	// Update & remove dead drops (rain is purely visual via debug draw for now,
-	// but the positions are tracked for splash effects on the ground)
+	// Update & remove dead drops
 	for (int32 i = RainDrops.Num() - 1; i >= 0; --i)
 	{
 		FRainDrop& D = RainDrops[i];
@@ -324,6 +323,9 @@ void AExoWeatherSystem::SpawnRainParticles(float DeltaTime)
 			RainDrops.RemoveAtSwap(i);
 		}
 	}
+
+	// Render rain drops as mesh streaks
+	UpdateRainMeshes();
 }
 
 // ---------------------------------------------------------------------------
