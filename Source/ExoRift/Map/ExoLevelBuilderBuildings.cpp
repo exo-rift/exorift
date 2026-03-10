@@ -18,6 +18,30 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	float HalfY = Size.Y * 0.5f;
 	float HalfZ = Size.Z * 0.5f;
 
+	// Derive accent color from building position for compound-specific identity
+	FLinearColor AccentGlow(0.1f, 0.5f, 1.2f); // Default: blue
+	FLinearColor WinGlow(0.06f, 0.15f, 0.35f);
+	if (Center.Y > 40000.f)
+	{	// North compound — amber industrial
+		AccentGlow = FLinearColor(1.2f, 0.6f, 0.12f);
+		WinGlow = FLinearColor(0.3f, 0.15f, 0.04f);
+	}
+	else if (Center.Y < -40000.f)
+	{	// South compound — teal research
+		AccentGlow = FLinearColor(0.15f, 1.0f, 0.7f);
+		WinGlow = FLinearColor(0.04f, 0.25f, 0.18f);
+	}
+	else if (Center.X > 40000.f)
+	{	// East compound — red power
+		AccentGlow = FLinearColor(1.2f, 0.25f, 0.15f);
+		WinGlow = FLinearColor(0.3f, 0.06f, 0.04f);
+	}
+	else if (Center.X < -40000.f)
+	{	// West compound — green military
+		AccentGlow = FLinearColor(0.2f, 1.0f, 0.3f);
+		WinGlow = FLinearColor(0.05f, 0.25f, 0.08f);
+	}
+
 	// Floor
 	SpawnStaticMesh(Center + FVector(0.f, 0.f, 10.f),
 		FVector(Size.X / 100.f, Size.Y / 100.f, 0.2f), Rot, CubeMesh,
@@ -95,11 +119,11 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	{
 		UStaticMeshComponent* S = SpawnStaticMesh(
 			Center + Rot.RotateVector(Offset), Scale, Rot, CubeMesh,
-			FLinearColor(0.05f, 0.15f, 0.3f));
+			FLinearColor(AccentGlow.R * 0.1f, AccentGlow.G * 0.1f, AccentGlow.B * 0.1f));
 		if (S && StripMat)
 		{
 			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripMat, this);
-			SM->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.1f, 0.5f, 1.2f));
+			SM->SetVectorParameterValue(TEXT("EmissiveColor"), AccentGlow);
 			S->SetMaterial(0, SM);
 		}
 	};
@@ -167,12 +191,11 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 			UStaticMeshComponent* WC = SpawnStaticMesh(
 				Center + Rot.RotateVector(FVector(WX, Side, WinZ)),
 				FVector(0.8f, 0.015f, 0.6f), Rot, CubeMesh,
-				FLinearColor(0.03f, 0.06f, 0.12f));
+				FLinearColor(WinGlow.R * 0.5f, WinGlow.G * 0.5f, WinGlow.B * 0.5f));
 			if (WC && WinMat)
 			{
 				UMaterialInstanceDynamic* WM = UMaterialInstanceDynamic::Create(WinMat, this);
-				WM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(0.06f, 0.15f, 0.35f));
+				WM->SetVectorParameterValue(TEXT("EmissiveColor"), WinGlow);
 				WC->SetMaterial(0, WM);
 			}
 		}
@@ -185,7 +208,6 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 		AExoAutoSlidingDoor::StaticClass(), DoorPos, Rot);
 	if (Door)
 	{
-		Door->InitDoor(DoorHalf * 2.f, DoorH, DoorHalf * 0.9f,
-			FLinearColor(0.1f, 0.5f, 1.f));
+		Door->InitDoor(DoorHalf * 2.f, DoorH, DoorHalf * 0.9f, AccentGlow);
 	}
 }
