@@ -1,5 +1,6 @@
 // ExoTracer.cpp — Dramatic sci-fi energy bolt with corona, sparks, and lighting
 #include "Visual/ExoTracer.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -131,10 +132,8 @@ void AExoTracer::InitTracer(const FVector& Start, const FVector& End, bool bIsHi
 		WeaponColor.G * 45.f,
 		WeaponColor.B * 45.f);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
+	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!BaseMat) return;
 
 	// Core — blazing white-hot center
 	CoreMat = UMaterialInstanceDynamic::Create(BaseMat, this);

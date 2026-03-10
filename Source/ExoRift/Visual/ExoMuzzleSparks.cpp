@@ -1,5 +1,6 @@
 // ExoMuzzleSparks.cpp — Energy discharge sparks from weapon muzzle
 #include "Visual/ExoMuzzleSparks.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -66,9 +67,8 @@ void AExoMuzzleSparks::InitSparks(const FRotator& FireDir, const FLinearColor& C
 		break;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFind.Succeeded()) return;
+	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!BaseMat) return;
 
 	FLinearColor SparkCol(
 		Color.R * 60.f + 10.f,
@@ -87,10 +87,8 @@ void AExoMuzzleSparks::InitSparks(const FRotator& FireDir, const FLinearColor& C
 		float S = SparkSize * FMath::RandRange(0.6f, 1.4f);
 		SparkMeshes[i]->SetWorldScale3D(FVector(S * 3.f, S * 0.5f, S * 0.5f));
 
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFind.Object, this);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 		FLinearColor SC = SparkCol * FMath::RandRange(0.6f, 1.2f);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), SC);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), SC);
 		SparkMeshes[i]->SetMaterial(0, Mat);
 	}

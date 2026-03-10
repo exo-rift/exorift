@@ -106,6 +106,9 @@ private:
 	void PlaceDrones();
 	void PlaceSteamVents();
 
+	// --- POIs / landmarks (in ExoLevelBuilderPOIs.cpp) ---
+	void PlacePOIs();
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

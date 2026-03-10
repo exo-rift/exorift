@@ -1,5 +1,6 @@
 // ExoTracerWake.cpp — Lingering energy droplets in tracer wake
 #include "Visual/ExoTracerWake.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -41,15 +42,12 @@ void AExoTracerWake::InitWake(const FLinearColor& Color, float Scale)
 	BaseColor = Color;
 	BaseScale = Scale;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
+	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!BaseMat) return;
 
 	// Core dot — bright emissive
 	DotMat = UMaterialInstanceDynamic::Create(BaseMat, this);
 	FLinearColor Emissive(Color.R * 50.f, Color.G * 50.f, Color.B * 50.f);
-	DotMat->SetVectorParameterValue(TEXT("BaseColor"), Emissive);
 	DotMat->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 	DotMesh->SetMaterial(0, DotMat);
 	DotMesh->SetRelativeScale3D(FVector(Scale));
@@ -57,7 +55,6 @@ void AExoTracerWake::InitWake(const FLinearColor& Color, float Scale)
 	// Halo — larger, softer glow
 	HaloMat = UMaterialInstanceDynamic::Create(BaseMat, this);
 	FLinearColor HaloCol(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f);
-	HaloMat->SetVectorParameterValue(TEXT("BaseColor"), HaloCol);
 	HaloMat->SetVectorParameterValue(TEXT("EmissiveColor"), HaloCol);
 	HaloMesh->SetMaterial(0, HaloMat);
 	HaloMesh->SetRelativeScale3D(FVector(3.5f));

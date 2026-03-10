@@ -43,5 +43,4 @@ private:
 	float Phase = 0.f;
 
 	UStaticMesh* SphereMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

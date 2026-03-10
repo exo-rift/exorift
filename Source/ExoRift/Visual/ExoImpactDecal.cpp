@@ -1,4 +1,5 @@
 #include "Visual/ExoImpactDecal.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -39,24 +40,26 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 	float S = FMath::RandRange(0.10f, 0.20f);
 	ScorchMesh->SetRelativeScale3D(FVector(S, S, 0.005f));
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
+	// Dark scorch mark (opaque PBR)
+	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (BasicMat)
+	{
+		UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.02f, 0.02f, 0.02f, 1.f));
+		ScorchMesh->SetMaterial(0, ScorchMat);
+	}
 
-	// Dark scorch mark
-	UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(
-		MatFinder.Object, this);
-	ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
-		FLinearColor(0.02f, 0.02f, 0.02f, 1.f));
-	ScorchMesh->SetMaterial(0, ScorchMat);
-
-	// Glowing ring (weapon color, bright for bloom)
-	UMaterialInstanceDynamic* GlowMat = UMaterialInstanceDynamic::Create(
-		MatFinder.Object, this);
-	FLinearColor GlowCol(Color.R * 20.f, Color.G * 20.f, Color.B * 20.f, 1.f);
-	GlowMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
-	GlowRing->SetMaterial(0, GlowMat);
+	// Glowing ring (emissive additive for bloom)
+	UMaterialInterface* GlowBaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (GlowBaseMat)
+	{
+		UMaterialInstanceDynamic* GlowMat = UMaterialInstanceDynamic::Create(GlowBaseMat, this);
+		FLinearColor GlowCol(Color.R * 20.f, Color.G * 20.f, Color.B * 20.f, 1.f);
+		GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
+		GlowRing->SetMaterial(0, GlowMat);
+	}
 }
 
 void AExoImpactDecal::Tick(float DeltaTime)

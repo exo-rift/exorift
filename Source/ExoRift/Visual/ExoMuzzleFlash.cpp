@@ -1,5 +1,6 @@
 // ExoMuzzleFlash.cpp — Dramatic weapon flash with halo ring and dual lights
 #include "Visual/ExoMuzzleFlash.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -105,15 +106,12 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 		WeaponColor.G * 45.f,
 		WeaponColor.B * 45.f);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFinder.Succeeded())
+	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (BaseMat)
 	{
 		auto ApplyMat = [&](UStaticMeshComponent* Mesh, const FLinearColor& Col)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-				MatFinder.Object, this);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Col);
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
 			Mesh->SetMaterial(0, Mat);
 		};

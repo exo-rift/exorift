@@ -1,4 +1,5 @@
 #include "Visual/ExoWeaponViewModel.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoFPArms.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -98,9 +99,14 @@ UStaticMeshComponent* UExoWeaponViewModel::AddBarrelPart(const FVector& Offset,
 	UStaticMeshComponent* Part = AddPart(Offset, Scale, Color, Mesh);
 	if (Part)
 	{
-		UMaterialInstanceDynamic* Mat = Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0));
-		if (Mat)
+		// Use LitEmissive material so EmissiveColor actually works for heat glow
+		UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+		if (LitMat)
 		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, GetOwner());
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Part->SetMaterial(0, Mat);
 			BarrelMats.Add(Mat);
 			BarrelBaseColors.Add(Color);
 		}

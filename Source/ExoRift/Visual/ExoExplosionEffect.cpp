@@ -1,5 +1,6 @@
 // ExoExplosionEffect.cpp — Fireball, shockwave ring, flash, debris
 #include "Visual/ExoExplosionEffect.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoScreenShake.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -104,49 +105,48 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 
 	BaseIntensity = ExplosionLight->Intensity;
 
-	// Fireball material — hot orange-red with emissive
-	UMaterialInterface* BaseMat = FireballMesh->GetMaterial(0);
-	if (BaseMat)
+	// Energy elements use emissive additive material
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+
+	if (EmissiveMat)
 	{
-		UMaterialInstanceDynamic* FBMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		FBMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.4f, 0.08f));
+		// Fireball — hot orange-red emissive
+		UMaterialInstanceDynamic* FBMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(18.f, 7.f, 1.2f));
 		FireballMesh->SetMaterial(0, FBMat);
 
 		// Inner flash — white-hot
-		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		FlashMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(1.f, 0.95f, 0.7f));
+		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(40.f, 35.f, 25.f));
 		InnerFlashMesh->SetMaterial(0, FlashMat);
 
 		// Shockwave — cyan-white
-		UMaterialInstanceDynamic* SwMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		SwMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.6f, 0.8f, 1.f));
+		UMaterialInstanceDynamic* SwMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		SwMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(8.f, 10.f, 15.f));
 		ShockwaveRing->SetMaterial(0, SwMat);
 
-		// Ground scorch — dark burn mark
+		// Ground scorch — subtle ember glow
 		if (ScorchMark)
 		{
-			UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-			ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.015f, 0.012f, 0.01f));
+			UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 			ScorchMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.3f, 0.08f, 0.02f));
 			ScorchMark->SetMaterial(0, ScorchMat);
 		}
+	}
 
-		// Smoke column — dark translucent rising pillar
-		if (SmokeColumn)
-		{
-			UMaterialInstanceDynamic* SmokeMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-			SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.06f, 0.05f, 0.04f));
-			SmokeColumn->SetMaterial(0, SmokeMat);
-		}
+	// Smoke column — opaque dark (no glow)
+	if (BasicMat && SmokeColumn)
+	{
+		UMaterialInstanceDynamic* SmokeMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.06f, 0.05f, 0.04f));
+		SmokeColumn->SetMaterial(0, SmokeMat);
 	}
 
 	// Screen shake

@@ -1,5 +1,6 @@
 // ExoImpactEffect.cpp — Dramatic energy impact burst with shockwave ring
 #include "Visual/ExoImpactEffect.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -108,24 +109,26 @@ void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter
 	FlashLight->SetIntensity(180000.f);
 	BaseIntensity = FlashLight->Intensity;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!EmissiveMat) return;
 
 	auto MakeMat = [&](const FLinearColor& Col) -> UMaterialInstanceDynamic*
 	{
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		M->SetVectorParameterValue(TEXT("BaseColor"), Col);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
 		return M;
 	};
 
 	CoreMesh->SetMaterial(0, MakeMat(SparkColor * 2.f));
 
-	UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(
-		MatFinder.Object, this);
-	DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
-	DustPuff->SetMaterial(0, DustMat);
+	UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (BasicMat)
+	{
+		UMaterialInstanceDynamic* DustMat = UMaterialInstanceDynamic::Create(BasicMat, this);
+		DustMat->SetVectorParameterValue(TEXT("BaseColor"), DustColor);
+		DustPuff->SetMaterial(0, DustMat);
+	}
 
 	// Shockwave ring aligned to hit normal
 	ShockwaveRing->SetMaterial(0, MakeMat(RingColor));

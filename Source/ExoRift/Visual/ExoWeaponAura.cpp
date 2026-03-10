@@ -1,5 +1,6 @@
 // ExoWeaponAura.cpp — Animated rarity glow on weapons
 #include "Visual/ExoWeaponAura.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -12,10 +13,6 @@ UExoWeaponAura::UExoWeaponAura()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphF(
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphF.Succeeded()) SphereMesh = SphF.Object;
-
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterial = MatF.Object;
 }
 
 void UExoWeaponAura::InitAura(EWeaponRarity InRarity, const FLinearColor& RarityColor)
@@ -29,7 +26,8 @@ void UExoWeaponAura::InitAura(EWeaponRarity InRarity, const FLinearColor& Rarity
 	default: ActiveOrbs = 0; break;
 	}
 
-	if (ActiveOrbs == 0 || !SphereMesh || !BaseMaterial) return;
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (ActiveOrbs == 0 || !SphereMesh || !EmissiveMat) return;
 
 	for (int32 i = 0; i < ActiveOrbs; i++)
 	{
@@ -41,9 +39,7 @@ void UExoWeaponAura::InitAura(EWeaponRarity InRarity, const FLinearColor& Rarity
 		Orbs[i]->CastShadow = false;
 		Orbs[i]->RegisterComponent();
 
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
-		Mat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(RarityColor.R * 0.5f, RarityColor.G * 0.5f, RarityColor.B * 0.5f));
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * 25.f, RarityColor.G * 25.f, RarityColor.B * 25.f));
 		Orbs[i]->SetMaterial(0, Mat);

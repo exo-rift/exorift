@@ -1,5 +1,6 @@
 // ExoEnergyRibbon.cpp — Persistent glowing contrail left by energy tracers
 #include "Visual/ExoEnergyRibbon.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -45,9 +46,8 @@ void AExoEnergyRibbon::InitRibbon(const FVector& Start, const FVector& End,
 
 	float SegLen = TotalLen / NUM_SEGMENTS;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatF.Succeeded()) return;
+	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!BaseMat) return;
 
 	SegmentDrifts.SetNum(NUM_SEGMENTS);
 
@@ -78,8 +78,7 @@ void AExoEnergyRibbon::InitRibbon(const FVector& Start, const FVector& End,
 			Color.G * Brightness + 5.f,
 			Color.B * Brightness + 5.f);
 
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MatF.Object, this);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), SegColor);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), SegColor);
 		Segments[i]->SetMaterial(0, Mat);
 		SegmentMats.Add(Mat);
