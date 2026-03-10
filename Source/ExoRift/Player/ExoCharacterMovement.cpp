@@ -205,7 +205,22 @@ void AExoCharacter::TickFootsteps(float DeltaTime)
 		FootstepTimer = FootstepInterval;
 		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 		{
-			Audio->PlayFootstepSound(GetActorLocation(), bIsSprinting);
+			// Detect surface type via downward trace
+			EFootstepSurface Surface = EFootstepSurface::Concrete;
+			FVector FootLoc = GetActorLocation();
+			FHitResult FootHit;
+			FCollisionQueryParams FParams;
+			FParams.AddIgnoredActor(this);
+			if (GetWorld()->LineTraceSingleByChannel(FootHit,
+				FootLoc, FootLoc - FVector(0.f, 0.f, 200.f), ECC_Visibility, FParams))
+			{
+				float HitZ = FootHit.ImpactPoint.Z;
+				// Above ground level = on a structure (metal)
+				if (HitZ > 100.f) Surface = EFootstepSurface::Metal;
+				// Below ground level = in water channel
+				else if (HitZ < -50.f) Surface = EFootstepSurface::Water;
+			}
+			Audio->PlayFootstepSound(FootLoc, bIsSprinting, Surface);
 		}
 	}
 }

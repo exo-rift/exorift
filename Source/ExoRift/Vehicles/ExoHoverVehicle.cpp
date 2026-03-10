@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
@@ -78,6 +79,92 @@ AExoHoverVehicle::AExoHoverVehicle()
 	EngineGlowR->SetAttenuationRadius(300.f);
 	EngineGlowR->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
 	EngineGlowR->CastShadows = false;
+
+	// Headlights — forward-facing spotlights
+	HeadlightL = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightL"));
+	HeadlightL->SetupAttachment(VehicleMesh);
+	HeadlightL->SetRelativeLocation(FVector(90.f, -30.f, 5.f));
+	HeadlightL->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
+	HeadlightL->SetIntensity(80000.f);
+	HeadlightL->SetOuterConeAngle(30.f);
+	HeadlightL->SetInnerConeAngle(15.f);
+	HeadlightL->SetAttenuationRadius(5000.f);
+	HeadlightL->SetLightColor(FLinearColor(0.9f, 0.95f, 1.f));
+	HeadlightL->CastShadows = false;
+
+	HeadlightR = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightR"));
+	HeadlightR->SetupAttachment(VehicleMesh);
+	HeadlightR->SetRelativeLocation(FVector(90.f, 30.f, 5.f));
+	HeadlightR->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
+	HeadlightR->SetIntensity(80000.f);
+	HeadlightR->SetOuterConeAngle(30.f);
+	HeadlightR->SetInnerConeAngle(15.f);
+	HeadlightR->SetAttenuationRadius(5000.f);
+	HeadlightR->SetLightColor(FLinearColor(0.9f, 0.95f, 1.f));
+	HeadlightR->CastShadows = false;
+
+	// Body detail — windshield visor, side panels, rear fin
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
+		TEXT("/Engine/BasicShapes/Cube"));
+	if (CubeFinder.Succeeded())
+	{
+		Windshield = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Windshield"));
+		Windshield->SetupAttachment(VehicleMesh);
+		Windshield->SetStaticMesh(CubeFinder.Object);
+		Windshield->SetRelativeLocation(FVector(40.f, 0.f, 20.f));
+		Windshield->SetRelativeScale3D(FVector(0.2f, 0.6f, 0.01f));
+		Windshield->SetRelativeRotation(FRotator(30.f, 0.f, 0.f));
+		Windshield->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Windshield->CastShadow = false;
+
+		SidePanelL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SidePanelL"));
+		SidePanelL->SetupAttachment(VehicleMesh);
+		SidePanelL->SetStaticMesh(CubeFinder.Object);
+		SidePanelL->SetRelativeLocation(FVector(0.f, -55.f, 5.f));
+		SidePanelL->SetRelativeScale3D(FVector(0.8f, 0.02f, 0.12f));
+		SidePanelL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		SidePanelL->CastShadow = false;
+
+		SidePanelR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SidePanelR"));
+		SidePanelR->SetupAttachment(VehicleMesh);
+		SidePanelR->SetStaticMesh(CubeFinder.Object);
+		SidePanelR->SetRelativeLocation(FVector(0.f, 55.f, 5.f));
+		SidePanelR->SetRelativeScale3D(FVector(0.8f, 0.02f, 0.12f));
+		SidePanelR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		SidePanelR->CastShadow = false;
+
+		RearFin = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RearFin"));
+		RearFin->SetupAttachment(VehicleMesh);
+		RearFin->SetStaticMesh(CubeFinder.Object);
+		RearFin->SetRelativeLocation(FVector(-75.f, 0.f, 25.f));
+		RearFin->SetRelativeScale3D(FVector(0.15f, 0.01f, 0.2f));
+		RearFin->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		RearFin->CastShadow = false;
+	}
+
+	// Hover dust cloud meshes (scaled spheres underneath)
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphFinder(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	if (SphFinder.Succeeded())
+	{
+		HoverDustL = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HoverDustL"));
+		HoverDustL->SetupAttachment(VehicleMesh);
+		HoverDustL->SetStaticMesh(SphFinder.Object);
+		HoverDustL->SetRelativeLocation(FVector(-40.f, -30.f, -80.f));
+		HoverDustL->SetRelativeScale3D(FVector(0.01f));
+		HoverDustL->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HoverDustL->CastShadow = false;
+		HoverDustL->SetVisibility(false);
+
+		HoverDustR = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HoverDustR"));
+		HoverDustR->SetupAttachment(VehicleMesh);
+		HoverDustR->SetStaticMesh(SphFinder.Object);
+		HoverDustR->SetRelativeLocation(FVector(-40.f, 30.f, -80.f));
+		HoverDustR->SetRelativeScale3D(FVector(0.01f));
+		HoverDustR->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HoverDustR->CastShadow = false;
+		HoverDustR->SetVisibility(false);
+	}
 
 	CurrentBoostEnergy = BoostEnergy;
 

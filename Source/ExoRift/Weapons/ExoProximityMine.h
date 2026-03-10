@@ -6,6 +6,8 @@
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 class AExoCharacter;
 
 UENUM(BlueprintType)
@@ -73,9 +75,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Mine")
 	float MaxLifetime = 60.f;
 
+	void BuildMineVisuals();
+	void UpdateMineVFX(float DeltaTime);
+
 	EProximityMineState MineState = EProximityMineState::Deploying;
 	float StateTimer = 0.f;
 	float LifetimeTimer = 0.f;
 	bool bPulseOn = false;
 	float PulseTimer = 0.f;
+
+	// VFX components
+	UPROPERTY()
+	UStaticMeshComponent* Antenna = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* LEDMesh = nullptr;
+	UPROPERTY()
+	UPointLightComponent* StatusLight = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* BodyDynMat = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* LEDDynMat = nullptr;
 };

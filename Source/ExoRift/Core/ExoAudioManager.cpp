@@ -172,16 +172,48 @@ void UExoAudioManager::PlayDefeatStinger()
 // Spatial sounds
 // ---------------------------------------------------------------------------
 
-void UExoAudioManager::PlayFootstepSound(const FVector& Location, bool bIsSprinting)
+void UExoAudioManager::PlayFootstepSound(const FVector& Location, bool bIsSprinting,
+	EFootstepSurface Surface)
 {
 	if (!WeaponFireSound) return;
 
 	float Volume = bIsSprinting ? 0.25f : 0.12f;
-	// Very low pitch for thuddy footstep feel
-	float Pitch = bIsSprinting ? 0.3f : 0.35f;
-	// Add slight random variation
+	float Pitch;
+
+	switch (Surface)
+	{
+	case EFootstepSurface::Metal:
+		// Higher, sharper metallic clank
+		Pitch = bIsSprinting ? 0.55f : 0.6f;
+		Volume *= 1.2f;
+		break;
+	case EFootstepSurface::Water:
+		// Low muffled splash
+		Pitch = bIsSprinting ? 0.2f : 0.22f;
+		Volume *= 1.5f;
+		break;
+	default: // Concrete
+		Pitch = bIsSprinting ? 0.3f : 0.35f;
+		break;
+	}
+
 	Pitch += FMath::RandRange(-0.03f, 0.03f);
 	UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, Volume, Pitch);
+
+	// Layer a secondary tap for metal surfaces (double-click feel)
+	if (Surface == EFootstepSurface::Metal)
+	{
+		float Delay = FMath::RandRange(0.02f, 0.05f);
+		float SecPitch = Pitch + FMath::RandRange(0.1f, 0.2f);
+		float SecVol = Volume * 0.4f;
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(Handle, [this, Location, SecVol, SecPitch]()
+		{
+			if (WeaponFireSound)
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound,
+					Location, SecVol, SecPitch);
+		}, Delay, false);
+	}
 }
 
 void UExoAudioManager::PlayWeaponFireSound(USoundBase* Sound, const FVector& Location, float Volume)

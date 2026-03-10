@@ -295,3 +295,13 @@ void AExoHUD::DrawSupplyDropAnnouncement()
 
 	if (T <= 0.f) GS->SupplyDropAnnouncement.Empty();
 }
+
+void AExoHUD::DrawLocationBanner()
+{
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
+	if (!Char) return;
+
+	float DT = GetWorld()->GetDeltaSeconds();
+	FExoLocationNames::Tick(DT, Char->GetActorLocation());
+	FExoLocationNames::Draw(this, Canvas, HUDFont);
+}

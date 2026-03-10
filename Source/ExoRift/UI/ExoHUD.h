@@ -9,6 +9,7 @@
 #include "UI/ExoScoreboard.h"
 #include "UI/ExoCompass.h"
 #include "UI/ExoNotificationSystem.h"
+#include "UI/ExoLocationNames.h"
 #include "ExoHUD.generated.h"
 
 UCLASS()
@@ -54,6 +55,7 @@ protected:
 	void DrawMatchTimer();
 	void DrawZoneTimer();
 	void DrawVehicleHUD();
+	void DrawLocationBanner();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;

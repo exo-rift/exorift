@@ -86,6 +86,12 @@ private:
 	void SpawnEnergyConduit(const FVector& Start, const FVector& End, const FLinearColor& Color);
 	void SpawnNeonTube(const FVector& Pos, const FVector& Scale, float Yaw, const FLinearColor& Color);
 
+	// --- Catwalks & vertical gameplay (in ExoLevelBuilderCatwalks.cpp) ---
+	void BuildCatwalks();
+	void SpawnCatwalk(const FVector& Start, const FVector& End, float Width);
+	void SpawnObservationDeck(const FVector& Center, float Radius, float Yaw);
+	void SpawnZiplineAnchor(const FVector& Top);
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

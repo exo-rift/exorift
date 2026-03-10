@@ -9,6 +9,7 @@ class UCameraComponent;
 class USphereComponent;
 class USpringArmComponent;
 class UPointLightComponent;
+class USpotLightComponent;
 class UMaterialInstanceDynamic;
 class AExoCharacter;
 
@@ -128,6 +129,32 @@ private:
 	UMaterialInstanceDynamic* ThrusterMat = nullptr;
 	UPROPERTY()
 	UMaterialInstanceDynamic* BodyMat = nullptr;
+
+	// Headlights
+	UPROPERTY()
+	USpotLightComponent* HeadlightL = nullptr;
+	UPROPERTY()
+	USpotLightComponent* HeadlightR = nullptr;
+
+	// Body detail meshes
+	UPROPERTY()
+	UStaticMeshComponent* Windshield = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* SidePanelL = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* SidePanelR = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* RearFin = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* WindshieldMat = nullptr;
+
+	// Hover dust
+	UPROPERTY()
+	UStaticMeshComponent* HoverDustL = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* HoverDustR = nullptr;
+	UPROPERTY()
+	UMaterialInstanceDynamic* DustMat = nullptr;
 
 	float CurrentLeanAngle = 0.f;
 };

@@ -62,6 +62,7 @@ void AExoLevelBuilder::BeginPlay()
 	BuildInteriors();
 	BuildSignage();
 	BuildAtmosphere();
+	BuildCatwalks();
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),
 		LevelMeshes.Num());

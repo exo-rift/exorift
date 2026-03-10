@@ -6,6 +6,13 @@
 
 class USoundBase;
 
+enum class EFootstepSurface : uint8
+{
+	Concrete,
+	Metal,
+	Water
+};
+
 // Centralized audio management — plays 2D UI sounds and manages spatial audio
 UCLASS()
 class EXORIFT_API UExoAudioManager : public UWorldSubsystem
@@ -27,7 +34,8 @@ public:
 	void PlayDefeatStinger();
 
 	// Footstep sounds
-	void PlayFootstepSound(const FVector& Location, bool bIsSprinting);
+	void PlayFootstepSound(const FVector& Location, bool bIsSprinting,
+		EFootstepSurface Surface = EFootstepSurface::Concrete);
 
 	// 3D spatial sounds
 	void PlayWeaponFireSound(USoundBase* Sound, const FVector& Location, float Volume = 1.f);
