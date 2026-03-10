@@ -3,6 +3,8 @@
 #include "Player/ExoPlayerController.h"
 #include "Core/ExoGameMode.h"
 #include "Core/ExoPlayerState.h"
+#include "Visual/ExoDeathEffect.h"
+#include "Visual/ExoCharacterModel.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ExoRift.h"
@@ -178,6 +180,22 @@ void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->DisableMovement();
+
+	// Death energy burst effect
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride =
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AExoDeathEffect* FX = GetWorld()->SpawnActor<AExoDeathEffect>(
+			AExoDeathEffect::StaticClass(),
+			GetActorLocation() + FVector(0.f, 0.f, 50.f),
+			FRotator::ZeroRotator, SpawnParams);
+		if (FX)
+		{
+			FLinearColor AccentCol(0.2f, 0.5f, 1.f); // Default blue
+			FX->Init(AccentCol);
+		}
+	}
 
 	// Notify game mode
 	if (AExoGameMode* GM = GetWorld()->GetAuthGameMode<AExoGameMode>())
