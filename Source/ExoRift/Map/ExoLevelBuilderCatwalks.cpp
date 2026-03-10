@@ -134,7 +134,24 @@ void AExoLevelBuilder::SpawnCatwalk(const FVector& Start, const FVector& End, fl
 			FLinearColor(0.08f, 0.08f, 0.1f));
 	}
 
-	// Accent lights along the walkway — dim blue strip lights
+	// Emissive edge strips — glowing guide rails on both sides
+	UMaterialInterface* StripMat = FExoMaterialFactory::GetEmissiveOpaque();
+	for (int32 Side = -1; Side <= 1; Side += 2)
+	{
+		UStaticMeshComponent* Strip = SpawnStaticMesh(
+			Mid + Right * (RailOffset * 0.85f * Side) + FVector(0.f, 0.f, 3.f),
+			FVector(Length / 100.f, 0.04f, 0.02f), Rot, CubeMesh,
+			FLinearColor(0.1f, 0.4f, 0.8f));
+		if (Strip && StripMat)
+		{
+			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripMat, this);
+			SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.3f, 1.2f, 2.5f));
+			Strip->SetMaterial(0, SM);
+		}
+	}
+
+	// Point lights along the walkway
 	int32 LightCount = FMath::Max(1, FMath::RoundToInt32(Length / 3000.f));
 	for (int32 i = 0; i < LightCount; i++)
 	{
@@ -144,8 +161,8 @@ void AExoLevelBuilder::SpawnCatwalk(const FVector& Start, const FVector& End, fl
 		UPointLightComponent* WalkLight = NewObject<UPointLightComponent>(this);
 		WalkLight->SetupAttachment(RootComponent);
 		WalkLight->SetWorldLocation(LightPos);
-		WalkLight->SetIntensity(800.f);
-		WalkLight->SetAttenuationRadius(500.f);
+		WalkLight->SetIntensity(1200.f);
+		WalkLight->SetAttenuationRadius(600.f);
 		WalkLight->SetLightColor(FLinearColor(0.2f, 0.5f, 1.f));
 		WalkLight->CastShadows = false;
 		WalkLight->RegisterComponent();
@@ -178,6 +195,19 @@ void AExoLevelBuilder::SpawnObservationDeck(const FVector& Center, float Radius,
 			FVector(SegLen / 100.f, 0.03f, RailH / 100.f),
 			FRotator(0.f, Angle + 90.f, 0.f), CubeMesh,
 			FLinearColor(0.1f, 0.1f, 0.12f));
+	}
+
+	// Perimeter glow ring — emissive accent at platform edge
+	UStaticMeshComponent* DeckRing = SpawnStaticMesh(Center + FVector(0.f, 0.f, 3.f),
+		FVector(ScaleXY * 1.02f, ScaleXY * 1.02f, 0.03f), Rot, CylinderMesh,
+		FLinearColor(0.1f, 0.4f, 0.8f));
+	if (DeckRing)
+	{
+		UMaterialInterface* RingEmissive = FExoMaterialFactory::GetEmissiveOpaque();
+		UMaterialInstanceDynamic* DRM = UMaterialInstanceDynamic::Create(RingEmissive, this);
+		DRM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.2f, 0.8f, 1.6f));
+		DeckRing->SetMaterial(0, DRM);
 	}
 
 	// Central bollard with light

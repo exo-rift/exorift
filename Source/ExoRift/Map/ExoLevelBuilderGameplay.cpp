@@ -8,6 +8,8 @@
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoZoneVisualizer.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 void AExoLevelBuilder::PlaceSpawnPoints()
@@ -233,7 +235,14 @@ void AExoLevelBuilder::PlaceCoverElements()
 		CoverCount++;
 	}
 
-	// Scattered crate clusters
+	// Scattered crate clusters with cargo indicator markings
+	UMaterialInterface* MarkMat = FExoMaterialFactory::GetEmissiveOpaque();
+	FLinearColor MarkColors[] = {
+		FLinearColor(0.8f, 0.4f, 0.05f),  // Amber cargo
+		FLinearColor(0.1f, 0.6f, 0.3f),   // Green supply
+		FLinearColor(0.6f, 0.1f, 0.1f),   // Red ordnance
+		FLinearColor(0.1f, 0.3f, 0.8f),   // Blue tech
+	};
 	for (int32 i = 0; i < 40; i++)
 	{
 		FVector Pos(
@@ -243,15 +252,32 @@ void AExoLevelBuilder::PlaceCoverElements()
 
 		float CrateSize = FMath::RandRange(100.f, 300.f);
 		float CrateH = FMath::RandRange(80.f, 200.f);
+		FRotator CrateRot(0.f, FMath::RandRange(0.f, 90.f), 0.f);
 		SpawnStaticMesh(
 			Pos + FVector(0.f, 0.f, CrateH * 0.5f),
 			FVector(CrateSize / 100.f, CrateSize / 100.f, CrateH / 100.f),
-			FRotator(0.f, FMath::RandRange(0.f, 90.f), 0.f), CubeMesh,
-			FLinearColor(0.1f, 0.08f, 0.06f)); // Rust/crate brown
+			CrateRot, CubeMesh,
+			FLinearColor(0.1f, 0.08f, 0.06f));
+
+		// Emissive cargo indicator strip on every 3rd crate
+		if (i % 3 == 0 && MarkMat)
+		{
+			FLinearColor MC = MarkColors[i % 4];
+			UStaticMeshComponent* Mark = SpawnStaticMesh(
+				Pos + FVector(0.f, 0.f, CrateH * 0.7f),
+				FVector(CrateSize / 100.f * 0.8f, CrateSize / 100.f + 0.01f, 0.04f),
+				CrateRot, CubeMesh, MC);
+			if (Mark)
+			{
+				UMaterialInstanceDynamic* MM = UMaterialInstanceDynamic::Create(MarkMat, this);
+				MM->SetVectorParameterValue(TEXT("EmissiveColor"), MC * 2.f);
+				Mark->SetMaterial(0, MM);
+			}
+		}
 		CoverCount++;
 	}
 
-	// Jersey barriers (short thick walls)
+	// Jersey barriers with reflective warning stripes
 	for (int32 i = 0; i < 20; i++)
 	{
 		FVector Pos(
@@ -261,11 +287,29 @@ void AExoLevelBuilder::PlaceCoverElements()
 
 		float Len = FMath::RandRange(400.f, 1000.f);
 		float Yaw = FMath::RandRange(0.f, 360.f);
+		FRotator BarrierRot(0.f, Yaw, 0.f);
 		SpawnStaticMesh(
 			Pos + FVector(0.f, 0.f, 200.f),
 			FVector(Len / 100.f, 1.2f, 4.f),
-			FRotator(0.f, Yaw, 0.f), CubeMesh,
-			FLinearColor(0.12f, 0.12f, 0.13f)); // Concrete gray
+			BarrierRot, CubeMesh,
+			FLinearColor(0.12f, 0.12f, 0.13f));
+
+		// Orange warning stripe on top of barrier
+		if (MarkMat)
+		{
+			UStaticMeshComponent* WStripe = SpawnStaticMesh(
+				Pos + FVector(0.f, 0.f, 400.f),
+				FVector(Len / 100.f, 1.25f, 0.06f),
+				BarrierRot, CubeMesh,
+				FLinearColor(0.8f, 0.4f, 0.05f));
+			if (WStripe)
+			{
+				UMaterialInstanceDynamic* WM = UMaterialInstanceDynamic::Create(MarkMat, this);
+				WM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(1.2f, 0.5f, 0.05f));
+				WStripe->SetMaterial(0, WM);
+			}
+		}
 		CoverCount++;
 	}
 

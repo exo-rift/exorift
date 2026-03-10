@@ -173,6 +173,36 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 		TunnelLight->RegisterComponent();
 	}
 
+	// Floor guide strips — emissive lines along tunnel edges
+	UMaterialInterface* GuideMat = FExoMaterialFactory::GetEmissiveOpaque();
+	for (int32 Side = -1; Side <= 1; Side += 2)
+	{
+		UStaticMeshComponent* Guide = SpawnStaticMesh(
+			Mid + Right * (TunnelW * 0.4f * Side) + FVector(0.f, 0.f, 5.f),
+			FVector(Length / 100.f, 0.06f, 0.02f), Rot, CubeMesh,
+			FLinearColor(0.8f, 0.4f, 0.05f));
+		if (Guide && GuideMat)
+		{
+			UMaterialInstanceDynamic* GM = UMaterialInstanceDynamic::Create(GuideMat, this);
+			GM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(1.5f, 0.6f, 0.08f));
+			Guide->SetMaterial(0, GM);
+		}
+	}
+
+	// Center line — dim blue nav guide
+	UStaticMeshComponent* CenterLine = SpawnStaticMesh(
+		Mid + FVector(0.f, 0.f, 3.f),
+		FVector(Length / 100.f, 0.03f, 0.015f), Rot, CubeMesh,
+		FLinearColor(0.1f, 0.3f, 0.6f));
+	if (CenterLine && GuideMat)
+	{
+		UMaterialInstanceDynamic* CLM = UMaterialInstanceDynamic::Create(GuideMat, this);
+		CLM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.2f, 0.6f, 1.2f));
+		CenterLine->SetMaterial(0, CLM);
+	}
+
 	// Support ribs — structural cross-beams every 3000 units
 	int32 RibCount = FMath::Max(2, FMath::RoundToInt32(Length / 3000.f));
 	for (int32 i = 0; i < RibCount; i++)
