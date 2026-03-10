@@ -135,30 +135,47 @@ void AExoCharacter::TickMantle(float DeltaTime)
 void AExoCharacter::TickCameraBob(float DeltaTime)
 {
 	if (!FirstPersonCamera) return;
+
+	// Strafe tilt — get lateral velocity relative to facing direction
+	float TargetTilt = 0.f;
+	{
+		FVector Vel = GetVelocity();
+		FRotator YawRot(0.f, GetControlRotation().Yaw, 0.f);
+		FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+		float Lateral = FVector::DotProduct(Vel, RightDir);
+		TargetTilt = FMath::Clamp(Lateral / 600.f, -1.f, 1.f) * -1.5f;
+		if (bIsADS) TargetTilt *= 0.3f;
+	}
+
 	if (!GetCharacterMovement()->IsMovingOnGround() || bIsSliding || bIsMantling)
 	{
-		// Smoothly return to default when not walking
 		FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
 		CamLoc.Z = FMath::FInterpTo(CamLoc.Z, DefaultCameraZ, DeltaTime, 8.f);
 		FirstPersonCamera->SetRelativeLocation(CamLoc);
+
+		FRotator CamRot = FirstPersonCamera->GetRelativeRotation();
+		CamRot.Roll = FMath::FInterpTo(CamRot.Roll, TargetTilt, DeltaTime, 6.f);
+		FirstPersonCamera->SetRelativeRotation(CamRot);
 		return;
 	}
 
 	float Speed = GetVelocity().Size2D();
 	if (Speed < 50.f)
 	{
-		// Idle — gently return camera
 		FVector CamLoc = FirstPersonCamera->GetRelativeLocation();
 		CamLoc.Z = FMath::FInterpTo(CamLoc.Z, DefaultCameraZ, DeltaTime, 8.f);
 		FirstPersonCamera->SetRelativeLocation(CamLoc);
 		CameraBobTimer = 0.f;
+
+		FRotator CamRot = FirstPersonCamera->GetRelativeRotation();
+		CamRot.Roll = FMath::FInterpTo(CamRot.Roll, 0.f, DeltaTime, 8.f);
+		FirstPersonCamera->SetRelativeRotation(CamRot);
 		return;
 	}
 
-	// Bob frequency scales with speed: walk ~7 Hz, sprint ~10 Hz
 	float BobFreq = bIsSprinting ? 10.f : 7.f;
-	float BobAmpV = bIsSprinting ? 2.5f : 1.2f;    // Vertical amplitude
-	float BobAmpH = bIsSprinting ? 0.8f : 0.3f;    // Horizontal sway
+	float BobAmpV = bIsSprinting ? 2.5f : 1.2f;
+	float BobAmpH = bIsSprinting ? 0.8f : 0.3f;
 
 	CameraBobTimer += DeltaTime * BobFreq;
 
@@ -169,9 +186,10 @@ void AExoCharacter::TickCameraBob(float DeltaTime)
 	CamLoc.Z = DefaultCameraZ + VertBob;
 	FirstPersonCamera->SetRelativeLocation(CamLoc);
 
-	// Subtle roll sway
+	// Roll = walk sway + strafe tilt
 	FRotator CamRot = FirstPersonCamera->GetRelativeRotation();
-	CamRot.Roll = HorzBob;
+	float TargetRoll = HorzBob + TargetTilt;
+	CamRot.Roll = FMath::FInterpTo(CamRot.Roll, TargetRoll, DeltaTime, 10.f);
 	FirstPersonCamera->SetRelativeRotation(CamRot);
 }
 
