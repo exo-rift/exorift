@@ -96,9 +96,19 @@ protected:
 	UPROPERTY()
 	UStaticMeshComponent* GrappleBeam = nullptr;
 	UPROPERTY()
+	UStaticMeshComponent* GrappleGlow = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* GrappleTargetRing = nullptr;
+	UPROPERTY()
+	UStaticMeshComponent* GrappleSourceFlash = nullptr;
+	UPROPERTY()
 	UMaterialInstanceDynamic* GrappleBeamMat = nullptr;
 	UPROPERTY()
+	UMaterialInstanceDynamic* GrappleGlowMat = nullptr;
+	UPROPERTY()
 	UPointLightComponent* GrappleLight = nullptr;
+	UPROPERTY()
+	UPointLightComponent* GrappleSourceLight = nullptr;
 	void CreateGrappleBeam();
 	void UpdateGrappleBeam();
 	void DestroyGrappleBeam();
