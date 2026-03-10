@@ -73,7 +73,7 @@ void FExoTracerManager::SpawnImpactEffect(UWorld* World, const FVector& Location
 		Location, FRotator::ZeroRotator, Params);
 	if (Impact)
 	{
-		Impact->InitEffect(HitNormal, bHitCharacter);
+		Impact->InitEffect(HitNormal, bHitCharacter, GetWeaponTracerColor(WeaponType));
 	}
 
 	// Leave a scorch mark on surfaces (not on characters)

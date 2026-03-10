@@ -3,6 +3,7 @@
 #include "Map/ExoLootCrate.h"
 #include "Map/ExoTargetDummy.h"
 #include "Map/ExoPowerUpTerminal.h"
+#include "Map/ExoReactorCore.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -119,6 +120,17 @@ void AExoLevelBuilder::BeginPlay()
 			if (TD) TD->InitDummy(D.Color, 200.f);
 		}
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 6 target dummies"));
+	}
+
+	// Energy reactor centerpiece at hub — visible from across the map
+	{
+		FActorSpawnParameters ReactorP;
+		ReactorP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AExoReactorCore* Reactor = GetWorld()->SpawnActor<AExoReactorCore>(
+			AExoReactorCore::StaticClass(), FVector(0.f, -3000.f, 10.f),
+			FRotator::ZeroRotator, ReactorP);
+		if (Reactor) Reactor->InitReactor();
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed energy reactor at hub center"));
 	}
 
 	// Power-up terminals at strategic compound locations

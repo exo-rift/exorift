@@ -61,25 +61,48 @@ AExoImpactEffect::AExoImpactEffect()
 	FlashLight->CastShadows = false;
 }
 
-void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter)
+void AExoImpactEffect::InitEffect(const FVector& InHitNormal, bool bHitCharacter,
+	const FLinearColor& WeaponColor)
 {
 	HitNorm = InHitNormal;
 
-	FLinearColor SparkColor = bHitCharacter
-		? FLinearColor(60.f, 12.f, 3.f, 1.f)
-		: FLinearColor(30.f, 50.f, 75.f, 1.f);
+	// Weapon-colored impacts: blend weapon color with hit type tint
+	FLinearColor SparkColor;
+	FLinearColor LightColor;
+	FLinearColor DustColor;
+	FLinearColor RingColor;
 
-	FLinearColor LightColor = bHitCharacter
-		? FLinearColor(1.f, 0.3f, 0.1f)
-		: FLinearColor(0.5f, 0.8f, 1.f);
-
-	FLinearColor DustColor = bHitCharacter
-		? FLinearColor(0.6f, 0.1f, 0.04f, 1.f)
-		: FLinearColor(0.25f, 0.25f, 0.3f, 1.f);
-
-	FLinearColor RingColor = bHitCharacter
-		? FLinearColor(40.f, 8.f, 2.f, 1.f)
-		: FLinearColor(20.f, 35.f, 55.f, 1.f);
+	if (bHitCharacter)
+	{
+		// Character hits: red-orange base tinted toward weapon color
+		SparkColor = FLinearColor(
+			40.f + WeaponColor.R * 20.f,
+			8.f + WeaponColor.G * 8.f,
+			2.f + WeaponColor.B * 6.f);
+		LightColor = FLinearColor(
+			0.8f + WeaponColor.R * 0.2f,
+			0.2f + WeaponColor.G * 0.15f,
+			0.05f + WeaponColor.B * 0.1f);
+		DustColor = FLinearColor(0.5f, 0.08f, 0.03f);
+		RingColor = FLinearColor(
+			30.f + WeaponColor.R * 15.f,
+			6.f + WeaponColor.G * 6.f,
+			2.f + WeaponColor.B * 4.f);
+	}
+	else
+	{
+		// Surface hits: weapon-colored energy sparks
+		SparkColor = FLinearColor(
+			WeaponColor.R * 55.f + 5.f,
+			WeaponColor.G * 55.f + 5.f,
+			WeaponColor.B * 55.f + 5.f);
+		LightColor = WeaponColor;
+		DustColor = FLinearColor(0.2f, 0.2f, 0.25f);
+		RingColor = FLinearColor(
+			WeaponColor.R * 35.f + 3.f,
+			WeaponColor.G * 35.f + 3.f,
+			WeaponColor.B * 35.f + 3.f);
+	}
 
 	FlashLight->SetLightColor(LightColor);
 	FlashLight->SetIntensity(180000.f);

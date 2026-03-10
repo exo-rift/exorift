@@ -16,8 +16,9 @@ class AExoImpactEffect : public AActor
 public:
 	AExoImpactEffect();
 
-	/** Configure the effect at spawn time. */
-	void InitEffect(const FVector& HitNormal, bool bHitCharacter);
+	/** Configure the effect at spawn time with weapon-specific color. */
+	void InitEffect(const FVector& HitNormal, bool bHitCharacter,
+		const FLinearColor& WeaponColor = FLinearColor(0.3f, 0.7f, 1.f));
 
 	virtual void Tick(float DeltaTime) override;
 

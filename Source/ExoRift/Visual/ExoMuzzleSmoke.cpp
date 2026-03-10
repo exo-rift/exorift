@@ -23,20 +23,20 @@ AExoMuzzleSmoke::AExoMuzzleSmoke()
 void AExoMuzzleSmoke::InitSmoke(const FVector& DriftDir)
 {
 	DriftVelocity = DriftDir;
-	BaseScale = FMath::RandRange(0.1f, 0.2f);
-	Lifetime = FMath::RandRange(0.4f, 0.7f);
+	BaseScale = FMath::RandRange(0.18f, 0.35f);
+	Lifetime = FMath::RandRange(0.5f, 0.9f);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
 	if (!MatFinder.Succeeded()) return;
 
 	SmokeMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-	FLinearColor SmokeCol(0.12f, 0.12f, 0.14f);
+	FLinearColor SmokeCol(0.15f, 0.15f, 0.18f);
 	SmokeMat->SetVectorParameterValue(TEXT("BaseColor"), SmokeCol);
 	SmokeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(0.03f, 0.03f, 0.04f));
+		FLinearColor(0.06f, 0.06f, 0.08f));
 	SmokePuff->SetMaterial(0, SmokeMat);
-	SmokePuff->SetRelativeScale3D(FVector(BaseScale * 0.3f));
+	SmokePuff->SetRelativeScale3D(FVector(BaseScale * 0.4f));
 }
 
 void AExoMuzzleSmoke::Tick(float DeltaTime)
@@ -59,12 +59,14 @@ void AExoMuzzleSmoke::Tick(float DeltaTime)
 	float S = BaseScale * (0.3f + 0.7f * ExpandT) * (1.f - ShrinkT * 0.6f);
 	SmokePuff->SetRelativeScale3D(FVector(S, S, S * 0.7f));
 
-	// Fade
+	// Fade — more visible smoke that lingers
 	if (SmokeMat)
 	{
-		float Alpha = (1.f - T * T) * 0.5f;
+		float Alpha = (1.f - T * T) * 0.7f;
 		SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.12f * Alpha, 0.12f * Alpha, 0.14f * Alpha));
+			FLinearColor(0.15f * Alpha, 0.15f * Alpha, 0.18f * Alpha));
+		SmokeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.04f * Alpha, 0.04f * Alpha, 0.06f * Alpha));
 	}
 
 	if (Age >= Lifetime) Destroy();
@@ -78,8 +80,8 @@ void AExoMuzzleSmoke::SpawnSmoke(UWorld* World, const FVector& MuzzlePos,
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// 1-2 wisps per shot
-	int32 Count = FMath::RandRange(1, 2);
+	// 2-3 wisps per shot for visible smoke cloud
+	int32 Count = FMath::RandRange(2, 3);
 	for (int32 i = 0; i < Count; i++)
 	{
 		FVector Offset(
