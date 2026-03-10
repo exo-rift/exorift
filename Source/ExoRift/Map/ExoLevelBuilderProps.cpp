@@ -80,6 +80,41 @@ void AExoLevelBuilder::BuildProps()
 			CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
 	}
 
+	// === ROAD INTERSECTION FURNITURE ===
+	// Barrier bollards at key intersections
+	struct FBollardRow { FVector Start; FVector End; int32 Count; };
+	TArray<FBollardRow> Bollards = {
+		// Roundabout perimeter
+		{{14000.f, 0.f, GroundZ}, {10000.f, 10000.f, GroundZ}, 5},
+		{{0.f, 14000.f, GroundZ}, {-10000.f, 10000.f, GroundZ}, 5},
+		{{-14000.f, 0.f, GroundZ}, {-10000.f, -10000.f, GroundZ}, 5},
+		{{0.f, -14000.f, GroundZ}, {10000.f, -10000.f, GroundZ}, 5},
+	};
+	for (const auto& BR : Bollards)
+	{
+		for (int32 j = 0; j < BR.Count; j++)
+		{
+			float T = (float)j / (float)(BR.Count - 1);
+			FVector BPos = FMath::Lerp(BR.Start, BR.End, T);
+			// Short glowing bollard
+			SpawnStaticMesh(BPos + FVector(0.f, 0.f, 60.f),
+				FVector(0.15f, 0.15f, 1.2f), FRotator::ZeroRotator,
+				CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
+			// Emissive top cap
+			UStaticMeshComponent* Cap = SpawnStaticMesh(
+				BPos + FVector(0.f, 0.f, 125.f),
+				FVector(0.2f, 0.2f, 0.06f), FRotator::ZeroRotator,
+				CylinderMesh, FLinearColor(0.8f, 0.5f, 0.1f));
+			if (Cap && BaseMaterial)
+			{
+				UMaterialInstanceDynamic* CM = Cast<UMaterialInstanceDynamic>(
+					Cap->GetMaterial(0));
+				if (CM) CM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(2.f, 1.2f, 0.3f));
+			}
+		}
+	}
+
 	// === CARGO CONTAINERS at compound loading areas ===
 	struct FContainer { FVector Pos; float Yaw; FLinearColor Color; };
 	TArray<FContainer> Containers = {

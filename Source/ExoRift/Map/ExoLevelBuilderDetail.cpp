@@ -49,6 +49,57 @@ void AExoLevelBuilder::BuildGroundDetail()
 	SpawnCrater(FVector(-90000.f, -60000.f, 0.f), 3500.f);
 	SpawnCrater(FVector(40000.f, -80000.f, 0.f), 2200.f);
 
+	// === AMBIENT GROUND LIGHTS ===
+	// Scattered atmospheric glow spots across the map
+	struct FGroundGlow { FVector Pos; FLinearColor Color; float Intensity; float Radius; };
+	TArray<FGroundGlow> Glows = {
+		// Hub approach — cool blue
+		{{15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
+		{{-15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
+		{{0.f, 15000.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
+		{{0.f, -15000.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
+		// North industrial — warm amber
+		{{0.f, 70000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 2000.f, 5000.f},
+		{{-8000.f, 85000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 2500.f, 3000.f},
+		// South research — teal
+		{{0.f, -70000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 2000.f, 4000.f},
+		{{5000.f, -85000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 1500.f, 3000.f},
+		// East power — red warning
+		{{70000.f, 0.f, 20.f}, {0.8f, 0.15f, 0.05f}, 2500.f, 5000.f},
+		{{85000.f, 5000.f, 20.f}, {0.8f, 0.15f, 0.05f}, 2000.f, 3000.f},
+		// West barracks — green
+		{{-70000.f, 0.f, 20.f}, {0.1f, 0.5f, 0.2f}, 2000.f, 4000.f},
+		// Open field atmospheric — purple
+		{{50000.f, 50000.f, 20.f}, {0.3f, 0.1f, 0.5f}, 1500.f, 6000.f},
+		{{-50000.f, -50000.f, 20.f}, {0.3f, 0.1f, 0.5f}, 1500.f, 6000.f},
+		// Road intersections — white
+		{{0.f, 0.f, 30.f}, {0.5f, 0.6f, 0.8f}, 4000.f, 5000.f},
+	};
+	for (const auto& G : Glows)
+	{
+		UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
+		GL->SetupAttachment(RootComponent);
+		GL->SetWorldLocation(G.Pos);
+		GL->SetIntensity(G.Intensity);
+		GL->SetAttenuationRadius(G.Radius);
+		GL->SetLightColor(G.Color);
+		GL->CastShadows = false;
+		GL->RegisterComponent();
+
+		// Small emissive ground disk at each glow
+		UStaticMeshComponent* Disk = SpawnStaticMesh(
+			G.Pos - FVector(0.f, 0.f, 15.f),
+			FVector(G.Radius / 2000.f, G.Radius / 2000.f, 0.02f),
+			FRotator::ZeroRotator, CylinderMesh, G.Color);
+		if (Disk && BaseMaterial)
+		{
+			UMaterialInstanceDynamic* DM = Cast<UMaterialInstanceDynamic>(
+				Disk->GetMaterial(0));
+			if (DM) DM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(G.Color.R * 0.3f, G.Color.G * 0.3f, G.Color.B * 0.3f));
+		}
+	}
+
 	// Hazard floor markings near dangerous areas
 	FLinearColor YellowStripe(0.6f, 0.5f, 0.05f);
 	struct FHazardMark { FVector Pos; float Yaw; };
