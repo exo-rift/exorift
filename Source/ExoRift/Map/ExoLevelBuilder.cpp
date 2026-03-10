@@ -11,6 +11,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "Visual/ExoAmbientParticles.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "ExoRift.h"
 
 AExoLevelBuilder::AExoLevelBuilder()
@@ -161,29 +162,39 @@ void AExoLevelBuilder::BuildTerrain()
 
 void AExoLevelBuilder::BuildLighting()
 {
-	// Directional light (sun) — create as component on this actor
+	// Primary sun — low angle for dramatic long shadows
 	UDirectionalLightComponent* Sun = NewObject<UDirectionalLightComponent>(this);
 	Sun->SetupAttachment(RootComponent);
 	Sun->RegisterComponent();
-	Sun->SetWorldRotation(FRotator(-45.f, 30.f, 0.f));
-	Sun->SetIntensity(3.f);
-	Sun->SetLightColor(FLinearColor(0.9f, 0.85f, 0.7f));
+	Sun->SetWorldRotation(FRotator(-25.f, 220.f, 0.f));
+	Sun->SetIntensity(4.f);
+	Sun->SetLightColor(FLinearColor(1.0f, 0.85f, 0.6f)); // Warm golden hour
 	Sun->CastShadows = true;
 
-	// Sky light for ambient fill
+	// Fill light — opposite direction, cool blue, softer
+	UDirectionalLightComponent* Fill = NewObject<UDirectionalLightComponent>(this);
+	Fill->SetupAttachment(RootComponent);
+	Fill->RegisterComponent();
+	Fill->SetWorldRotation(FRotator(-60.f, 40.f, 0.f));
+	Fill->SetIntensity(0.8f);
+	Fill->SetLightColor(FLinearColor(0.5f, 0.6f, 0.9f)); // Cool blue fill
+	Fill->CastShadows = false;
+
+	// Sky light for ambient fill — deep blue for sci-fi atmosphere
 	USkyLightComponent* Sky = NewObject<USkyLightComponent>(this);
 	Sky->SetupAttachment(RootComponent);
 	Sky->RegisterComponent();
-	Sky->SetIntensity(1.5f);
-	Sky->SetLightColor(FLinearColor(0.4f, 0.5f, 0.7f));
+	Sky->SetIntensity(1.8f);
+	Sky->SetLightColor(FLinearColor(0.35f, 0.45f, 0.7f));
 
-	// Atmospheric fog — denser for moody sci-fi atmosphere
+	// Atmospheric fog — moody sci-fi haze with blue-violet tint
 	UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this);
 	Fog->SetupAttachment(RootComponent);
 	Fog->RegisterComponent();
-	Fog->SetFogDensity(0.0015f);
-	Fog->SetFogHeightFalloff(0.15f);
-	Fog->SetFogInscatteringColor(FLinearColor(0.1f, 0.13f, 0.22f));
+	Fog->SetFogDensity(0.002f);
+	Fog->SetFogHeightFalloff(0.12f);
+	Fog->SetFogInscatteringColor(FLinearColor(0.08f, 0.1f, 0.2f));
+	Fog->SetDirectionalInscatteringColor(FLinearColor(0.25f, 0.2f, 0.15f));
 
 	// Global post-process — lower priority than ExoPostProcess actor (priority 0 < 1)
 	UPostProcessComponent* PP = NewObject<UPostProcessComponent>(this);
@@ -193,13 +204,15 @@ void AExoLevelBuilder::BuildLighting()
 	PP->Settings.bOverride_AutoExposureBias = true;
 	PP->Settings.AutoExposureBias = 0.5f;
 	PP->Settings.bOverride_BloomIntensity = true;
-	PP->Settings.BloomIntensity = 2.0f;
+	PP->Settings.BloomIntensity = 2.5f;
 	PP->Settings.bOverride_BloomThreshold = true;
-	PP->Settings.BloomThreshold = 0.3f; // Low threshold for dramatic emissive bloom
+	PP->Settings.BloomThreshold = 0.2f; // Lower threshold for richer emissive bloom
 	PP->Settings.bOverride_VignetteIntensity = true;
 	PP->Settings.VignetteIntensity = 0.25f;
 	PP->Settings.bOverride_FilmGrainIntensity = true;
-	PP->Settings.FilmGrainIntensity = 0.04f;
+	PP->Settings.FilmGrainIntensity = 0.03f;
+	PP->Settings.bOverride_BloomConvolutionSize = true;
+	PP->Settings.BloomConvolutionSize = 1.f;
 	PP->RegisterComponent();
 
 	// Nav mesh bounds for bot navigation
@@ -229,7 +242,18 @@ UStaticMeshComponent* AExoLevelBuilder::SpawnStaticMesh(const FVector& Location,
 	Comp->CastShadow = true;
 	Comp->RegisterComponent();
 
-	if (BaseMaterial)
+	// Use LitEmissive for metallic PBR sci-fi surfaces
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
+	{
+		UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		DynMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		DynMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		DynMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		DynMat->SetScalarParameterValue(TEXT("Roughness"), 0.28f);
+		Comp->SetMaterial(0, DynMat);
+	}
+	else if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 		DynMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
