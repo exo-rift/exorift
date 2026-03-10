@@ -172,6 +172,7 @@ void UExoInventoryComponent::SwapToSlot(int32 SlotIndex)
 	if (New)
 	{
 		New->SetActorHiddenInGame(false);
+		New->PlayDrawAnimation();
 	}
 
 	OnWeaponChanged.Broadcast(New, CurrentSlotIndex);

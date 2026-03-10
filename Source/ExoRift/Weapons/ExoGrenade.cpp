@@ -9,6 +9,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoScreenShake.h"
+#include "Visual/ExoEMPEffect.h"
 #include "Core/ExoAudioManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -238,11 +239,13 @@ void AExoGrenade::ExplodeEMP()
 		Char->TakeDamage(15.f, DmgEvent, GetInstigatorController(), this);
 	}
 
-	// Blue-white flash effect
 	FExoScreenShake::AddShake(0.4f, 0.3f);
 
-	// Spawn a blue flash (using explosion effect with reduced scale)
-	FExoTracerManager::SpawnExplosionEffect(GetWorld(), Origin, ExplosionRadius * 0.5f);
+	// Spawn EMP pulse VFX
+	FActorSpawnParameters EMPParams;
+	AExoEMPEffect* EMPFx = GetWorld()->SpawnActor<AExoEMPEffect>(
+		AExoEMPEffect::StaticClass(), Origin, FRotator::ZeroRotator, EMPParams);
+	if (EMPFx) EMPFx->InitPulse(ExplosionRadius);
 
 	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 		Audio->PlayExplosionSound(Origin);

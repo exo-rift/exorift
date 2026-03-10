@@ -70,6 +70,13 @@ void AExoWeaponBase::Tick(float DeltaTime)
 	TimeSinceLastShot += DeltaTime;
 	TickCooldown(DeltaTime);
 
+	// Draw/equip animation
+	if (bDrawAnimActive)
+	{
+		DrawBlend = FMath::FInterpTo(DrawBlend, 1.f, DeltaTime, DrawSpeed);
+		if (DrawBlend > 0.98f) { DrawBlend = 1.f; bDrawAnimActive = false; }
+	}
+
 	// Spread recovery (faster when ADS)
 	if (!bWantsToFire || bIsOverheated)
 	{
@@ -120,6 +127,12 @@ void AExoWeaponBase::StopADS()
 void AExoWeaponBase::ToggleFireMode()
 {
 	// Base weapons don't have fire mode toggle — override in subclass
+}
+
+void AExoWeaponBase::PlayDrawAnimation()
+{
+	DrawBlend = 0.f;
+	bDrawAnimActive = true;
 }
 
 void AExoWeaponBase::AddHeat(float Amount)
@@ -211,11 +224,16 @@ void AExoWeaponBase::TickWeaponSway(float DeltaTime)
 	float SwayScale = FMath::Lerp(1.f, 0.15f, ADSBlend);
 	float IdleScale = FMath::Lerp(1.f, 0.1f, ADSBlend);
 
+	// Draw animation offset — weapon rises from below when equipped
+	FVector DrawOffset = FVector(0.f, 0.f, -30.f * (1.f - DrawBlend));
+	float DrawRotOffset = -25.f * (1.f - DrawBlend);
+
 	ViewModel->SetRelativeLocation(BasePos
 		+ SwayOffset * SwayScale
 		+ RecoilOffset
-		+ FVector(0.f, IdleY * IdleScale, IdleZ * IdleScale));
-	ViewModel->SetRelativeRotation(FRotator(RecoilRotation, 0.f, 0.f));
+		+ FVector(0.f, IdleY * IdleScale, IdleZ * IdleScale)
+		+ DrawOffset);
+	ViewModel->SetRelativeRotation(FRotator(RecoilRotation + DrawRotOffset, 0.f, 0.f));
 }
 
 void AExoWeaponBase::ApplyRecoilKick()

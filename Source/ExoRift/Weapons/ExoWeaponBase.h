@@ -31,6 +31,7 @@ public:
 	virtual void StartADS();
 	virtual void StopADS();
 	virtual void ToggleFireMode();
+	void PlayDrawAnimation();
 	bool IsADS() const { return bIsADS; }
 	float GetADSFOV() const { return ADSFOV; }
 	float GetADSSpreadMultiplier() const { return ADSSpreadMultiplier; }
@@ -174,6 +175,11 @@ protected:
 	float SwayReturnSpeed = 8.f;
 	float SwayAmount = 0.4f;
 	float MaxSwayOffset = 3.f;
+
+	// Equip/draw animation
+	float DrawBlend = 0.f;
+	float DrawSpeed = 6.f;
+	bool bDrawAnimActive = false;
 
 	// ADS blend
 	float ADSBlend = 0.f;
