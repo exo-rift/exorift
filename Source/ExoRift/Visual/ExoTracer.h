@@ -40,6 +40,9 @@ private:
 	UStaticMeshComponent* BeamTrail;
 
 	UPROPERTY()
+	UStaticMeshComponent* Corona; // Outer soft halo
+
+	UPROPERTY()
 	UStaticMeshComponent* HeadMesh;
 
 	UPROPERTY()
@@ -47,6 +50,13 @@ private:
 
 	UPROPERTY()
 	UPointLightComponent* TailLight;
+
+	// Trailing sparks — small cubes that scatter behind the bolt
+	static constexpr int32 NUM_SPARKS = 4;
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> SparkMeshes;
+	TArray<FVector> SparkOffsets;
+	TArray<FVector> SparkVelocities;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* CoreMat;
@@ -56,6 +66,9 @@ private:
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* TrailMat;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* CoronaMat;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* HeadMat;
@@ -69,11 +82,12 @@ private:
 	// Per-weapon sizing
 	float TravelSpeed = 120000.f;
 	float BeamLength = 1200.f;
-	float CoreRadius = 0.012f;
-	float GlowRadius = 0.035f;
-	float TrailRadius = 0.006f;
-	float HeadScale = 0.15f;
-	float LightIntensity = 20000.f;
+	float CoreRadius = 0.03f;
+	float GlowRadius = 0.09f;
+	float TrailRadius = 0.015f;
+	float CoronaRadius = 0.18f;
+	float HeadScale = 0.30f;
+	float LightIntensity = 55000.f;
 
 	float FadeAge = 0.f;
 	float FadeTime = 0.15f;
@@ -81,7 +95,9 @@ private:
 
 	FLinearColor CoreColor;
 	FLinearColor GlowColor;
+	FLinearColor BaseWeaponColor;
 
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
+	UStaticMesh* CubeMesh = nullptr;
 };

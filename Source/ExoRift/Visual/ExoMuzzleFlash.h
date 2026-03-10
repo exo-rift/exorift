@@ -33,12 +33,19 @@ private:
 	UStaticMeshComponent* FlashFlare;
 
 	UPROPERTY()
+	UStaticMeshComponent* FlashRing; // Expanding halo ring
+
+	UPROPERTY()
 	UPointLightComponent* FlashLight;
 
+	UPROPERTY()
+	UPointLightComponent* BounceLight; // Ground-bounce secondary light
+
 	float Age = 0.f;
-	float Lifetime = 0.07f;
+	float Lifetime = 0.09f;
 	float BaseIntensity = 0.f;
-	float CoreScale = 0.15f;
-	float CrossScale = 0.12f;
-	float FlareScale = 0.10f;
+	float CoreScale = 0.25f;
+	float CrossScale = 0.20f;
+	float FlareScale = 0.16f;
+	float RingScale = 0.35f;
 };

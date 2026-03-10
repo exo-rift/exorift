@@ -73,6 +73,7 @@ protected:
 	void PickNextWeather();
 	void ApplyToPostProcess();
 	void SpawnRainParticles(float DeltaTime);
+	void UpdateLightning(float DeltaTime);
 
 	// Components created at runtime for weather effects
 	UPROPERTY()
@@ -122,4 +123,9 @@ private:
 	// Lightning flash state
 	float LightningAlpha = 0.f;
 	float LightningCooldown = 0.f;
+	int32 LightningFlashesRemaining = 0; // Multi-flash bursts
+	float MultiFlashDelay = 0.f;
+
+	// Lightning bolt visual (directional light + post-process)
+	float LightningBoltAlpha = 0.f; // Separate bolt brightness (decays faster)
 };
