@@ -36,6 +36,16 @@ void AExoLevelBuilder::BuildAtmosphere()
 	SpawnSpotlightBeam(FVector(-150000.f, 0.f, 10.f), 4000.f, WarnOrange);
 	SpawnSpotlightBeam(FVector(0.f, 150000.f, 10.f), 4000.f, WarnOrange);
 	SpawnSpotlightBeam(FVector(0.f, -150000.f, 10.f), 4000.f, WarnOrange);
+	// Wilderness beacons — distant towers visible from open fields
+	SpawnSpotlightBeam(FVector(100000.f, 100000.f, 10.f), 3500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(-100000.f, -100000.f, 10.f), 3500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(100000.f, -100000.f, 10.f), 3200.f, CoolWhite);
+	SpawnSpotlightBeam(FVector(-100000.f, 100000.f, 10.f), 3200.f, CoolWhite);
+	// Mid-field navigation beacons
+	SpawnSpotlightBeam(FVector(40000.f, 40000.f, 10.f), 2500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(-40000.f, -40000.f, 10.f), 2500.f, CoolWhite);
+	SpawnSpotlightBeam(FVector(40000.f, -40000.f, 10.f), 2200.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(-40000.f, 40000.f, 10.f), 2200.f, TacBlue);
 
 	// === ENERGY CONDUITS — glowing pipes connecting buildings ===
 	FLinearColor ConduitCyan(0.1f, 0.6f, 0.8f);
@@ -49,6 +59,15 @@ void AExoLevelBuilder::BuildAtmosphere()
 	SpawnEnergyConduit(FVector(0.f, -5000.f, 150.f), FVector(0.f, -30000.f, 150.f), ConduitOrange);
 	// Hub to west
 	SpawnEnergyConduit(FVector(-5000.f, 0.f, 150.f), FVector(-30000.f, 0.f, 150.f), ConduitOrange);
+	// Inter-compound conduits — linking adjacent bases
+	// North to East (diagonal)
+	SpawnEnergyConduit(FVector(15000.f, 65000.f, 200.f), FVector(65000.f, 15000.f, 200.f), ConduitCyan);
+	// East to South (diagonal)
+	SpawnEnergyConduit(FVector(65000.f, -15000.f, 200.f), FVector(15000.f, -65000.f, 200.f), ConduitOrange);
+	// South to West (diagonal)
+	SpawnEnergyConduit(FVector(-15000.f, -65000.f, 200.f), FVector(-65000.f, -15000.f, 200.f), ConduitCyan);
+	// West to North (diagonal)
+	SpawnEnergyConduit(FVector(-65000.f, 15000.f, 200.f), FVector(-15000.f, 65000.f, 200.f), ConduitOrange);
 
 	// === NEON ACCENT TUBES — decorative glowing strips on buildings ===
 	FLinearColor NeonCyan(0.05f, 0.8f, 1.f);

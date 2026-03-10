@@ -218,7 +218,7 @@ void AExoLevelBuilder::SpawnBridge(const FVector& Start, const FVector& End,
 		FVector(Length / 100.f, 0.1f, 0.6f), Rot, CubeMesh,
 		FLinearColor(0.12f, 0.12f, 0.14f));
 
-	// Support columns
+	// Support columns with accent lights
 	int32 NumSupports = FMath::Max(2, FMath::CeilToInt(Length / 5000.f));
 	FVector DirNorm = Dir.GetSafeNormal();
 	for (int32 i = 0; i < NumSupports; i++)
@@ -228,6 +228,36 @@ void AExoLevelBuilder::SpawnBridge(const FVector& Start, const FVector& End,
 		SpawnStaticMesh(FVector(ColPos.X, ColPos.Y, Height * 0.5f),
 			FVector(1.f, 1.f, Height / 100.f), FRotator::ZeroRotator, CylinderMesh,
 			FLinearColor(0.1f, 0.1f, 0.12f));
+
+		// Underside accent light at each support column
+		UPointLightComponent* UnderGlow = NewObject<UPointLightComponent>(this);
+		UnderGlow->SetupAttachment(RootComponent);
+		UnderGlow->SetWorldLocation(FVector(ColPos.X, ColPos.Y, Height * 0.7f));
+		UnderGlow->SetIntensity(4000.f);
+		UnderGlow->SetAttenuationRadius(Width * 0.8f);
+		UnderGlow->SetLightColor(FLinearColor(0.15f, 0.3f, 0.6f));
+		UnderGlow->CastShadows = false;
+		UnderGlow->RegisterComponent();
+	}
+
+	// Rail-mounted emissive strips on both sides
+	UMaterialInterface* RailMat = FExoMaterialFactory::GetEmissiveOpaque();
+	if (RailMat)
+	{
+		for (int32 Side = -1; Side <= 1; Side += 2)
+		{
+			UStaticMeshComponent* Strip = SpawnStaticMesh(
+				DeckPos + Right * (float)Side + FVector(0.f, 0.f, 65.f),
+				FVector(Length / 100.f, 0.04f, 0.04f), Rot, CubeMesh,
+				FLinearColor(0.1f, 0.3f, 0.6f));
+			if (Strip)
+			{
+				UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(RailMat, this);
+				SM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.15f, 0.4f, 0.8f));
+				Strip->SetMaterial(0, SM);
+			}
+		}
 	}
 }
 

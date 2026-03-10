@@ -89,6 +89,8 @@ void AExoLevelBuilder::PlacePOIs()
 			{{60000.f, -60000.f, 0.f}, 15.f},
 			{{-70000.f, 70000.f, 0.f}, -30.f},
 			{{100000.f, 80000.f, 0.f}, 45.f},
+			{{-90000.f, -70000.f, 0.f}, 120.f},
+			{{80000.f, -90000.f, 0.f}, -60.f},
 		};
 		for (const FTowerDef& T : Towers)
 		{
@@ -108,6 +110,8 @@ void AExoLevelBuilder::PlacePOIs()
 		FDepotDef Depots[] = {
 			{{-50000.f, 30000.f, 0.f}, 20.f},
 			{{40000.f, -50000.f, 0.f}, -35.f},
+			{{-20000.f, -30000.f, 0.f}, 60.f},
+			{{70000.f, 50000.f, 0.f}, -10.f},
 		};
 		for (const FDepotDef& D : Depots)
 		{
@@ -145,6 +149,11 @@ void AExoLevelBuilder::PlacePOIs()
 			{{-5000.f, -78000.f, 0.f}, 0.f},
 			{{50000.f, 50000.f, 0.f}, -45.f},
 			{{-60000.f, -50000.f, 0.f}, 135.f},
+			// Additional open-field guard towers for map density
+			{{35000.f, -35000.f, 0.f}, 315.f},
+			{{-35000.f, 35000.f, 0.f}, 135.f},
+			{{70000.f, -70000.f, 0.f}, 315.f},
+			{{-70000.f, 70000.f, 0.f}, 135.f},
 		};
 		for (const FGTDef& GT : GuardTowers)
 		{

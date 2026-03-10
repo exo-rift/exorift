@@ -15,11 +15,15 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 	SpawnCrashedShip(FVector(15000.f, -40000.f, 0.f), -65.f, 0.7f);
 
 	// === DEBRIS FIELDS — scattered wreckage from orbital bombardment ===
-	SpawnDebrisField(FVector(25000.f, 60000.f, 0.f), 5000.f, 20);
-	SpawnDebrisField(FVector(-70000.f, 30000.f, 0.f), 4000.f, 16);
-	SpawnDebrisField(FVector(80000.f, -65000.f, 0.f), 6000.f, 24);
-	SpawnDebrisField(FVector(-40000.f, -85000.f, 0.f), 3500.f, 14);
-	SpawnDebrisField(FVector(50000.f, -10000.f, 0.f), 3000.f, 12);
+	SpawnDebrisField(FVector(25000.f, 60000.f, 0.f), 5000.f, 35);
+	SpawnDebrisField(FVector(-70000.f, 30000.f, 0.f), 4000.f, 28);
+	SpawnDebrisField(FVector(80000.f, -65000.f, 0.f), 6000.f, 40);
+	SpawnDebrisField(FVector(-40000.f, -85000.f, 0.f), 3500.f, 24);
+	SpawnDebrisField(FVector(50000.f, -10000.f, 0.f), 3000.f, 20);
+	// Additional debris fields in open areas
+	SpawnDebrisField(FVector(-15000.f, 40000.f, 0.f), 3500.f, 18);
+	SpawnDebrisField(FVector(65000.f, 45000.f, 0.f), 4500.f, 30);
+	SpawnDebrisField(FVector(-55000.f, -50000.f, 0.f), 3000.f, 22);
 
 	// === SCORCH MARKS — impact burns from previous battles ===
 	SpawnScorchMark(FVector(35000.f, 55000.f, 1.f), 3000.f);
@@ -89,9 +93,23 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 	{
 		struct FGlowCrater { FVector Pos; float Radius; FLinearColor GlowCol; };
 		TArray<FGlowCrater> GlowCraters = {
+			// Fire orange — orbital bombardment sites
 			{{45000.f, -55000.f, 0.f}, 2000.f, FLinearColor(0.4f, 0.1f, 0.02f)},
+			{{-20000.f, 45000.f, 0.f}, 1600.f, FLinearColor(0.6f, 0.15f, 0.03f)},
+			{{75000.f, 30000.f, 0.f}, 2200.f, FLinearColor(0.5f, 0.12f, 0.02f)},
+			// Energy blue — weapons platform impacts
 			{{-80000.f, 50000.f, 0.f}, 2500.f, FLinearColor(0.05f, 0.2f, 0.4f)},
+			{{60000.f, -85000.f, 0.f}, 1900.f, FLinearColor(0.08f, 0.25f, 0.5f)},
+			{{-30000.f, -60000.f, 0.f}, 1400.f, FLinearColor(0.04f, 0.15f, 0.35f)},
+			// Plasma purple — exotic ordnance
 			{{30000.f, 100000.f, 0.f}, 1800.f, FLinearColor(0.2f, 0.05f, 0.3f)},
+			{{-95000.f, -30000.f, 0.f}, 2100.f, FLinearColor(0.25f, 0.06f, 0.35f)},
+			// Radiation green — reactor breach sites
+			{{-60000.f, -45000.f, 0.f}, 2800.f, FLinearColor(0.08f, 0.3f, 0.05f)},
+			{{50000.f, 70000.f, 0.f}, 1500.f, FLinearColor(0.1f, 0.35f, 0.06f)},
+			// Hot white — recent kinetic impacts
+			{{-10000.f, -95000.f, 0.f}, 1200.f, FLinearColor(0.4f, 0.35f, 0.3f)},
+			{{95000.f, 10000.f, 0.f}, 1700.f, FLinearColor(0.35f, 0.3f, 0.25f)},
 		};
 		for (const auto& GC : GlowCraters)
 		{

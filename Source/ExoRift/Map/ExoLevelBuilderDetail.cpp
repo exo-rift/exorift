@@ -76,6 +76,16 @@ void AExoLevelBuilder::BuildGroundDetail()
 		{{-50000.f, -50000.f, 20.f}, {0.3f, 0.1f, 0.5f}, 1500.f, 6000.f},
 		// Road intersections — white
 		{{0.f, 0.f, 30.f}, {0.5f, 0.6f, 0.8f}, 4000.f, 5000.f},
+		// Open field pockets — deep purple/blue for alien atmosphere
+		{{35000.f, -35000.f, 20.f}, {0.2f, 0.08f, 0.35f}, 1800.f, 5000.f},
+		{{-35000.f, 35000.f, 20.f}, {0.2f, 0.08f, 0.35f}, 1800.f, 5000.f},
+		{{-60000.f, 60000.f, 20.f}, {0.15f, 0.06f, 0.25f}, 1200.f, 4000.f},
+		{{60000.f, -60000.f, 20.f}, {0.15f, 0.06f, 0.25f}, 1200.f, 4000.f},
+		// Road midpoints — dim white for navigation
+		{{0.f, 40000.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
+		{{0.f, -40000.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
+		{{40000.f, 0.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
+		{{-40000.f, 0.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
 	};
 	for (const auto& G : Glows)
 	{
@@ -129,8 +139,16 @@ void AExoLevelBuilder::BuildGroundDetail()
 		{{-100000.f, -40000.f, 3.f}, -15.f}, // Toxic zone
 		{{40000.f, 100000.f, 3.f}, 30.f},    // Fire zone
 	};
-	for (const auto& M : Marks)
+	// Hazard-specific tint colors for area lighting
+	FLinearColor HazardTints[] = {
+		FLinearColor(0.15f, 0.6f, 0.05f),  // Radiation — green
+		FLinearColor(0.2f, 0.4f, 0.9f),    // Electric — blue
+		FLinearColor(0.5f, 0.15f, 0.6f),   // Toxic — purple
+		FLinearColor(0.9f, 0.25f, 0.05f),  // Fire — orange
+	};
+	for (int32 i = 0; i < Marks.Num(); i++)
 	{
+		const auto& M = Marks[i];
 		// Warning stripe pair
 		SpawnStaticMesh(M.Pos + FVector(500.f, 0.f, 0.f),
 			FVector(0.5f, 20.f, 0.05f), FRotator(0.f, M.Yaw, 0.f),
@@ -138,6 +156,31 @@ void AExoLevelBuilder::BuildGroundDetail()
 		SpawnStaticMesh(M.Pos + FVector(-500.f, 0.f, 0.f),
 			FVector(0.5f, 20.f, 0.05f), FRotator(0.f, M.Yaw, 0.f),
 			CubeMesh, YellowStripe);
+
+		// Hazard zone area tint light
+		UPointLightComponent* HZ = NewObject<UPointLightComponent>(this);
+		HZ->SetupAttachment(RootComponent);
+		HZ->SetWorldLocation(M.Pos + FVector(0.f, 0.f, 300.f));
+		HZ->SetIntensity(6000.f);
+		HZ->SetAttenuationRadius(8000.f);
+		HZ->SetLightColor(HazardTints[i]);
+		HZ->CastShadows = false;
+		HZ->RegisterComponent();
+
+		// Emissive ground pool at hazard center
+		UStaticMeshComponent* HPool = SpawnStaticMesh(
+			M.Pos + FVector(0.f, 0.f, 2.f),
+			FVector(40.f, 40.f, 0.02f), FRotator::ZeroRotator,
+			CylinderMesh, HazardTints[i]);
+		if (HPool)
+		{
+			UMaterialInterface* HMat = FExoMaterialFactory::GetEmissiveAdditive();
+			UMaterialInstanceDynamic* HD = UMaterialInstanceDynamic::Create(HMat, this);
+			HD->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(HazardTints[i].R * 0.4f, HazardTints[i].G * 0.4f,
+					HazardTints[i].B * 0.4f));
+			HPool->SetMaterial(0, HD);
+		}
 	}
 }
 

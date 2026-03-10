@@ -160,6 +160,7 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 
 	// Random debris velocities — dramatic high-energy scatter
 	DebrisVelocities.SetNum(DebrisMeshes.Num());
+	UMaterialInterface* DebrisLit = FExoMaterialFactory::GetLitEmissive();
 	for (int32 i = 0; i < DebrisMeshes.Num(); i++)
 	{
 		FVector Vel = FMath::VRand() * FMath::RandRange(900.f, 2200.f);
@@ -169,14 +170,17 @@ void AExoExplosionEffect::InitExplosion(float Radius)
 		float S = FMath::RandRange(0.05f, 0.15f);
 		DebrisMeshes[i]->SetWorldScale3D(FVector(S, S * 0.6f, S * 0.4f));
 
-		// Debris material — dark with orange emissive
-		UMaterialInterface* DBMat = DebrisMeshes[i]->GetMaterial(0);
-		if (DBMat)
+		// Debris material — dark metal with hot orange emissive edge glow
+		if (DebrisLit)
 		{
-			UMaterialInstanceDynamic* DMat = UMaterialInstanceDynamic::Create(DBMat, this);
+			UMaterialInstanceDynamic* DMat = UMaterialInstanceDynamic::Create(DebrisLit, this);
+			float R = 0.3f + FMath::FRand() * 0.2f;
 			DMat->SetVectorParameterValue(TEXT("BaseColor"),
-				FLinearColor(0.3f + FMath::FRand() * 0.2f, 0.15f, 0.05f));
-			DMat->SetScalarParameterValue(TEXT("Emissive"), 3.f);
+				FLinearColor(R, 0.15f, 0.05f));
+			DMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(R * 6.f, 1.5f, 0.3f));
+			DMat->SetScalarParameterValue(TEXT("Metallic"), 0.7f);
+			DMat->SetScalarParameterValue(TEXT("Roughness"), 0.4f);
 			DebrisMeshes[i]->SetMaterial(0, DMat);
 		}
 	}

@@ -74,12 +74,12 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 		RingScale = 0.90f; Lifetime = 0.18f;
 		break;
 	case EWeaponType::SMG:
-		CoreScale = 0.50f; CrossScale = 0.40f; FlareScale = 0.30f;
-		RingScale = 0.65f; Lifetime = 0.09f;
+		CoreScale = 0.55f; CrossScale = 0.45f; FlareScale = 0.35f;
+		RingScale = 0.70f; Lifetime = 0.12f;
 		break;
 	case EWeaponType::Pistol:
-		CoreScale = 0.60f; CrossScale = 0.50f; FlareScale = 0.40f;
-		RingScale = 0.80f; Lifetime = 0.12f;
+		CoreScale = 0.65f; CrossScale = 0.55f; FlareScale = 0.45f;
+		RingScale = 0.85f; Lifetime = 0.14f;
 		break;
 	default: // Rifle
 		CoreScale = 0.70f; CrossScale = 0.60f; FlareScale = 0.50f;

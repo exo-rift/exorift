@@ -267,6 +267,43 @@ void AExoLevelBuilder::BuildSkybox()
 		StationLight->RegisterComponent();
 	}
 
+	// === ASTEROID BELT — scattered rocky bodies near the planet ===
+	if (SphereMesh)
+	{
+		UMaterialInterface* AsteroidMat = FExoMaterialFactory::GetEmissiveOpaque();
+		float BeltCenter = PlanetDist * 0.4f;
+		for (int32 i = 0; i < 20; i++)
+		{
+			float Angle = FMath::RandRange(0.f, 360.f);
+			float Rad = FMath::DegreesToRadians(Angle);
+			float Dist = BeltCenter + FMath::RandRange(-40000.f, 40000.f);
+			float Elev = PlanetDist * 0.2f + FMath::RandRange(-30000.f, 30000.f);
+			FVector APos(
+				PlanetPos.X + FMath::Cos(Rad) * Dist,
+				PlanetPos.Y + FMath::Sin(Rad) * Dist,
+				Elev);
+			float AScale = FMath::RandRange(30.f, 120.f);
+
+			UStaticMeshComponent* Ast = NewObject<UStaticMeshComponent>(this);
+			Ast->SetupAttachment(RootComponent);
+			Ast->SetStaticMesh(SphereMesh);
+			Ast->SetWorldLocation(APos);
+			Ast->SetWorldScale3D(FVector(AScale, AScale * 0.7f, AScale * 0.5f));
+			Ast->SetWorldRotation(FRotator(
+				FMath::RandRange(-30.f, 30.f),
+				FMath::RandRange(0.f, 360.f),
+				FMath::RandRange(-20.f, 20.f)));
+			Ast->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Ast->CastShadow = false;
+			Ast->RegisterComponent();
+
+			UMaterialInstanceDynamic* AM = UMaterialInstanceDynamic::Create(AsteroidMat, this);
+			AM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.03f + (i % 3) * 0.01f, 0.025f, 0.02f));
+			Ast->SetMaterial(0, AM);
+		}
+	}
+
 	// === ORBITAL DEBRIS — broken ship hulls from a recent battle ===
 	if (CubeMesh)
 	{

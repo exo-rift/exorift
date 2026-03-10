@@ -174,21 +174,33 @@ void AExoWeaponPickup::BuildPickupModel()
 		}
 	}
 
-	// Vertical beacon beam — visible from distance
+	// Vertical beacon beam — visible from distance (all rarities)
 	UMaterialInterface* EmissiveAdditive = FExoMaterialFactory::GetEmissiveAdditive();
-	if (CylMesh && EmissiveAdditive && Rarity >= EWeaponRarity::Rare)
+	if (CylMesh && EmissiveAdditive)
 	{
+		// Beam width scales with rarity — even Common gets a dim beacon
+		float BeamWidth = 0.025f;
+		float BeamHeight = 12.f;
+		switch (Rarity)
+		{
+		case EWeaponRarity::Common:    BeamWidth = 0.025f; BeamHeight = 10.f; break;
+		case EWeaponRarity::Rare:      BeamWidth = 0.035f; BeamHeight = 14.f; break;
+		case EWeaponRarity::Epic:      BeamWidth = 0.045f; BeamHeight = 18.f; break;
+		case EWeaponRarity::Legendary: BeamWidth = 0.06f;  BeamHeight = 22.f; break;
+		default: break;
+		}
+
 		BeaconBeam = NewObject<UStaticMeshComponent>(this);
 		BeaconBeam->SetupAttachment(RootComponent);
 		BeaconBeam->SetStaticMesh(CylMesh);
-		BeaconBeam->SetRelativeLocation(FVector(0.f, 0.f, 800.f));
-		BeaconBeam->SetRelativeScale3D(FVector(0.015f, 0.015f, 16.f));
+		BeaconBeam->SetRelativeLocation(FVector(0.f, 0.f, BeamHeight * 50.f));
+		BeaconBeam->SetRelativeScale3D(FVector(BeamWidth, BeamWidth, BeamHeight));
 		BeaconBeam->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		BeaconBeam->CastShadow = false;
 		BeaconBeam->RegisterComponent();
 
 		BeaconMat = UMaterialInstanceDynamic::Create(EmissiveAdditive, this);
-		float BeaconEm = EmMul * 1.5f;
+		float BeaconEm = EmMul * 2.f;
 		BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * BeaconEm, RarityColor.G * BeaconEm,
 				RarityColor.B * BeaconEm));
