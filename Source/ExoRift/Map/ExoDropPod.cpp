@@ -54,9 +54,7 @@ AExoDropPod::AExoDropPod()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	if (SphereFind.Succeeded()) SphereMesh = SphereFind.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded()) BaseMaterial = MatFind.Object;
+	// BaseMaterial no longer needed — LitEmissive used at runtime
 }
 
 void AExoDropPod::InitPod(AController* InPassenger, AExoDropPodManager* InManager)

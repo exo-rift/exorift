@@ -33,12 +33,15 @@ AExoLootContainer::AExoLootContainer()
 		ContainerMesh->SetRelativeScale3D(FVector(1.0f, 0.6f, 0.5f));
 	}
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded())
+	// PBR metallic crate body via LitEmissive
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MatFind.Object, this);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.1f, 0.06f));
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+		Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
 		ContainerMesh->SetMaterial(0, Mat);
 	}
 }
@@ -56,13 +59,9 @@ void AExoLootContainer::BuildVisuals()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(
 		TEXT("/Engine/BasicShapes/Cube"));
 	UStaticMesh* CubeMesh = CubeFind.Succeeded() ? CubeFind.Object : nullptr;
+	if (!CubeMesh) return;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	UMaterialInterface* BaseMat = MatFind.Succeeded() ? MatFind.Object : nullptr;
-
-	if (!CubeMesh || !BaseMat) return;
-
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 	UMaterialInterface* EmissiveBaseMat = FExoMaterialFactory::GetEmissiveOpaque();
 
 	auto MakePart = [&](const FVector& Loc, const FVector& Scale,
@@ -84,10 +83,13 @@ void AExoLootContainer::BuildVisuals()
 				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 			C->SetMaterial(0, Mat);
 		}
-		else
+		else if (LitMat)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
 			C->SetMaterial(0, Mat);
 		}
 		return C;

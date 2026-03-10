@@ -38,12 +38,12 @@ AExoSupplyDrop::AExoSupplyDrop()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(TEXT("/Engine/BasicShapes/Cylinder"));
 	if (CylF.Succeeded()) CylinderMeshRef = CylF.Object;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded()) BaseMaterialRef = MatF.Object;
+	// BaseMaterialRef no longer needed — LitEmissive used at runtime
 }
 
 void AExoSupplyDrop::BuildCrateMesh()
 {
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator) -> UStaticMeshComponent*
 	{
@@ -57,10 +57,24 @@ void AExoSupplyDrop::BuildCrateMesh()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = true;
 		C->RegisterComponent();
-		if (BaseMaterialRef)
+		if (LitMat)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterialRef, this);
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+			if (Lum > 0.15f)
+			{
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(Color.R * 5.f, Color.G * 5.f, Color.B * 5.f));
+				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.5f);
+				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.15f);
+			}
+			else
+			{
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
+			}
 			C->SetMaterial(0, Mat);
 		}
 		return C;

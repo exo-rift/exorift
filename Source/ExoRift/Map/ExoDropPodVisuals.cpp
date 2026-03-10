@@ -8,6 +8,7 @@
 
 void AExoDropPod::BuildPodMesh()
 {
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 	auto MakeComp = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator) -> UStaticMeshComponent*
 	{
@@ -21,10 +22,24 @@ void AExoDropPod::BuildPodMesh()
 		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		C->CastShadow = true;
 		C->RegisterComponent();
-		if (BaseMaterial)
+		if (LitMat)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+			if (Lum > 0.15f)
+			{
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.4f);
+				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.15f);
+			}
+			else
+			{
+				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.9f);
+				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.2f);
+			}
 			C->SetMaterial(0, Mat);
 		}
 		return C;

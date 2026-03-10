@@ -117,5 +117,4 @@ protected:
 	UStaticMesh* CylinderMesh = nullptr;
 	UStaticMesh* ConeMesh = nullptr;
 	UStaticMesh* SphereMesh = nullptr;
-	UMaterialInterface* BaseMaterial = nullptr;
 };

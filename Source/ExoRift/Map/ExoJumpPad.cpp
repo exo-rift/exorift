@@ -68,16 +68,16 @@ void AExoJumpPad::BeginPlay()
 	Super::BeginPlay();
 	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AExoJumpPad::OnPadOverlap);
 
-	// Apply materials
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
-	if (BasePlatform->GetStaticMesh())
+	// Apply PBR metallic material to base platform
+	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+	if (LitMat && BasePlatform->GetStaticMesh())
 	{
-		UMaterialInstanceDynamic* BaseMat = UMaterialInstanceDynamic::Create(
-			BasePlatform->GetMaterial(0), this);
+		UMaterialInstanceDynamic* BaseMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		BaseMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.05f, 0.055f, 0.07f));
+		BaseMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		BaseMat->SetScalarParameterValue(TEXT("Metallic"), 0.9f);
+		BaseMat->SetScalarParameterValue(TEXT("Roughness"), 0.2f);
 		BasePlatform->SetMaterial(0, BaseMat);
 	}
 
