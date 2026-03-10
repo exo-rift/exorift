@@ -65,8 +65,9 @@ void UExoMatchmakingManager::Tick(float DeltaTime)
 		if (LoadTimer >= 1.5f) // Brief "match found" display
 		{
 			TransitionTo(EMatchmakingState::Loading);
-			// Transition to gameplay map
-			UGameplayStatics::OpenLevel(GetWorld(), *UExoMapConfig::GetBRMapPath());
+			// Transition to gameplay map with explicit game mode override
+			UGameplayStatics::OpenLevel(GetWorld(), *UExoMapConfig::GetBRMapPath(), true,
+				TEXT("?game=/Script/ExoRift.ExoGameMode"));
 		}
 		break;
 	}

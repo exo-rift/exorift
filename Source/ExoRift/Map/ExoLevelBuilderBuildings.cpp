@@ -48,13 +48,45 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY, Size.Z - 200.f)),
 		FVector(DoorHalf * 2.f / 100.f, WallThickness / 100.f + 0.1f, 2.f), Rot, CubeMesh, TrimColor);
 
-	// Roof + trim
+	// Corner pillars — structural columns at each building corner
+	FLinearColor PillarColor(0.1f, 0.11f, 0.13f);
+	float PillarW = 120.f;
+	for (float CX : {-HalfX, HalfX})
+		for (float CY : {-HalfY, HalfY})
+			SpawnStaticMesh(Center + Rot.RotateVector(FVector(CX, CY, HalfZ)),
+				FVector(PillarW / 100.f, PillarW / 100.f, Size.Z / 100.f + 0.2f),
+				Rot, CubeMesh, PillarColor);
+
+	// Base plinth — dark strip around building perimeter
+	FLinearColor PlinthColor(0.04f, 0.045f, 0.05f);
+	float PlinthH = 40.f;
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY, PlinthH * 0.5f)),
+		FVector(Size.X / 100.f + 0.2f, 0.3f, PlinthH / 100.f), Rot, CubeMesh, PlinthColor);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY, PlinthH * 0.5f)),
+		FVector(Size.X / 100.f + 0.2f, 0.3f, PlinthH / 100.f), Rot, CubeMesh, PlinthColor);
+
+	// Door frame side posts
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(-DoorHalf, HalfY, HalfZ * 0.8f)),
+		FVector(0.6f, WallThickness / 100.f + 0.15f, Size.Z / 100.f * 0.8f), Rot, CubeMesh, TrimColor);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(DoorHalf, HalfY, HalfZ * 0.8f)),
+		FVector(0.6f, WallThickness / 100.f + 0.15f, Size.Z / 100.f * 0.8f), Rot, CubeMesh, TrimColor);
+
+	// Front entrance step
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY + 60.f, 15.f)),
+		FVector(DoorHalf * 2.f / 100.f + 0.5f, 1.2f, 0.3f), Rot, CubeMesh,
+		FLinearColor(0.065f, 0.07f, 0.08f));
+
+	// Roof + trim (all four sides)
 	SpawnStaticMesh(Center + FVector(0.f, 0.f, Size.Z),
 		FVector(Size.X / 100.f + 0.3f, Size.Y / 100.f + 0.3f, 0.3f), Rot, CubeMesh, RoofColor);
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY + 15.f, Size.Z + 20.f)),
 		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
 	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY - 15.f, Size.Z + 20.f)),
 		FVector(Size.X / 100.f + 0.4f, 0.1f, 0.4f), Rot, CubeMesh, TrimColor);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(-HalfX - 15.f, 0.f, Size.Z + 20.f)),
+		FVector(0.1f, Size.Y / 100.f + 0.4f, 0.4f), Rot, CubeMesh, TrimColor);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(HalfX + 15.f, 0.f, Size.Z + 20.f)),
+		FVector(0.1f, Size.Y / 100.f + 0.4f, 0.4f), Rot, CubeMesh, TrimColor);
 
 	// Emissive accent strips on front/back walls
 	float StripZ = Size.Z * 0.6f;
@@ -96,6 +128,14 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	IntLight->CastShadows = false;
 	IntLight->RegisterComponent();
 
+	// Horizontal wall panel line (mid-height detail break)
+	float PanelZ = Size.Z * 0.3f;
+	FLinearColor PanelLine(0.065f, 0.075f, 0.09f);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, HalfY + 1.f, PanelZ)),
+		FVector(Size.X / 100.f * 0.95f, 0.015f, 0.06f), Rot, CubeMesh, PanelLine);
+	SpawnStaticMesh(Center + Rot.RotateVector(FVector(0.f, -HalfY - 1.f, PanelZ)),
+		FVector(Size.X / 100.f * 0.95f, 0.015f, 0.06f), Rot, CubeMesh, PanelLine);
+
 	// Rooftop equipment on larger buildings
 	if (Size.X > 3000.f && Size.Y > 3000.f)
 	{
@@ -106,6 +146,12 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 			FLinearColor(0.08f, 0.08f, 0.1f));
 		SpawnStaticMesh(VentPos + FVector(0.f, 0.f, 35.f),
 			FVector(1.3f, 0.8f, 0.05f), Rot, CubeMesh, FLinearColor(0.06f, 0.06f, 0.07f));
+		// Second rooftop unit offset from the first
+		FVector Vent2 = Center + FVector(
+			FMath::RandRange(-HalfX * 0.3f, HalfX * 0.3f),
+			FMath::RandRange(-HalfY * 0.3f, HalfY * 0.3f), Size.Z + 40.f);
+		SpawnStaticMesh(Vent2, FVector(0.6f, 0.6f, 0.8f), Rot, CylinderMesh,
+			FLinearColor(0.07f, 0.07f, 0.09f));
 	}
 
 	// Window panels along walls — emissive glow from interior lighting
