@@ -1,4 +1,5 @@
 #include "Visual/ExoFlickerLight.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -34,12 +35,9 @@ void AExoFlickerLight::InitLight(const FLinearColor& Color, float InBaseIntensit
 	Light->SetLightColor(Color);
 	Light->SetIntensity(BaseIntensity);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFinder.Succeeded())
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFinder.Object, this);
+			FExoMaterialFactory::GetLitEmissive(), this);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.15f, 0.15f, 0.18f, 1.f));
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),

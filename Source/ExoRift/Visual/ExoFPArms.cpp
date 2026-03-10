@@ -1,5 +1,6 @@
 // ExoFPArms.cpp — Procedural first-person arm geometry
 #include "Visual/ExoFPArms.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -39,16 +40,20 @@ UStaticMeshComponent* UExoFPArms::AddPart(const FVector& Offset, const FVector& 
 	Part->CastShadow = false;
 	Part->SetGenerateOverlapEvents(false);
 
-	if (BaseMaterial)
+	float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+	if (Lum > 0.12f)
+	{
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
+			FExoMaterialFactory::GetLitEmissive(), GetOwner());
+		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+		Part->SetMaterial(0, Mat);
+	}
+	else if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
-		if (Lum > 0.12f)
-		{
-			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
-		}
 		Part->SetMaterial(0, Mat);
 	}
 

@@ -8,6 +8,7 @@
 #include "Weapons/ExoWeaponSMG.h"
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoPickupFlash.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -68,6 +69,8 @@ void AExoWeaponPickup::BuildPickupModel()
 	default:                       EmMul = 0.5f; break;
 	}
 
+	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
+
 	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator,
 		bool bIsAccent = false) -> UMaterialInstanceDynamic*
@@ -82,15 +85,19 @@ void AExoWeaponPickup::BuildPickupModel()
 		C->CastShadow = false;
 		C->RegisterComponent();
 		UMaterialInstanceDynamic* Mat = nullptr;
-		if (BaseMat)
+		if (bIsAccent && EmissiveOpaque)
 		{
+			// Accent strips — solid glowing elements (opaque, unlit)
+			Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
+			C->SetMaterial(0, Mat);
+		}
+		else if (BaseMat)
+		{
+			// Structural body parts — non-emissive (BasicShapeMaterial)
 			Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-			if (bIsAccent)
-			{
-				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
-			}
 			C->SetMaterial(0, Mat);
 		}
 		return Mat;
@@ -173,11 +180,9 @@ void AExoWeaponPickup::BuildPickupModel()
 	PedestalPlate->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PedestalPlate->CastShadow = false;
 	PedestalPlate->RegisterComponent();
-	if (BaseMat)
+	if (EmissiveOpaque)
 	{
-		PedestalMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		PedestalMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(RarityColor.R * 0.15f, RarityColor.G * 0.15f, RarityColor.B * 0.15f));
+		PedestalMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
 		PedestalMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * EmMul * 0.3f, RarityColor.G * EmMul * 0.3f,
 				RarityColor.B * EmMul * 0.3f));
@@ -195,10 +200,9 @@ void AExoWeaponPickup::BuildPickupModel()
 		RarityRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		RarityRing->CastShadow = false;
 		RarityRing->RegisterComponent();
-		if (BaseMat)
+		if (EmissiveOpaque)
 		{
-			RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-			RingMat->SetVectorParameterValue(TEXT("BaseColor"), RarityColor * 0.3f);
+			RingMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
 			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(RarityColor.R * EmMul * 0.6f, RarityColor.G * EmMul * 0.6f,
 					RarityColor.B * EmMul * 0.6f));
@@ -207,7 +211,8 @@ void AExoWeaponPickup::BuildPickupModel()
 	}
 
 	// --- Vertical beacon beam — visible from distance ---
-	if (CylMesh && BaseMat && Rarity >= EWeaponRarity::Rare)
+	UMaterialInterface* EmissiveAdditive = FExoMaterialFactory::GetEmissiveAdditive();
+	if (CylMesh && EmissiveAdditive && Rarity >= EWeaponRarity::Rare)
 	{
 		BeaconBeam = NewObject<UStaticMeshComponent>(this);
 		BeaconBeam->SetupAttachment(RootComponent);
@@ -218,11 +223,9 @@ void AExoWeaponPickup::BuildPickupModel()
 		BeaconBeam->CastShadow = false;
 		BeaconBeam->RegisterComponent();
 
-		BeaconMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		// Beacon beam — pure energy overlay (additive, unlit)
+		BeaconMat = UMaterialInstanceDynamic::Create(EmissiveAdditive, this);
 		float BeaconEm = EmMul * 1.5f;
-		BeaconMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(RarityColor.R * BeaconEm * 0.3f, RarityColor.G * BeaconEm * 0.3f,
-				RarityColor.B * BeaconEm * 0.3f));
 		BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * BeaconEm, RarityColor.G * BeaconEm,
 				RarityColor.B * BeaconEm));

@@ -1,4 +1,5 @@
 #include "Visual/ExoAmbientParticles.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -13,8 +14,6 @@ AExoAmbientParticles::AExoAmbientParticles()
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
 		TEXT("/Engine/BasicShapes/Sphere"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
 
 	for (int32 i = 0; i < NUM_MOTES; i++)
 	{
@@ -44,17 +43,13 @@ AExoAmbientParticles::AExoAmbientParticles()
 		Mt.BaseScale = FMath::RandRange(0.015f, 0.035f);
 	}
 
-	// Apply default dust mote material
-	if (MatFinder.Succeeded())
+	// Apply default dust mote material — emissive opaque so glow is visible in shadow
 	{
+		UMaterialInterface* DustMat = FExoMaterialFactory::GetEmissiveOpaque();
 		for (int32 i = 0; i < NUM_MOTES; i++)
 		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-				MatFinder.Object, this);
-			FLinearColor DustCol(0.5f, 0.45f, 0.4f, 1.f);
-			// Slight emissive so they're visible in shadow
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(DustMat, this);
 			FLinearColor EmissiveCol(0.3f, 0.28f, 0.25f, 1.f);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), DustCol);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), EmissiveCol);
 			MoteMeshes[i]->SetMaterial(0, Mat);
 		}
@@ -65,14 +60,13 @@ void AExoAmbientParticles::SetStyle(bool bEnergyWisps)
 {
 	bIsEnergyStyle = bEnergyWisps;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
+	UMaterialInterface* ParentMat = bEnergyWisps
+		? FExoMaterialFactory::GetEmissiveAdditive()
+		: FExoMaterialFactory::GetEmissiveOpaque();
 
 	for (int32 i = 0; i < MoteMeshes.Num(); i++)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFinder.Object, this);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ParentMat, this);
 		if (bEnergyWisps)
 		{
 			// Glowing cyan/blue energy wisps
@@ -81,15 +75,12 @@ void AExoAmbientParticles::SetStyle(bool bEnergyWisps)
 				0.1f + Hue * 0.3f,
 				0.5f + Hue * 0.3f,
 				2.f + (1.f - Hue) * 3.f, 1.f);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Col);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
 			Motes[i].BaseScale = FMath::RandRange(0.02f, 0.05f);
 		}
 		else
 		{
 			// Dust motes
-			FLinearColor DustCol(0.5f, 0.45f, 0.4f, 1.f);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), DustCol);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.3f, 0.28f, 0.25f, 1.f));
 		}

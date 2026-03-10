@@ -37,6 +37,7 @@ private:
 	UPROPERTY()
 	UMaterialInstanceDynamic* FlashMat = nullptr;
 
+	FLinearColor FlashColor = FLinearColor::White;
 	float Age = 0.f;
 	float Lifetime = 0.25f;
 	float BaseIntensity = 20000.f;

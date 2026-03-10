@@ -1,5 +1,6 @@
 // ExoDeathEffect.cpp — Energy burst + scattering fragments on elimination
 #include "Visual/ExoDeathEffect.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -59,20 +60,16 @@ AExoDeathEffect::AExoDeathEffect()
 
 void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 {
-	UMaterialInterface* BaseMat = CoreFlash->GetMaterial(0);
-	if (!BaseMat) return;
+	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Core flash — bright white-blue
-	UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FlashMat->SetVectorParameterValue(TEXT("BaseColor"),
-		FLinearColor(0.8f, 0.9f, 1.f));
+	UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(15.f, 18.f, 25.f));
 	CoreFlash->SetMaterial(0, FlashMat);
 
 	// Shock ring — accent-colored
-	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	RingMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
+	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(AccentColor.R * 5.f, AccentColor.G * 5.f, AccentColor.B * 5.f));
 	ShockRing->SetMaterial(0, RingMat);
@@ -90,13 +87,12 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 		float S = FMath::RandRange(0.02f, 0.07f);
 		Fragments[i]->SetWorldScale3D(FVector(S));
 
-		UMaterialInstanceDynamic* FMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		UMaterialInstanceDynamic* FragMat = UMaterialInstanceDynamic::Create(EmMat, this);
 		float Brightness = FMath::RandRange(2.f, 6.f);
-		FMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
-		FMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+		FragMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(AccentColor.R * Brightness,
 				AccentColor.G * Brightness, AccentColor.B * Brightness));
-		Fragments[i]->SetMaterial(0, FMat);
+		Fragments[i]->SetMaterial(0, FragMat);
 	}
 }
 

@@ -1,4 +1,5 @@
 #include "Visual/ExoPickupFlash.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -34,19 +35,16 @@ AExoPickupFlash::AExoPickupFlash()
 
 void AExoPickupFlash::Init(const FLinearColor& Color)
 {
+	FlashColor = Color;
 	if (FlashLight) FlashLight->SetLightColor(Color);
 
 	if (FlashSphere)
 	{
-		UMaterialInterface* Base = FlashSphere->GetMaterial(0);
-		if (Base)
-		{
-			FlashMat = UMaterialInstanceDynamic::Create(Base, this);
-			FlashMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-			FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
-			FlashSphere->SetMaterial(0, FlashMat);
-		}
+		FlashMat = UMaterialInstanceDynamic::Create(
+			FExoMaterialFactory::GetEmissiveAdditive(), this);
+		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+		FlashSphere->SetMaterial(0, FlashMat);
 	}
 }
 
@@ -74,10 +72,9 @@ void AExoPickupFlash::Tick(float DeltaTime)
 
 	if (FlashMat)
 	{
-		FLinearColor Col;
-		FlashMat->GetVectorParameterValue(TEXT("BaseColor"), Col);
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Col.R * 8.f * Alpha, Col.G * 8.f * Alpha, Col.B * 8.f * Alpha));
+			FLinearColor(FlashColor.R * 8.f * Alpha, FlashColor.G * 8.f * Alpha,
+				FlashColor.B * 8.f * Alpha));
 	}
 }
 

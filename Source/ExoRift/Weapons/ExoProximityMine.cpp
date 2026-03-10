@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
@@ -85,16 +86,17 @@ void AExoProximityMine::BeginPlay()
 void AExoProximityMine::BuildMineVisuals()
 {
 	UMaterialInterface* BaseMat = MineMesh ? MineMesh->GetMaterial(0) : nullptr;
-	if (!BaseMat) return;
+	UMaterialInterface* LitEmissive = FExoMaterialFactory::GetLitEmissive();
+	if (!LitEmissive) return;
 
-	// Body — dark metallic
-	BodyDynMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+	// Body — dark metallic (gains emissive glow when triggered)
+	BodyDynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
 	BodyDynMat->SetVectorParameterValue(TEXT("BaseColor"),
 		FLinearColor(0.06f, 0.06f, 0.08f));
 	MineMesh->SetMaterial(0, BodyDynMat);
 
-	// Antenna — silver
-	if (Antenna)
+	// Antenna — silver (non-emissive structural part)
+	if (Antenna && BaseMat)
 	{
 		UMaterialInstanceDynamic* AntMat = UMaterialInstanceDynamic::Create(BaseMat, this);
 		AntMat->SetVectorParameterValue(TEXT("BaseColor"),
@@ -102,10 +104,10 @@ void AExoProximityMine::BuildMineVisuals()
 		Antenna->SetMaterial(0, AntMat);
 	}
 
-	// LED — starts yellow (deploying)
+	// LED — starts yellow (deploying), glowing indicator
 	if (LEDMesh)
 	{
-		LEDDynMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		LEDDynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
 		LEDDynMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(1.f, 0.7f, 0.f));
 		LEDDynMat->SetVectorParameterValue(TEXT("EmissiveColor"),

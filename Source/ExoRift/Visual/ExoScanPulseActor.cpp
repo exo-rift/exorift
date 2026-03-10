@@ -1,5 +1,6 @@
 // ExoScanPulseActor.cpp — Expanding ring visual for AreaScan ability
 #include "Visual/ExoScanPulseActor.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -46,20 +47,17 @@ void AExoScanPulseActor::Init(float Radius)
 {
 	ScanRadius = Radius;
 
-	UMaterialInterface* BaseMat = RingMesh->GetMaterial(0);
-	if (!BaseMat) return;
+	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Ring — bright cyan-blue energy
-	UMaterialInstanceDynamic* RMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	RMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.1f, 0.4f, 1.f));
+	UMaterialInstanceDynamic* RMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	RMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(1.f, 4.f, 10.f));
 	RingMesh->SetMaterial(0, RMat);
 
 	// Inner flash — bright white-blue origin burst
-	UMaterialInstanceDynamic* FMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.7f, 0.85f, 1.f));
-	FMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(10.f, 14.f, 20.f));
-	InnerFlash->SetMaterial(0, FMat);
+	UMaterialInstanceDynamic* FlashMID = UMaterialInstanceDynamic::Create(EmMat, this);
+	FlashMID->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(10.f, 14.f, 20.f));
+	InnerFlash->SetMaterial(0, FlashMID);
 }
 
 void AExoScanPulseActor::Tick(float DeltaTime)

@@ -2,6 +2,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoScreenShake.h"
 
 AExoWeaponSniper::AExoWeaponSniper()
@@ -65,14 +66,12 @@ AExoWeaponSniper::AExoWeaponSniper()
 	GlintMesh->SetVisibility(false);
 	if (SphereFinder.Succeeded()) GlintMesh->SetStaticMesh(SphereFinder.Object);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFinder.Succeeded())
+	// Scope glint — pure energy flash (additive, unlit)
+	UMaterialInterface* EmissiveAdditive = FExoMaterialFactory::GetEmissiveAdditive();
+	if (EmissiveAdditive)
 	{
 		UMaterialInstanceDynamic* GlintMat = UMaterialInstanceDynamic::Create(
-			MatFinder.Object, this);
-		GlintMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(1.f, 1.f, 1.f, 1.f));
+			EmissiveAdditive, this);
 		GlintMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(80.f, 70.f, 50.f, 1.f)); // Blazing white-gold
 		GlintMesh->SetMaterial(0, GlintMat);

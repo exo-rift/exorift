@@ -1,5 +1,6 @@
 // ExoHoloBillboard.cpp — Animated holographic billboard with scrolling text bars
 #include "Visual/ExoHoloBillboard.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -54,15 +55,12 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 	BoardWidth = Width;
 	BoardHeight = Height;
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
+	UMaterialInterface* EmissiveOpaqueMat = FExoMaterialFactory::GetEmissiveOpaque();
+	UMaterialInterface* EmissiveAdditiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Main screen — dark with subtle glow
 	ScreenMesh->SetRelativeScale3D(FVector(Width / 100.f, 5.f, Height / 100.f));
-	ScreenMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	ScreenMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.02f, 0.02f, 0.03f));
+	ScreenMat = UMaterialInstanceDynamic::Create(EmissiveOpaqueMat, this);
 	ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(Color.R * 0.2f, Color.G * 0.2f, Color.B * 0.2f));
 	ScreenMesh->SetMaterial(0, ScreenMat);
@@ -73,8 +71,7 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 	{
 		F->SetRelativeLocation(FVector(0.f, 0.f, ZOff));
 		F->SetRelativeScale3D(FVector(FrameW, 0.12f, 0.08f));
-		UMaterialInstanceDynamic* FM = UMaterialInstanceDynamic::Create(BaseMat, this);
-		FM->SetVectorParameterValue(TEXT("BaseColor"), Color * 0.3f);
+		UMaterialInstanceDynamic* FM = UMaterialInstanceDynamic::Create(EmissiveOpaqueMat, this);
 		FM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		F->SetMaterial(0, FM);
@@ -99,9 +96,8 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 		BarSpeeds[i] = FMath::RandRange(300.f, 800.f) * (FMath::RandBool() ? 1.f : -1.f);
 		BarPositions[i] = FMath::RandRange(-Width * 0.5f, Width * 0.5f);
 
-		BarMats[i] = UMaterialInstanceDynamic::Create(BaseMat, this);
+		BarMats[i] = UMaterialInstanceDynamic::Create(EmissiveAdditiveMat, this);
 		float Em = FMath::RandRange(2.f, 6.f);
-		BarMats[i]->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		BarMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * Em, Color.G * Em, Color.B * Em));
 		TextBars[i]->SetMaterial(0, BarMats[i]);

@@ -1,5 +1,6 @@
 // ExoMuzzleSmoke.cpp — Post-fire muzzle smoke wisp
 #include "Visual/ExoMuzzleSmoke.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -26,13 +27,8 @@ void AExoMuzzleSmoke::InitSmoke(const FVector& DriftDir)
 	BaseScale = FMath::RandRange(0.18f, 0.35f);
 	Lifetime = FMath::RandRange(0.5f, 0.9f);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-
-	SmokeMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-	FLinearColor SmokeCol(0.15f, 0.15f, 0.18f);
-	SmokeMat->SetVectorParameterValue(TEXT("BaseColor"), SmokeCol);
+	SmokeMat = UMaterialInstanceDynamic::Create(
+		FExoMaterialFactory::GetEmissiveOpaque(), this);
 	SmokeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(0.06f, 0.06f, 0.08f));
 	SmokePuff->SetMaterial(0, SmokeMat);
@@ -63,10 +59,8 @@ void AExoMuzzleSmoke::Tick(float DeltaTime)
 	if (SmokeMat)
 	{
 		float Alpha = (1.f - T * T) * 0.7f;
-		SmokeMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.15f * Alpha, 0.15f * Alpha, 0.18f * Alpha));
 		SmokeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.04f * Alpha, 0.04f * Alpha, 0.06f * Alpha));
+			FLinearColor(0.06f * Alpha, 0.06f * Alpha, 0.08f * Alpha));
 	}
 
 	if (Age >= Lifetime) Destroy();

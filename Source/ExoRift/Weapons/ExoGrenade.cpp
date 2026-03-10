@@ -7,6 +7,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoScreenShake.h"
 #include "Visual/ExoEMPEffect.h"
@@ -37,12 +38,11 @@ AExoGrenade::AExoGrenade()
 		MeshComp->SetStaticMesh(SphereMesh.Object);
 	}
 
-	// Apply grenade body material
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatF(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatF.Succeeded())
+	// Apply grenade body material — lit surface with emissive for fuse glow
+	UMaterialInterface* LitEmissive = FExoMaterialFactory::GetLitEmissive();
+	if (LitEmissive)
 	{
-		BodyMat = UMaterialInstanceDynamic::Create(MatF.Object, this);
+		BodyMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.08f, 0.08f, 0.08f));
 		MeshComp->SetMaterial(0, BodyMat);

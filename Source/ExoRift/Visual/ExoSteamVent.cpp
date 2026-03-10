@@ -1,4 +1,5 @@
 #include "Visual/ExoSteamVent.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -48,15 +49,11 @@ void AExoSteamVent::InitVent(float InInterval, float InDuration,
 
 	VentLight->SetLightColor(InColor);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
+	UMaterialInterface* PuffMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	for (auto* P : PuffMeshes)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFinder.Object, this);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), InColor * 0.5f);
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(PuffMat, this);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(InColor.R * 2.f, InColor.G * 2.f, InColor.B * 2.f));
 		P->SetMaterial(0, Mat);

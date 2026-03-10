@@ -1,4 +1,5 @@
 #include "Visual/ExoCharacterModel.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -142,10 +143,13 @@ void UExoCharacterModel::BuildModel(bool bIsBot)
 
 void UExoCharacterModel::SetAccentColor(const FLinearColor& Color)
 {
-	if (AccentPart && BaseMaterial)
+	if (AccentPart)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
+			FExoMaterialFactory::GetLitEmissive(), GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		AccentPart->SetMaterial(0, Mat);
 	}
 	if (IdentityLight)
@@ -170,17 +174,21 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 	Part->SetGenerateOverlapEvents(false);
 	Part->SetOwnerNoSee(false);
 
-	if (BaseMaterial)
+	// Bright accent colors get strong emissive glow for visibility
+	float Luminance = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
+	if (Luminance > 0.15f)
+	{
+		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
+			FExoMaterialFactory::GetLitEmissive(), GetOwner());
+		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+		Part->SetMaterial(0, Mat);
+	}
+	else if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, GetOwner());
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		// Bright accent colors get strong emissive glow for visibility
-		float Luminance = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
-		if (Luminance > 0.15f)
-		{
-			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
-		}
 		Part->SetMaterial(0, Mat);
 	}
 

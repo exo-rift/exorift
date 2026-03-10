@@ -1,5 +1,6 @@
 // ExoSparkEmitter.cpp — Periodic electrical spark bursts
 #include "Visual/ExoSparkEmitter.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -35,8 +36,9 @@ void AExoSparkEmitter::InitSparks(const FLinearColor& Color, float BurstInterval
 	SparkOrigin = GetActorLocation();
 	FlashLight->SetLightColor(Color);
 
-	if (!CubeMesh || !BaseMat) return;
+	if (!CubeMesh) return;
 
+	UMaterialInterface* SparkMat = FExoMaterialFactory::GetEmissiveAdditive();
 	SparkMeshes.SetNum(MAX_SPARKS);
 	Sparks.SetNum(MAX_SPARKS);
 	for (int32 i = 0; i < MAX_SPARKS; i++)
@@ -50,8 +52,7 @@ void AExoSparkEmitter::InitSparks(const FLinearColor& Color, float BurstInterval
 		S->SetVisibility(false);
 		S->RegisterComponent();
 
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMat, this);
-		M->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(SparkMat, this);
 		FLinearColor Em(Color.R * 30.f, Color.G * 30.f, Color.B * 30.f);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		S->SetMaterial(0, M);

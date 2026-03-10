@@ -1,5 +1,6 @@
 // ExoEMPEffect.cpp — Blue expanding EMP pulse with arc fragments
 #include "Visual/ExoEMPEffect.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -70,24 +71,20 @@ void AExoEMPEffect::InitPulse(float Radius)
 	PulseRadius = Radius;
 	CoreSphere->SetWorldScale3D(FVector(0.3f));
 
-	UMaterialInterface* BaseMat = CoreSphere->GetMaterial(0);
-	if (!BaseMat) return;
+	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Core — bright cyan-white
-	UMaterialInstanceDynamic* CoreMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	CoreMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.5f, 0.8f, 1.f));
+	UMaterialInstanceDynamic* CoreMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(20.f, 30.f, 50.f));
 	CoreSphere->SetMaterial(0, CoreMat);
 
 	// Primary ring — blue
-	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	RingMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.1f, 0.3f, 1.f));
+	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(5.f, 10.f, 30.f));
 	PulseRing->SetMaterial(0, RingMat);
 
 	// Secondary ring — lighter cyan
-	UMaterialInstanceDynamic* Ring2Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	Ring2Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.3f, 0.6f, 1.f));
+	UMaterialInstanceDynamic* Ring2Mat = UMaterialInstanceDynamic::Create(EmMat, this);
 	Ring2Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(8.f, 15.f, 25.f));
 	PulseRing2->SetMaterial(0, Ring2Mat);
 
@@ -101,8 +98,7 @@ void AExoEMPEffect::InitPulse(float Radius)
 
 		ArcFragments[i]->SetWorldScale3D(FVector(0.02f, 0.02f, 0.5f));
 
-		UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		ArcMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.7f, 0.9f, 1.f));
+		UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(EmMat, this);
 		float Bright = FMath::RandRange(10.f, 20.f);
 		ArcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Bright * 0.5f, Bright * 0.8f, Bright));

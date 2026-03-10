@@ -5,6 +5,7 @@
 #include "Components/PointLightComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoTracerManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,9 +25,6 @@ AExoProjectile::AExoProjectile()
 		TEXT("/Engine/BasicShapes/Sphere"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
 		TEXT("/Engine/BasicShapes/Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-
 	// Core energy sphere — stretched along travel direction
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(CollisionSphere);
@@ -55,26 +53,21 @@ AExoProjectile::AExoProjectile()
 	TrailWake->SetGenerateOverlapEvents(false);
 	if (CylFinder.Succeeded()) TrailWake->SetStaticMesh(CylFinder.Object);
 
-	// Dynamic materials
-	if (MatFinder.Succeeded())
+	// Dynamic materials — energy glow overlays (additive, unlit)
+	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
+	if (EmissiveMat)
 	{
-		ProjectileMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		ProjectileMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(1.f, 0.4f, 0.1f));
+		ProjectileMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(25.f, 10.f, 2.5f));
 		ProjectileMesh->SetMaterial(0, ProjectileMat);
 
-		OuterGlowMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		OuterGlowMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.6f, 0.25f, 0.06f));
+		OuterGlowMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		OuterGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(8.f, 3.f, 0.8f));
 		OuterGlow->SetMaterial(0, OuterGlowMat);
 
-		TrailMat = UMaterialInstanceDynamic::Create(MatFinder.Object, this);
-		TrailMat->SetVectorParameterValue(TEXT("BaseColor"),
-			FLinearColor(0.4f, 0.15f, 0.04f));
+		TrailMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
 		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(5.f, 2.f, 0.5f));
 		TrailWake->SetMaterial(0, TrailMat);
@@ -114,7 +107,6 @@ void AExoProjectile::SetProjectileColor(const FLinearColor& Color)
 	GlowColor = Color;
 	if (ProjectileMat)
 	{
-		ProjectileMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		ProjectileMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 12.f, Color.G * 12.f, Color.B * 12.f));
 	}

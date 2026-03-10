@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoPickupFlash.h"
 #include "ExoRift.h"
 
@@ -71,11 +72,20 @@ void AExoArmorPickup::Tick(float DeltaTime)
 		// Tint display mesh with tier color + pulsing emissive
 		FLinearColor Col = GetTierColor();
 		float Pulse = 1.5f + 0.5f * FMath::Sin(BobPhase * 1.5f);
-		if (DisplayMesh && DisplayMesh->GetMaterial(0))
+		if (DisplayMesh)
 		{
 			UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(
 				DisplayMesh->GetMaterial(0));
-			if (!DynMat) DynMat = DisplayMesh->CreateAndSetMaterialInstanceDynamic(0);
+			if (!DynMat)
+			{
+				// Create MID from LitEmissive so EmissiveColor actually works
+				UMaterialInterface* LitEmissive = FExoMaterialFactory::GetLitEmissive();
+				if (LitEmissive)
+				{
+					DynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
+					DisplayMesh->SetMaterial(0, DynMat);
+				}
+			}
 			if (DynMat)
 			{
 				DynMat->SetVectorParameterValue(TEXT("BaseColor"), Col);

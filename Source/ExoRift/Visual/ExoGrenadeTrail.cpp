@@ -1,5 +1,6 @@
 // ExoGrenadeTrail.cpp — Fading trail spheres along grenade flight path
 #include "Visual/ExoGrenadeTrail.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -33,7 +34,9 @@ void AExoGrenadeTrail::InitTrail(AActor* Parent, EGrenadeType Type)
 	default:                  TrailColor = FLinearColor(1.f, 0.4f, 0.1f); break;
 	}
 
-	if (!SphereMesh || !BaseMaterial) return;
+	if (!SphereMesh) return;
+
+	UMaterialInterface* TrailMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Pre-allocate dot pool
 	Dots.SetNum(MAX_DOTS);
@@ -49,9 +52,8 @@ void AExoGrenadeTrail::InitTrail(AActor* Parent, EGrenadeType Type)
 		D->SetVisibility(false);
 		D->RegisterComponent();
 
-		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(TrailMat, this);
 		FLinearColor Em(TrailColor.R * 8.f, TrailColor.G * 8.f, TrailColor.B * 8.f);
-		M->SetVectorParameterValue(TEXT("BaseColor"), TrailColor);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		D->SetMaterial(0, M);
 

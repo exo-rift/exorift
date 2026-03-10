@@ -1,5 +1,6 @@
 // ExoShellCasing.cpp — Ejected shell casing with tumbling trajectory
 #include "Visual/ExoShellCasing.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -38,14 +39,11 @@ void AExoShellCasing::InitCasing(const FVector& EjectDirection, const FLinearCol
 		FMath::RandRange(100.f, 400.f));
 
 	// Brass-metallic material with weapon tint
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (MatFind.Succeeded())
 	{
 		FLinearColor Brass(0.6f, 0.45f, 0.15f);
 		FLinearColor Tinted = FMath::Lerp(Brass, Color, 0.2f);
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
-			MatFind.Object, this);
+			FExoMaterialFactory::GetLitEmissive(), this);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Tinted);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Tinted * 2.f);
 		CasingMesh->SetMaterial(0, Mat);

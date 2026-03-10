@@ -1,5 +1,6 @@
 // ExoShieldBubbleActor.cpp — Brief protective dome for ShieldBubble ability
 #include "Visual/ExoShieldBubbleActor.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -45,21 +46,16 @@ AExoShieldBubbleActor::AExoShieldBubbleActor()
 
 void AExoShieldBubbleActor::Init()
 {
-	UMaterialInterface* BaseMaterial = DomeMesh->GetMaterial(0);
-	if (!BaseMaterial) return;
+	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Dome — translucent cyan with emissive
-	DomeMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	DomeMat->SetVectorParameterValue(TEXT("BaseColor"),
-		FLinearColor(0.05f, 0.3f, 0.5f));
+	DomeMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(0.5f, 3.f, 5.f));
 	DomeMesh->SetMaterial(0, DomeMat);
 
 	// Base ring — brighter accent
-	RingMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-	RingMat->SetVectorParameterValue(TEXT("BaseColor"),
-		FLinearColor(0.1f, 0.6f, 1.f));
+	RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
 	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(1.f, 6.f, 10.f));
 	BaseRing->SetMaterial(0, RingMat);

@@ -3,6 +3,7 @@
 #include "Weapons/ExoWeaponPickup.h"
 #include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoCharacter.h"
+#include "Visual/ExoMaterialFactory.h"
 #include "Visual/ExoPickupFlash.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -66,29 +67,27 @@ void AExoDeathBox::InitFromPlayer(const FString& PlayerName,
 
 void AExoDeathBox::BuildVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-	if (!MatFinder.Succeeded()) return;
-	UMaterialInterface* BaseMat = MatFinder.Object;
+	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
+	UMaterialInterface* EmissiveAdditive = FExoMaterialFactory::GetEmissiveAdditive();
+	if (!EmissiveOpaque || !EmissiveAdditive) return;
 
 	// Death box: dark body with red-orange glow
 	FLinearColor DeathColor(1.f, 0.35f, 0.15f);
 
-	BodyMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.05f, 0.05f));
+	// Body — solid glowing element (opaque, unlit)
+	BodyMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
 	BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(DeathColor.R * 1.5f, DeathColor.G * 1.5f, DeathColor.B * 1.5f));
 	BoxBody->SetMaterial(0, BodyMat);
 
-	UMaterialInstanceDynamic* LidMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	LidMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.06f, 0.06f));
+	// Lid — solid glowing element (opaque, unlit)
+	UMaterialInstanceDynamic* LidMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
 	LidMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(DeathColor.R * 0.8f, DeathColor.G * 0.8f, DeathColor.B * 0.8f));
 	BoxLid->SetMaterial(0, LidMat);
 
-	BeamMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	BeamMat->SetVectorParameterValue(TEXT("BaseColor"),
-		FLinearColor(DeathColor.R * 2.f, DeathColor.G * 2.f, DeathColor.B * 2.f));
+	// Holo beam — pure energy overlay (additive, unlit)
+	BeamMat = UMaterialInstanceDynamic::Create(EmissiveAdditive, this);
 	BeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 		FLinearColor(DeathColor.R * 3.f, DeathColor.G * 3.f, DeathColor.B * 3.f));
 	HoloBeam->SetMaterial(0, BeamMat);
