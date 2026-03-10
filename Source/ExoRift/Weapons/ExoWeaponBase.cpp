@@ -192,6 +192,17 @@ void AExoWeaponBase::TickCooldown(float DeltaTime)
 	}
 }
 
+void AExoWeaponBase::ResetHeat()
+{
+	CurrentHeat = 0.f;
+	if (bIsOverheated)
+	{
+		bIsOverheated = false;
+		OnCooledDown.Broadcast();
+	}
+	OnHeatChanged.Broadcast(0.f);
+}
+
 void AExoWeaponBase::AddEnergy(float Amount)
 {
 	float OldEnergy = CurrentEnergy;

@@ -2,6 +2,7 @@
 #include "Map/ExoLevelBuilder.h"
 #include "Map/ExoLootCrate.h"
 #include "Map/ExoTargetDummy.h"
+#include "Map/ExoPowerUpTerminal.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -118,6 +119,31 @@ void AExoLevelBuilder::BeginPlay()
 			if (TD) TD->InitDummy(D.Color, 200.f);
 		}
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 6 target dummies"));
+	}
+
+	// Power-up terminals at strategic compound locations
+	{
+		FActorSpawnParameters TermP;
+		TermP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		struct FTermDef { FVector Pos; EPowerUpType Type; };
+		FTermDef Terminals[] = {
+			{{2500.f, -1000.f, 10.f}, EPowerUpType::SpeedBoost},
+			{{-2500.f, 1000.f, 10.f}, EPowerUpType::DamageBoost},
+			{{4000.f, 80000.f, 10.f}, EPowerUpType::ShieldRecharge},
+			{{-4000.f, -81000.f, 10.f}, EPowerUpType::OverheatReset},
+			{{80000.f, 2000.f, 10.f}, EPowerUpType::SpeedBoost},
+			{{-81000.f, -2000.f, 10.f}, EPowerUpType::DamageBoost},
+			{{45000.f, 46000.f, 10.f}, EPowerUpType::ShieldRecharge},
+			{{-55000.f, -54000.f, 10.f}, EPowerUpType::OverheatReset},
+		};
+		for (const FTermDef& T : Terminals)
+		{
+			AExoPowerUpTerminal* Term = GetWorld()->SpawnActor<AExoPowerUpTerminal>(
+				AExoPowerUpTerminal::StaticClass(), T.Pos,
+				FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f), TermP);
+			if (Term) Term->InitTerminal(T.Type);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 8 power-up terminals"));
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoLevelBuilder: Level complete — %d mesh components, ready."),

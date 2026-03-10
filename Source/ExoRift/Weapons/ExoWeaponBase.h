@@ -50,6 +50,7 @@ public:
 	// Heat accessors
 	float GetCurrentHeat() const { return CurrentHeat; }
 	bool IsOverheated() const { return bIsOverheated; }
+	void ResetHeat();
 	EWeaponType GetWeaponType() const { return WeaponType; }
 
 	// Energy accessors

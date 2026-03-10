@@ -1,5 +1,6 @@
 #include "Weapons/ExoGrenadeComponent.h"
 #include "Weapons/ExoGrenade.h"
+#include "Visual/ExoGrenadeTrail.h"
 #include "ExoRift.h"
 
 UExoGrenadeComponent::UExoGrenadeComponent()
@@ -24,6 +25,13 @@ void UExoGrenadeComponent::ThrowGrenade(FVector Origin, FRotator Direction)
 	if (!Grenade) return;
 
 	Grenade->Ignite(Direction.Vector());
+
+	// Attach a trail effect to the grenade
+	FActorSpawnParameters TrailParams;
+	TrailParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AExoGrenadeTrail* Trail = GetWorld()->SpawnActor<AExoGrenadeTrail>(
+		AExoGrenadeTrail::StaticClass(), Origin, FRotator::ZeroRotator, TrailParams);
+	if (Trail) Trail->InitTrail(Grenade, Grenade->GrenadeType);
 
 	--CurrentGrenades;
 	LastThrowTime = Now;
