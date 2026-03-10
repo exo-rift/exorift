@@ -39,13 +39,28 @@ protected:
 	UStaticMeshComponent* ProjectileMesh;
 
 	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* OuterGlow; // Large soft halo
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* TrailWake; // Cylinder trailing behind
+
+	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovement;
 
 	UPROPERTY(VisibleAnywhere)
 	UPointLightComponent* GlowLight;
 
+	UPROPERTY(VisibleAnywhere)
+	UPointLightComponent* TrailLight; // Secondary light along trail
+
 	UPROPERTY()
 	UMaterialInstanceDynamic* ProjectileMat = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* OuterGlowMat = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* TrailMat = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
 	float ExplosionRadius = 500.f;
