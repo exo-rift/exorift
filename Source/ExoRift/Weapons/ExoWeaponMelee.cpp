@@ -4,6 +4,8 @@
 #include "UI/ExoDamageNumbers.h"
 #include "UI/ExoHitMarker.h"
 #include "Visual/ExoPostProcess.h"
+#include "Visual/ExoTracerManager.h"
+#include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
@@ -43,7 +45,15 @@ void AExoWeaponMelee::FireShot()
 	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start,
 		Start + ViewDir.Vector() * SweepRange, FQuat::Identity,
 		ECC_Visibility, FCollisionShape::MakeSphere(SweepRadius), QParams);
+
+	// Melee swing shake regardless of hit
+	FExoScreenShake::AddShake(0.3f, 0.1f);
+
 	if (!bHit || !Hit.GetActor()) return;
+
+	// Impact VFX at contact point
+	FExoTracerManager::SpawnImpactEffect(GetWorld(), Hit.ImpactPoint,
+		Hit.ImpactNormal, Cast<AExoCharacter>(Hit.GetActor()) != nullptr);
 
 	float FinalDamage = Damage * GetRarityDamageMultiplier();
 	bool bHeadshot = false;
