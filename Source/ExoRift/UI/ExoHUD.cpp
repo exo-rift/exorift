@@ -13,6 +13,8 @@
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoMatchSummary.h"
+#include "UI/ExoTacticalMap.h"
+#include "Map/ExoZoneSystem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
 #include "EngineUtils.h"
@@ -167,6 +169,27 @@ void AExoHUD::DrawHUD()
 			Scoreboard.Draw(Canvas, HUDFont, SortedPlayers,
 				ScoreGS->MatchElapsedTime, ScoreGS->AliveCount, ScoreGS->TotalPlayers);
 		}
+	}
+
+	// Tactical map overlay (M key)
+	if (FExoTacticalMap::bIsOpen)
+	{
+		FVector MapPlayerPos = GetOwningPawn() ? GetOwningPawn()->GetActorLocation() : FVector::ZeroVector;
+		float ZR = 200000.f;
+		FVector ZC = FVector::ZeroVector;
+		float NZR = 0.f;
+		FVector NZC = FVector::ZeroVector;
+		for (TActorIterator<AExoZoneSystem> It(GetWorld()); It; ++It)
+		{
+			ZR = (*It)->GetCurrentRadius();
+			FVector2D ZC2D = (*It)->GetCurrentCenter();
+			ZC = FVector(ZC2D.X, ZC2D.Y, 0.f);
+			NZR = (*It)->GetTargetRadius();
+			FVector2D NZC2D = (*It)->GetTargetCenter();
+			NZC = FVector(NZC2D.X, NZC2D.Y, 0.f);
+			break;
+		}
+		FExoTacticalMap::Draw(this, Canvas, HUDFont, MapPlayerPos, ZR, ZC, NZR, NZC);
 	}
 
 	// Settings menu overlay — drawn last so it covers everything

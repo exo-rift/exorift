@@ -40,6 +40,7 @@ struct EXORIFT_API FExoInputSetup
 	UInputAction* Ability4 = nullptr;
 
 	// Menu / UI
+	UInputAction* TacticalMap = nullptr;
 	UInputAction* Pause = nullptr;
 	UInputAction* MenuUp = nullptr;
 	UInputAction* MenuDown = nullptr;

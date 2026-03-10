@@ -76,6 +76,7 @@ void FExoInputSetup::Initialize()
 	Ability2     = MakeAction(TEXT("IA_Ability2"),     B);
 	Ability3     = MakeAction(TEXT("IA_Ability3"),     B);
 	Ability4     = MakeAction(TEXT("IA_Ability4"),     B);
+	TacticalMap  = MakeAction(TEXT("IA_TacticalMap"),  B);
 	Pause        = MakeAction(TEXT("IA_Pause"),        B);
 	MenuUp       = MakeAction(TEXT("IA_MenuUp"),       B);
 	MenuDown     = MakeAction(TEXT("IA_MenuDown"),     B);
@@ -119,6 +120,7 @@ void FExoInputSetup::Initialize()
 	MappingContext->MapKey(Ability2,     EKeys::Two);
 	MappingContext->MapKey(Ability3,     EKeys::Three);
 	MappingContext->MapKey(Ability4,     EKeys::Four);
+	MappingContext->MapKey(TacticalMap,  EKeys::M);
 	MappingContext->MapKey(Pause,        EKeys::Escape);
 	MappingContext->MapKey(MenuUp,       EKeys::Up);
 	MappingContext->MapKey(MenuDown,     EKeys::Down);
@@ -133,5 +135,5 @@ void FExoInputSetup::Initialize()
 	MappingContext->MapKey(Restart,      EKeys::Enter);
 	MappingContext->MapKey(ReturnToMenu, EKeys::BackSpace);
 
-	UE_LOG(LogExoRift, Log, TEXT("Input setup: 32 actions, 36 key bindings"));
+	UE_LOG(LogExoRift, Log, TEXT("Input setup: 33 actions, 38 key bindings"));
 }

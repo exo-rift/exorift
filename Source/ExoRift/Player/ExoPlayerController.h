@@ -58,6 +58,7 @@ protected:
 	void HandleAbility4();
 
 	// Menu
+	void HandleTacticalMap();
 	void HandlePause();
 	void HandleMenuUp();
 	void HandleMenuDown();

@@ -16,6 +16,7 @@
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoSettingsMenu.h"
+#include "UI/ExoTacticalMap.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -89,6 +90,7 @@ void AExoPlayerController::SetupInputComponent()
 	EIC->BindAction(In.Emote4, ETriggerEvent::Started, this, &AExoPlayerController::HandleEmote4);
 
 	// Menu navigation
+	EIC->BindAction(In.TacticalMap, ETriggerEvent::Started, this, &AExoPlayerController::HandleTacticalMap);
 	EIC->BindAction(In.Pause, ETriggerEvent::Started, this, &AExoPlayerController::HandlePause);
 	EIC->BindAction(In.MenuUp, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuUp);
 	EIC->BindAction(In.MenuDown, ETriggerEvent::Started, this, &AExoPlayerController::HandleMenuDown);
@@ -379,6 +381,7 @@ void AExoPlayerController::HandleSpectatePrev()
 
 // --- Menu ---
 
+void AExoPlayerController::HandleTacticalMap() { FExoTacticalMap::bIsOpen = !FExoTacticalMap::bIsOpen; }
 void AExoPlayerController::HandlePause()     { FExoSettingsMenu::ToggleMenu(); }
 void AExoPlayerController::HandleMenuUp()    { FExoSettingsMenu::NavigateUp(); }
 void AExoPlayerController::HandleMenuDown()  { FExoSettingsMenu::NavigateDown(); }
