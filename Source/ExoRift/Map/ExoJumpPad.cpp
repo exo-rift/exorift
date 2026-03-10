@@ -1,0 +1,156 @@
+// ExoJumpPad.cpp — Launch pad for vertical repositioning
+#include "Map/ExoJumpPad.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Visual/ExoScreenShake.h"
+#include "Core/ExoAudioManager.h"
+#include "UObject/ConstructorHelpers.h"
+
+AExoJumpPad::AExoJumpPad()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFind(
+		TEXT("/Engine/BasicShapes/Cylinder"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphFind(
+		TEXT("/Engine/BasicShapes/Sphere"));
+
+	// Dark metal base
+	BasePlatform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BasePlatform"));
+	RootComponent = BasePlatform;
+	if (CylFind.Succeeded()) BasePlatform->SetStaticMesh(CylFind.Object);
+	BasePlatform->SetRelativeScale3D(FVector(3.f, 3.f, 0.15f));
+	BasePlatform->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BasePlatform->SetCollisionResponseToAllChannels(ECR_Block);
+
+	// Glowing ring on top
+	GlowRing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GlowRing"));
+	GlowRing->SetupAttachment(BasePlatform);
+	if (CylFind.Succeeded()) GlowRing->SetStaticMesh(CylFind.Object);
+	GlowRing->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	GlowRing->SetRelativeScale3D(FVector(0.9f, 0.9f, 0.02f));
+	GlowRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GlowRing->CastShadow = false;
+
+	// Center lens (sphere)
+	CenterLens = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CenterLens"));
+	CenterLens->SetupAttachment(BasePlatform);
+	if (SphFind.Succeeded()) CenterLens->SetStaticMesh(SphFind.Object);
+	CenterLens->SetRelativeLocation(FVector(0.f, 0.f, 15.f));
+	CenterLens->SetRelativeScale3D(FVector(0.3f, 0.3f, 0.1f));
+	CenterLens->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CenterLens->CastShadow = false;
+
+	// Trigger volume
+	TriggerVolume = CreateDefaultSubobject<USphereComponent>(TEXT("TriggerVolume"));
+	TriggerVolume->SetupAttachment(BasePlatform);
+	TriggerVolume->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
+	TriggerVolume->SetSphereRadius(120.f);
+	TriggerVolume->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	TriggerVolume->SetGenerateOverlapEvents(true);
+
+	// Accent light
+	PadLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PadLight"));
+	PadLight->SetupAttachment(BasePlatform);
+	PadLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+	PadLight->SetIntensity(6000.f);
+	PadLight->SetAttenuationRadius(600.f);
+	PadLight->CastShadows = false;
+}
+
+void AExoJumpPad::BeginPlay()
+{
+	Super::BeginPlay();
+	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AExoJumpPad::OnPadOverlap);
+
+	// Apply materials
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFind(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+
+	if (BasePlatform->GetStaticMesh())
+	{
+		UMaterialInstanceDynamic* BaseMat = UMaterialInstanceDynamic::Create(
+			BasePlatform->GetMaterial(0), this);
+		BaseMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.05f, 0.055f, 0.07f));
+		BasePlatform->SetMaterial(0, BaseMat);
+	}
+
+	if (MatFind.Succeeded())
+	{
+		RingMat = UMaterialInstanceDynamic::Create(MatFind.Object, this);
+		RingMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			AccentColor * 6.f);
+		GlowRing->SetMaterial(0, RingMat);
+
+		LensMat = UMaterialInstanceDynamic::Create(MatFind.Object, this);
+		LensMat->SetVectorParameterValue(TEXT("BaseColor"), AccentColor);
+		LensMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			AccentColor * 10.f);
+		CenterLens->SetMaterial(0, LensMat);
+	}
+
+	PadLight->SetLightColor(AccentColor);
+}
+
+void AExoJumpPad::InitPad(float InLaunchSpeed, const FLinearColor& Color)
+{
+	LaunchSpeed = InLaunchSpeed;
+	AccentColor = Color;
+	PadLight->SetLightColor(Color);
+}
+
+void AExoJumpPad::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (Cooldown > 0.f) Cooldown -= DeltaTime;
+
+	float Time = GetWorld()->GetTimeSeconds();
+	bool bReady = Cooldown <= 0.f;
+
+	// Pulsing glow when ready, dim when on cooldown
+	float Pulse = bReady ? (0.7f + 0.3f * FMath::Sin(Time * 3.f)) : 0.15f;
+
+	if (RingMat)
+	{
+		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			AccentColor * 6.f * Pulse);
+	}
+	if (LensMat)
+	{
+		LensMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			AccentColor * 10.f * Pulse);
+	}
+	PadLight->SetIntensity(bReady ? 6000.f * Pulse : 1000.f);
+}
+
+void AExoJumpPad::OnPadOverlap(UPrimitiveComponent* /*OverlappedComp*/,
+	AActor* OtherActor, UPrimitiveComponent* /*OtherComp*/,
+	int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
+{
+	if (Cooldown > 0.f) return;
+
+	ACharacter* Char = Cast<ACharacter>(OtherActor);
+	if (!Char) return;
+
+	UCharacterMovementComponent* CMC = Char->GetCharacterMovement();
+	if (!CMC) return;
+
+	// Launch upward
+	Char->LaunchCharacter(FVector(0.f, 0.f, LaunchSpeed), false, true);
+	Cooldown = CooldownTime;
+
+	// Feedback
+	FExoScreenShake::AddShake(0.15f, 0.1f);
+
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayImpactSound(GetActorLocation(), false);
+	}
+}

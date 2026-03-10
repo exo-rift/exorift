@@ -101,6 +101,9 @@ private:
 	void BuildCompoundLighting();
 	void SpawnCompoundGroundMarker(const FVector& Center, const FLinearColor& Color);
 
+	// --- Jump pads (placed in ExoLevelBuilderGameplay.cpp) ---
+	void PlaceJumpPads();
+
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,
 		const FRotator& Rotation, UStaticMesh* Mesh, const FLinearColor& Color);

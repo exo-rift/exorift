@@ -1,10 +1,12 @@
-// ExoLevelBuilderGameplay.cpp — Spawn points, loot, hazards, barrels, cover
+// ExoLevelBuilderGameplay.cpp — Spawn points, loot, hazards, barrels, cover, jump pads
 #include "Map/ExoLevelBuilder.h"
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoLootSpawner.h"
 #include "Map/ExoLootContainer.h"
 #include "Map/ExoHazardZone.h"
 #include "Map/ExoExplodingBarrel.h"
+#include "Map/ExoJumpPad.h"
+#include "Map/ExoShieldGenerator.h"
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoZoneVisualizer.h"
 #include "Components/StaticMeshComponent.h"
@@ -270,4 +272,93 @@ void AExoLevelBuilder::PlaceCoverElements()
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d cover elements"), CoverCount);
+}
+
+void AExoLevelBuilder::PlaceJumpPads()
+{
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	struct FPadInfo { FVector Pos; float Speed; FLinearColor Color; };
+	TArray<FPadInfo> Pads = {
+		// Hub — central pad for rooftop access
+		{{0.f, 5500.f, 10.f}, 2000.f, FLinearColor(0.1f, 0.8f, 1.f)},
+		// Hub — east pad near landing zone
+		{{6000.f, 0.f, 10.f}, 2200.f, FLinearColor(0.1f, 0.8f, 1.f)},
+		// North compound — warehouse roof access
+		{{-5000.f, 83000.f, 10.f}, 2500.f, FLinearColor(1.f, 0.6f, 0.15f)},
+		// South compound — lab tower launch
+		{{3000.f, -83000.f, 10.f}, 2200.f, FLinearColor(0.2f, 1.f, 0.4f)},
+		// East power station — tower launch
+		{{83000.f, -3000.f, 10.f}, 2800.f, FLinearColor(0.15f, 0.4f, 1.f)},
+		// West barracks — between buildings
+		{{-80000.f, 0.f, 10.f}, 2000.f, FLinearColor(1.f, 0.2f, 0.15f)},
+		// Crossroads area — midfield vertical play
+		{{30000.f, 30000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
+		{{-35000.f, -35000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
+		// Near bridge positions
+		{{50000.f, 50000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
+		{{-50000.f, -50000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
+	};
+
+	for (const FPadInfo& P : Pads)
+	{
+		AExoJumpPad* Pad = GetWorld()->SpawnActor<AExoJumpPad>(
+			AExoJumpPad::StaticClass(), P.Pos, FRotator::ZeroRotator, Params);
+		if (Pad)
+		{
+			Pad->InitPad(P.Speed, P.Color);
+		}
+	}
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d jump pads"), Pads.Num());
+
+	// Shield generators at contested positions
+	struct FGenInfo { FVector Pos; float Radius; FLinearColor Color; };
+	TArray<FGenInfo> Generators = {
+		{{0.f, 0.f, 10.f}, 1200.f, FLinearColor(0.1f, 0.6f, 1.f)},       // Hub center
+		{{40000.f, 40000.f, 10.f}, 800.f, FLinearColor(0.2f, 1.f, 0.4f)},  // NE crossroads
+		{{-40000.f, -40000.f, 10.f}, 800.f, FLinearColor(1.f, 0.4f, 0.2f)}, // SW crossroads
+		{{60000.f, -40000.f, 10.f}, 600.f, FLinearColor(0.8f, 0.2f, 1.f)},  // SE ruins
+	};
+
+	for (const FGenInfo& G : Generators)
+	{
+		AExoShieldGenerator* Gen = GetWorld()->SpawnActor<AExoShieldGenerator>(
+			AExoShieldGenerator::StaticClass(), G.Pos, FRotator::ZeroRotator, Params);
+		if (Gen) Gen->InitGenerator(G.Radius, G.Color);
+	}
+
+	// Rock formations for wilderness cover
+	FVector RockClusters[] = {
+		{25000.f, 60000.f, 0.f}, {-60000.f, 25000.f, 0.f},
+		{70000.f, -60000.f, 0.f}, {-25000.f, -70000.f, 0.f},
+		{90000.f, 40000.f, 0.f}, {-90000.f, -40000.f, 0.f},
+		{15000.f, -40000.f, 0.f}, {-45000.f, 15000.f, 0.f},
+	};
+	for (const FVector& RC : RockClusters)
+	{
+		// Central boulder
+		float BH = FMath::RandRange(300.f, 600.f);
+		float BW = FMath::RandRange(400.f, 800.f);
+		SpawnStaticMesh(RC + FVector(0.f, 0.f, BH * 0.4f),
+			FVector(BW / 100.f, BW * 0.8f / 100.f, BH / 100.f),
+			FRotator(FMath::RandRange(-5.f, 5.f), FMath::RandRange(0.f, 360.f), 0.f),
+			SphereMesh, FLinearColor(0.04f, 0.045f, 0.05f));
+		// Surrounding slabs (3-5)
+		int32 SlabCount = FMath::RandRange(3, 5);
+		for (int32 s = 0; s < SlabCount; s++)
+		{
+			float Ang = (2.f * PI * s) / SlabCount;
+			float Dist = FMath::RandRange(300.f, 700.f);
+			FVector SlabPos = RC + FVector(FMath::Cos(Ang) * Dist, FMath::Sin(Ang) * Dist, 0.f);
+			float SH = FMath::RandRange(150.f, 400.f);
+			SpawnStaticMesh(SlabPos + FVector(0.f, 0.f, SH * 0.5f),
+				FVector(FMath::RandRange(2.f, 5.f), FMath::RandRange(1.f, 2.5f), SH / 100.f),
+				FRotator(FMath::RandRange(-8.f, 8.f), FMath::RandRange(0.f, 360.f), 0.f),
+				CubeMesh, FLinearColor(0.04f, 0.045f, 0.055f));
+		}
+	}
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed shield generators and rock formations"));
 }
