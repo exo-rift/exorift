@@ -293,10 +293,37 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 			Size.Z + 60.f);
 		SpawnStaticMesh(VentPos, FVector(1.5f, 1.f, 0.6f), Rot, CubeMesh,
 			FLinearColor(0.08f, 0.08f, 0.1f));
-		// Vent grille
 		SpawnStaticMesh(VentPos + FVector(0.f, 0.f, 35.f),
 			FVector(1.3f, 0.8f, 0.05f), Rot, CubeMesh,
 			FLinearColor(0.06f, 0.06f, 0.07f));
+	}
+
+	// Window panels — small emissive rectangles along walls
+	int32 NumWindows = FMath::Max(1, FMath::RoundToInt32(Size.X / 1500.f));
+	float WinSpacing = Size.X / (NumWindows + 1);
+	float WinZ = Size.Z * 0.4f;
+	FLinearColor WinGlow(0.03f, 0.06f, 0.12f);
+	for (int32 w = 0; w < NumWindows; w++)
+	{
+		float WX = -HalfX + WinSpacing * (w + 1);
+		// Front window
+		UStaticMeshComponent* FW = SpawnStaticMesh(
+			Center + Rot.RotateVector(FVector(WX, HalfY + 2.f, WinZ)),
+			FVector(0.8f, 0.015f, 0.6f), Rot, CubeMesh, WinGlow);
+		// Back window
+		UStaticMeshComponent* BW = SpawnStaticMesh(
+			Center + Rot.RotateVector(FVector(WX, -HalfY - 2.f, WinZ)),
+			FVector(0.8f, 0.015f, 0.6f), Rot, CubeMesh, WinGlow);
+		for (UStaticMeshComponent* WC : {FW, BW})
+		{
+			if (WC && BaseMaterial)
+			{
+				UMaterialInstanceDynamic* WM = Cast<UMaterialInstanceDynamic>(
+					WC->GetMaterial(0));
+				if (WM) WM->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.06f, 0.15f, 0.35f));
+			}
+		}
 	}
 }
 

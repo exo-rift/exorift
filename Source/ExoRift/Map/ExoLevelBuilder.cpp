@@ -247,11 +247,9 @@ void AExoLevelBuilder::BuildSkybox()
 		int32 NumStars = 60;
 		for (int32 i = 0; i < NumStars; i++)
 		{
-			float Seed = i * 137.508f; // Golden angle for uniform distribution
+			float Seed = i * 137.508f;
 			float Phi = FMath::Acos(1.f - 2.f * FMath::Fmod(Seed * 0.381966f, 1.f));
 			float Theta = 2.f * PI * FMath::Fmod(Seed * 0.618034f, 1.f);
-
-			// Only upper hemisphere (stars above horizon)
 			if (Phi > PI * 0.6f) continue;
 
 			float R = 350000.f + (i % 7) * 20000.f;
@@ -271,19 +269,98 @@ void AExoLevelBuilder::BuildSkybox()
 			Star->CastShadow = false;
 			Star->RegisterComponent();
 
-			// Star color — mostly white, some blue/orange/yellow
 			FLinearColor StarCol;
 			int32 ColorType = i % 10;
-			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f); // White
-			else if (ColorType < 8) StarCol = FLinearColor(6.f, 8.f, 15.f); // Blue
-			else if (ColorType < 9) StarCol = FLinearColor(15.f, 10.f, 4.f); // Orange
-			else StarCol = FLinearColor(12.f, 12.f, 6.f); // Yellow
+			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f);
+			else if (ColorType < 8) StarCol = FLinearColor(6.f, 8.f, 15.f);
+			else if (ColorType < 9) StarCol = FLinearColor(15.f, 10.f, 4.f);
+			else StarCol = FLinearColor(12.f, 12.f, 6.f);
 
 			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 			StarMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.9f, 1.f));
 			StarMat->SetVectorParameterValue(TEXT("EmissiveColor"), StarCol);
 			Star->SetMaterial(0, StarMat);
 		}
+	}
+
+	// === PLANET on the horizon — large gas giant with rings ===
+	float PlanetDist = 380000.f;
+	FVector PlanetPos(PlanetDist * 0.5f, -PlanetDist * 0.3f, PlanetDist * 0.25f);
+
+	// Planet body — large sphere with banded colors
+	UStaticMeshComponent* Planet = NewObject<UStaticMeshComponent>(this);
+	Planet->SetupAttachment(RootComponent);
+	Planet->SetStaticMesh(SphereMesh);
+	Planet->SetWorldLocation(PlanetPos);
+	Planet->SetWorldScale3D(FVector(2500.f));
+	Planet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Planet->CastShadow = false;
+	Planet->RegisterComponent();
+
+	if (BaseMaterial)
+	{
+		UMaterialInstanceDynamic* PlanetMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		PlanetMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.12f, 0.08f, 0.04f));
+		PlanetMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.04f, 0.025f, 0.015f));
+		Planet->SetMaterial(0, PlanetMat);
+	}
+
+	// Planet ring — flat cylinder tilted
+	if (CylinderMesh)
+	{
+		UStaticMeshComponent* PlanetRing = NewObject<UStaticMeshComponent>(this);
+		PlanetRing->SetupAttachment(RootComponent);
+		PlanetRing->SetStaticMesh(CylinderMesh);
+		PlanetRing->SetWorldLocation(PlanetPos);
+		PlanetRing->SetWorldScale3D(FVector(4000.f, 4000.f, 5.f));
+		PlanetRing->SetWorldRotation(FRotator(25.f, 15.f, 0.f));
+		PlanetRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		PlanetRing->CastShadow = false;
+		PlanetRing->RegisterComponent();
+
+		if (BaseMaterial)
+		{
+			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			RingMat->SetVectorParameterValue(TEXT("BaseColor"),
+				FLinearColor(0.08f, 0.06f, 0.04f));
+			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.02f, 0.015f, 0.01f));
+			PlanetRing->SetMaterial(0, RingMat);
+		}
+	}
+
+	// Planet ambient light — warm glow from the planet
+	UPointLightComponent* PlanetGlow = NewObject<UPointLightComponent>(this);
+	PlanetGlow->SetupAttachment(RootComponent);
+	PlanetGlow->SetWorldLocation(PlanetPos);
+	PlanetGlow->SetIntensity(40000.f);
+	PlanetGlow->SetAttenuationRadius(PlanetDist * 0.5f);
+	PlanetGlow->SetLightColor(FLinearColor(0.25f, 0.15f, 0.08f));
+	PlanetGlow->CastShadows = false;
+	PlanetGlow->RegisterComponent();
+
+	// === MOON — smaller, brighter, opposite side of sky ===
+	FVector MoonPos(-PlanetDist * 0.4f, PlanetDist * 0.5f, PlanetDist * 0.4f);
+
+	UStaticMeshComponent* Moon = NewObject<UStaticMeshComponent>(this);
+	Moon->SetupAttachment(RootComponent);
+	Moon->SetStaticMesh(SphereMesh);
+	Moon->SetWorldLocation(MoonPos);
+	Moon->SetWorldScale3D(FVector(400.f));
+	Moon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Moon->CastShadow = false;
+	Moon->RegisterComponent();
+
+	if (BaseMaterial)
+	{
+		UMaterialInstanceDynamic* MoonMat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+		MoonMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(0.5f, 0.55f, 0.6f));
+		MoonMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(0.15f, 0.16f, 0.2f));
+		Moon->SetMaterial(0, MoonMat);
 	}
 }
 
