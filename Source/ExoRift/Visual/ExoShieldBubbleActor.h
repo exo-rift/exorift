@@ -7,7 +7,7 @@
 class UStaticMeshComponent;
 class UPointLightComponent;
 
-/** Brief protective dome visual for the ShieldBubble ability. */
+/** Protective energy dome with surface arcs for the ShieldBubble ability. */
 UCLASS()
 class AExoShieldBubbleActor : public AActor
 {
@@ -24,13 +24,33 @@ private:
 	UStaticMeshComponent* DomeMesh;
 
 	UPROPERTY()
+	UStaticMeshComponent* InnerDome;
+
+	UPROPERTY()
 	UStaticMeshComponent* BaseRing;
+
+	UPROPERTY()
+	UStaticMeshComponent* TopCrown;
 
 	UPROPERTY()
 	UPointLightComponent* ShieldLight;
 
 	UPROPERTY()
+	UPointLightComponent* TopLight;
+
+	static constexpr int32 NUM_ARCS = 6;
+
+	UPROPERTY()
+	UStaticMeshComponent* SurfaceArcs[NUM_ARCS];
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* ArcMats[NUM_ARCS];
+
+	UPROPERTY()
 	UMaterialInstanceDynamic* DomeMat = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* InnerMat = nullptr;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* RingMat = nullptr;
