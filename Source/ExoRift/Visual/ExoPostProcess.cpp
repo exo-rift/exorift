@@ -12,12 +12,12 @@ AExoPostProcess::AExoPostProcess()
 	PostProcessComp->bUnbound = true; // Affects entire scene
 	PostProcessComp->Priority = 1.f;
 
-	// Base settings for sci-fi look
+	// Base settings for dramatic sci-fi look
 	PostProcessComp->Settings.bOverride_BloomIntensity = true;
-	PostProcessComp->Settings.BloomIntensity = 0.8f;
+	PostProcessComp->Settings.BloomIntensity = 1.5f; // Higher bloom for visible energy glow
 
 	PostProcessComp->Settings.bOverride_BloomThreshold = true;
-	PostProcessComp->Settings.BloomThreshold = 0.8f;
+	PostProcessComp->Settings.BloomThreshold = 0.3f; // Lower threshold — emissives bloom visibly
 
 	PostProcessComp->Settings.bOverride_AutoExposureBias = true;
 	PostProcessComp->Settings.AutoExposureBias = 0.f;
@@ -26,27 +26,31 @@ AExoPostProcess::AExoPostProcess()
 	PostProcessComp->Settings.VignetteIntensity = 0.3f;
 
 	PostProcessComp->Settings.bOverride_FilmGrainIntensity = true;
-	PostProcessComp->Settings.FilmGrainIntensity = 0.04f;
+	PostProcessComp->Settings.FilmGrainIntensity = 0.03f;
 
 	// Cool shadow tint — blue-shifted shadows for sci-fi atmosphere
 	PostProcessComp->Settings.bOverride_ColorContrastShadows = true;
-	PostProcessComp->Settings.ColorContrastShadows = FVector4(1.05f, 1.05f, 1.12f, 1.f);
+	PostProcessComp->Settings.ColorContrastShadows = FVector4(1.08f, 1.08f, 1.18f, 1.f);
 
 	PostProcessComp->Settings.bOverride_ColorGammaShadows = true;
-	PostProcessComp->Settings.ColorGammaShadows = FVector4(0.98f, 0.98f, 1.04f, 1.f);
+	PostProcessComp->Settings.ColorGammaShadows = FVector4(0.96f, 0.96f, 1.06f, 1.f);
 
-	// Slightly warm highlights for contrast against cool shadows
+	// Warm highlights for contrast against cool shadows
 	PostProcessComp->Settings.bOverride_ColorGainHighlights = true;
-	PostProcessComp->Settings.ColorGainHighlights = FVector4(1.02f, 1.0f, 0.97f, 1.f);
+	PostProcessComp->Settings.ColorGainHighlights = FVector4(1.04f, 1.01f, 0.95f, 1.f);
+
+	// Deeper midtone contrast for cinematic feel
+	PostProcessComp->Settings.bOverride_ColorContrastMidtones = true;
+	PostProcessComp->Settings.ColorContrastMidtones = FVector4(1.06f, 1.06f, 1.08f, 1.f);
 
 	PostProcessComp->Settings.bOverride_SceneFringeIntensity = true;
 	PostProcessComp->Settings.SceneFringeIntensity = 0.f;
 
 	// Ambient occlusion for depth in enclosed spaces
 	PostProcessComp->Settings.bOverride_AmbientOcclusionIntensity = true;
-	PostProcessComp->Settings.AmbientOcclusionIntensity = 0.5f;
+	PostProcessComp->Settings.AmbientOcclusionIntensity = 0.6f;
 	PostProcessComp->Settings.bOverride_AmbientOcclusionRadius = true;
-	PostProcessComp->Settings.AmbientOcclusionRadius = 200.f;
+	PostProcessComp->Settings.AmbientOcclusionRadius = 250.f;
 }
 
 void AExoPostProcess::Tick(float DeltaTime)
@@ -187,9 +191,9 @@ void AExoPostProcess::Tick(float DeltaTime)
 	{
 		PostProcessComp->Settings.MotionBlurAmount = TotalMotionBlur * 0.6f;
 	}
-	PostProcessComp->Settings.BloomIntensity = 0.7f + SpeedBoostAlpha * 0.4f
-		+ ShieldFlashIntensity * 0.6f + ScanPulseIntensity * 0.3f
-		+ WeaponFireFlash * 1.5f;
+	PostProcessComp->Settings.BloomIntensity = 1.5f + SpeedBoostAlpha * 0.5f
+		+ ShieldFlashIntensity * 0.8f + ScanPulseIntensity * 0.4f
+		+ WeaponFireFlash * 2.f;
 
 	// Weapon fire: brief auto-exposure kick for visible muzzle bloom
 	PostProcessComp->Settings.AutoExposureBias = WeaponFireFlash * 0.4f;

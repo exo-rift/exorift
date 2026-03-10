@@ -175,16 +175,13 @@ void AExoLevelBuilder::BuildLighting()
 	Fog->SetFogHeightFalloff(0.2f);
 	Fog->SetFogInscatteringColor(FLinearColor(0.15f, 0.2f, 0.3f));
 
-	// Global post-process: slight bloom, vignette, color grading
+	// Global post-process — lower priority than ExoPostProcess actor (priority 0 < 1)
 	UPostProcessComponent* PP = NewObject<UPostProcessComponent>(this);
 	PP->SetupAttachment(RootComponent);
-	PP->bUnbound = true; // Affects entire level
-	PP->Settings.bOverride_BloomIntensity = true;
-	PP->Settings.BloomIntensity = 0.8f;
-	PP->Settings.bOverride_VignetteIntensity = true;
-	PP->Settings.VignetteIntensity = 0.3f;
+	PP->bUnbound = true;
+	PP->Priority = 0.f;
 	PP->Settings.bOverride_AutoExposureBias = true;
-	PP->Settings.AutoExposureBias = 0.5f;
+	PP->Settings.AutoExposureBias = 0.3f;
 	PP->RegisterComponent();
 
 	// Nav mesh bounds for bot navigation
@@ -366,6 +363,51 @@ void AExoLevelBuilder::BuildSkybox()
 		MoonMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(0.15f, 0.16f, 0.2f));
 		Moon->SetMaterial(0, MoonMat);
+	}
+
+	// === ORBITAL DEBRIS — broken ship hulls from a recent battle ===
+	if (CubeMesh && BaseMaterial)
+	{
+		struct FDebris { FVector Pos; FVector Scale; FRotator Rot; FLinearColor Col; };
+		float OrbDist = 300000.f;
+		TArray<FDebris> Debris = {
+			// Large hull fragment
+			{{OrbDist * 0.3f, OrbDist * 0.2f, OrbDist * 0.45f},
+				{800.f, 200.f, 60.f}, {15.f, 45.f, 10.f},
+				FLinearColor(0.06f, 0.06f, 0.08f)},
+			// Broken wing section
+			{{-OrbDist * 0.25f, OrbDist * 0.1f, OrbDist * 0.5f},
+				{400.f, 600.f, 20.f}, {-20.f, 120.f, 35.f},
+				FLinearColor(0.05f, 0.055f, 0.07f)},
+			// Engine block
+			{{OrbDist * 0.15f, -OrbDist * 0.3f, OrbDist * 0.35f},
+				{150.f, 150.f, 350.f}, {40.f, -30.f, 15.f},
+				FLinearColor(0.07f, 0.065f, 0.06f)},
+			// Small hull plate
+			{{-OrbDist * 0.4f, -OrbDist * 0.15f, OrbDist * 0.55f},
+				{300.f, 180.f, 15.f}, {-10.f, 200.f, -25.f},
+				FLinearColor(0.05f, 0.05f, 0.065f)},
+		};
+
+		for (const auto& D : Debris)
+		{
+			UStaticMeshComponent* Frag = NewObject<UStaticMeshComponent>(this);
+			Frag->SetupAttachment(RootComponent);
+			Frag->SetStaticMesh(CubeMesh);
+			Frag->SetWorldLocation(D.Pos);
+			Frag->SetWorldScale3D(D.Scale);
+			Frag->SetWorldRotation(D.Rot);
+			Frag->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Frag->CastShadow = false;
+			Frag->RegisterComponent();
+
+			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			DM->SetVectorParameterValue(TEXT("BaseColor"), D.Col);
+			// Faint edge glow from reflected planet light
+			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(D.Col.R * 0.2f, D.Col.G * 0.15f, D.Col.B * 0.1f));
+			Frag->SetMaterial(0, DM);
+		}
 	}
 }
 

@@ -3,6 +3,8 @@
 #include "Map/ExoZoneVisualizer.h"
 #include "Map/ExoLootSpawner.h"
 #include "Map/ExoSpawnPoint.h"
+#include "Map/ExoFloatingDust.h"
+#include "Map/ExoEnvironmentAnimator.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Visual/ExoPostProcess.h"
 #include "UI/ExoDamageNumbers.h"
@@ -39,6 +41,12 @@ void UExoWorldSetup::OnWorldBeginPlay(UWorld& InWorld)
 
 	// Vehicle spawner
 	EnsureActorExists(World, AExoVehicleSpawner::StaticClass());
+
+	// Floating atmospheric dust
+	EnsureActorExists(World, AExoFloatingDust::StaticClass());
+
+	// Environment animator (neon flicker, spotlight sweep, ambient pulse)
+	EnsureActorExists(World, AExoEnvironmentAnimator::StaticClass());
 
 	// Spawn points — create a ring of them if none exist
 	bool bHasSpawnPoints = false;

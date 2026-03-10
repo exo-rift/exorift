@@ -1,5 +1,6 @@
 // ExoLevelBuilderBuildings.cpp — SpawnBuilding with walls, emissives, windows
 #include "Map/ExoLevelBuilder.h"
+#include "Map/ExoAutoSlidingDoor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -126,5 +127,16 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 					FLinearColor(0.06f, 0.15f, 0.35f));
 			}
 		}
+	}
+
+	// Auto-sliding door at the front entrance
+	FVector DoorPos = Center + Rot.RotateVector(FVector(0.f, HalfY, 0.f));
+	float DoorH = FMath::Min(Size.Z - 200.f, 350.f);
+	AExoAutoSlidingDoor* Door = GetWorld()->SpawnActor<AExoAutoSlidingDoor>(
+		AExoAutoSlidingDoor::StaticClass(), DoorPos, Rot);
+	if (Door)
+	{
+		Door->InitDoor(DoorHalf * 2.f, DoorH, DoorHalf * 0.9f,
+			FLinearColor(0.1f, 0.5f, 1.f));
 	}
 }
