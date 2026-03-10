@@ -174,6 +174,65 @@ void AExoLevelBuilder::BuildSkybox()
 		Moon->SetMaterial(0, MoonMat);
 	}
 
+	// === ORBITAL SPACE STATION — visible structure in orbit ===
+	if (CubeMesh && CylinderMesh && BaseMaterial)
+	{
+		float StationDist = 280000.f;
+		FVector StationPos(StationDist * 0.1f, StationDist * 0.3f, StationDist * 0.55f);
+		FLinearColor StationHull(0.08f, 0.08f, 0.1f);
+		FLinearColor StationAccent(0.06f, 0.06f, 0.08f);
+
+		// Central hub module
+		auto AddStationPart = [&](const FVector& Offset, const FVector& Scale,
+			const FRotator& Rot, UStaticMesh* Mesh, const FLinearColor& Col)
+		{
+			UStaticMeshComponent* P = NewObject<UStaticMeshComponent>(this);
+			P->SetupAttachment(RootComponent);
+			P->SetStaticMesh(Mesh);
+			P->SetWorldLocation(StationPos + Offset);
+			P->SetWorldScale3D(Scale);
+			P->SetWorldRotation(Rot);
+			P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			P->CastShadow = false;
+			P->RegisterComponent();
+			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			M->SetVectorParameterValue(TEXT("BaseColor"), Col);
+			M->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(Col.R * 0.3f, Col.G * 0.3f, Col.B * 0.4f));
+			P->SetMaterial(0, M);
+		};
+
+		// Main cylinder body
+		AddStationPart(FVector::ZeroVector, FVector(200.f, 200.f, 600.f),
+			FRotator(0.f, 0.f, 90.f), CylinderMesh, StationHull);
+		// Solar panel arrays (4 flat rectangles)
+		for (int32 i = 0; i < 4; i++)
+		{
+			float Angle = i * 90.f;
+			FVector PanelOffset(
+				FMath::Cos(FMath::DegreesToRadians(Angle)) * 800.f,
+				FMath::Sin(FMath::DegreesToRadians(Angle)) * 800.f, 0.f);
+			AddStationPart(PanelOffset, FVector(50.f, 500.f, 5.f),
+				FRotator(0.f, Angle, 0.f), CubeMesh,
+				FLinearColor(0.02f, 0.03f, 0.06f));
+		}
+		// Docking ring at each end
+		AddStationPart(FVector(0.f, 0.f, 35000.f), FVector(250.f, 250.f, 30.f),
+			FRotator::ZeroRotator, CylinderMesh, StationAccent);
+		AddStationPart(FVector(0.f, 0.f, -35000.f), FVector(250.f, 250.f, 30.f),
+			FRotator::ZeroRotator, CylinderMesh, StationAccent);
+
+		// Running lights on station
+		UPointLightComponent* StationLight = NewObject<UPointLightComponent>(this);
+		StationLight->SetupAttachment(RootComponent);
+		StationLight->SetWorldLocation(StationPos);
+		StationLight->SetIntensity(30000.f);
+		StationLight->SetAttenuationRadius(StationDist * 0.3f);
+		StationLight->SetLightColor(FLinearColor(0.3f, 0.5f, 0.8f));
+		StationLight->CastShadows = false;
+		StationLight->RegisterComponent();
+	}
+
 	// === ORBITAL DEBRIS — broken ship hulls from a recent battle ===
 	if (CubeMesh && BaseMaterial)
 	{

@@ -3,6 +3,7 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "Player/ExoCharacter.h"
 #include "Visual/ExoWeaponViewModel.h"
+#include "Visual/ExoWeaponAura.h"
 #include "Core/ExoAudioManager.h"
 #include "Core/ExoPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -26,6 +27,15 @@ void AExoWeaponBase::BeginPlay()
 	ViewModel->SetRelativeLocation(FVector(20.f, 10.f, -8.f));
 	ViewModel->RegisterComponent();
 	ViewModel->BuildModel(WeaponType, GetRarityColor(Rarity));
+
+	// Rarity aura for Epic/Legendary weapons
+	if (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary)
+	{
+		UExoWeaponAura* Aura = NewObject<UExoWeaponAura>(this);
+		Aura->SetupAttachment(ViewModel);
+		Aura->RegisterComponent();
+		Aura->InitAura(Rarity, GetRarityColor(Rarity));
+	}
 }
 
 float AExoWeaponBase::GetRarityDamageMultiplier() const
