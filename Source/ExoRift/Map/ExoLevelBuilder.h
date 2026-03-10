@@ -101,9 +101,10 @@ private:
 	void BuildCompoundLighting();
 	void SpawnCompoundGroundMarker(const FVector& Center, const FLinearColor& Color);
 
-	// --- Jump pads & patrol drones (placed in ExoLevelBuilderGameplay.cpp) ---
+	// --- Jump pads, drones, steam vents (placed in ExoLevelBuilderGameplay.cpp) ---
 	void PlaceJumpPads();
 	void PlaceDrones();
+	void PlaceSteamVents();
 
 	// --- Helpers ---
 	UStaticMeshComponent* SpawnStaticMesh(const FVector& Location, const FVector& Scale,

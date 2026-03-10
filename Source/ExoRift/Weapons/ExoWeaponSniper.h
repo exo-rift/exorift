@@ -4,6 +4,8 @@
 #include "Weapons/ExoWeaponBase.h"
 #include "ExoWeaponSniper.generated.h"
 
+class UPointLightComponent;
+
 UCLASS()
 class EXORIFT_API AExoWeaponSniper : public AExoWeaponBase
 {
@@ -21,6 +23,15 @@ public:
 
 protected:
 	bool bIsScoped = false;
+
+	// Scope glint — visible flash to other players when scoped
+	UPROPERTY()
+	UStaticMeshComponent* GlintMesh;
+
+	UPROPERTY()
+	UPointLightComponent* GlintLight;
+
+	float GlintBlend = 0.f;
 
 	// Hold-breath mechanic: reduces sway to zero for a limited time
 	float HoldBreathTimer = 0.f;

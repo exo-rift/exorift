@@ -1,4 +1,7 @@
 #include "Weapons/ExoWeaponSniper.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoScreenShake.h"
 
 AExoWeaponSniper::AExoWeaponSniper()
@@ -49,11 +52,62 @@ AExoWeaponSniper::AExoWeaponSniper()
 	{
 		WeaponMesh->SetSkeletalMesh(SniperMesh.Object);
 	}
+
+	// Scope glint — bright flash visible to other players
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
+		TEXT("/Engine/BasicShapes/Sphere"));
+	GlintMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GlintMesh"));
+	GlintMesh->SetupAttachment(WeaponMesh);
+	GlintMesh->SetRelativeLocation(FVector(80.f, 0.f, 8.f)); // Scope lens position
+	GlintMesh->SetRelativeScale3D(FVector(0.001f));
+	GlintMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GlintMesh->CastShadow = false;
+	GlintMesh->SetVisibility(false);
+	if (SphereFinder.Succeeded()) GlintMesh->SetStaticMesh(SphereFinder.Object);
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatFinder(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+	if (MatFinder.Succeeded())
+	{
+		UMaterialInstanceDynamic* GlintMat = UMaterialInstanceDynamic::Create(
+			MatFinder.Object, this);
+		GlintMat->SetVectorParameterValue(TEXT("BaseColor"),
+			FLinearColor(1.f, 1.f, 1.f, 1.f));
+		GlintMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(80.f, 70.f, 50.f, 1.f)); // Blazing white-gold
+		GlintMesh->SetMaterial(0, GlintMat);
+	}
+
+	GlintLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlintLight"));
+	GlintLight->SetupAttachment(GlintMesh);
+	GlintLight->SetIntensity(0.f);
+	GlintLight->SetAttenuationRadius(5000.f);
+	GlintLight->SetLightColor(FLinearColor(1.f, 0.9f, 0.6f));
+	GlintLight->CastShadows = false;
 }
 
 void AExoWeaponSniper::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Scope glint — ramp up when scoped, pulse for visibility
+	float GlintTarget = bIsScoped ? 1.f : 0.f;
+	GlintBlend = FMath::FInterpTo(GlintBlend, GlintTarget, DeltaTime, 4.f);
+	if (GlintBlend > 0.01f)
+	{
+		float Time = GetWorld()->GetTimeSeconds();
+		float Pulse = 0.6f + 0.4f * FMath::Sin(Time * 3.f);
+		float Intensity = GlintBlend * Pulse;
+		float S = 0.08f * Intensity;
+		GlintMesh->SetVisibility(true);
+		GlintMesh->SetRelativeScale3D(FVector(S));
+		GlintLight->SetIntensity(60000.f * Intensity);
+	}
+	else
+	{
+		GlintMesh->SetVisibility(false);
+		GlintLight->SetIntensity(0.f);
+	}
 
 	if (bIsScoped)
 	{

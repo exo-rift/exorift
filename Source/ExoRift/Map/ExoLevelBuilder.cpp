@@ -68,6 +68,7 @@ void AExoLevelBuilder::BeginPlay()
 	BuildCompoundLighting();
 	PlaceJumpPads();
 	PlaceDrones();
+	PlaceSteamVents();
 
 	// Ambient floating particles (dust motes / energy wisps)
 	AExoAmbientParticles* Particles = AExoAmbientParticles::Get(GetWorld());

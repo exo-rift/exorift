@@ -8,6 +8,7 @@
 #include "Map/ExoJumpPad.h"
 #include "Map/ExoShieldGenerator.h"
 #include "Map/ExoPatrolDrone.h"
+#include "Visual/ExoSteamVent.h"
 #include "Map/ExoZoneSystem.h"
 #include "Map/ExoZoneVisualizer.h"
 #include "Components/StaticMeshComponent.h"
@@ -430,4 +431,33 @@ void AExoLevelBuilder::PlaceDrones()
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d patrol drones"), Routes.Num());
+}
+
+void AExoLevelBuilder::PlaceSteamVents()
+{
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	struct FVentDef { FVector Pos; FLinearColor Color; float Interval; };
+	TArray<FVentDef> Vents = {
+		// Industrial compound — hot amber vents
+		{{2000.f, 80000.f, 0.f}, FLinearColor(1.f, 0.5f, 0.1f), 4.f},
+		{{-3000.f, 82000.f, 0.f}, FLinearColor(1.f, 0.6f, 0.15f), 6.f},
+		{{5000.f, 78000.f, 0.f}, FLinearColor(1.f, 0.4f, 0.05f), 5.f},
+		// Power Station — electric blue
+		{{82000.f, 2000.f, 0.f}, FLinearColor(0.2f, 0.5f, 1.f), 3.f},
+		{{78000.f, -3000.f, 0.f}, FLinearColor(0.15f, 0.4f, 1.f), 7.f},
+		// Research Labs — green gas
+		{{-2000.f, -80000.f, 0.f}, FLinearColor(0.2f, 0.9f, 0.3f), 5.f},
+		{{3000.f, -82000.f, 0.f}, FLinearColor(0.3f, 1.f, 0.4f), 8.f},
+	};
+
+	for (const FVentDef& V : Vents)
+	{
+		AExoSteamVent* Vent = GetWorld()->SpawnActor<AExoSteamVent>(
+			AExoSteamVent::StaticClass(), V.Pos, FRotator::ZeroRotator, Params);
+		if (Vent) Vent->InitVent(V.Interval, 0.8f, V.Color);
+	}
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed %d steam vents"), Vents.Num());
 }

@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoFlickerLight.h"
 
 void AExoLevelBuilder::BuildAtmosphere()
 {
@@ -66,6 +67,31 @@ void AExoLevelBuilder::BuildAtmosphere()
 	// Barracks entrance markers
 	SpawnNeonTube(FVector(-83000.f, -5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
 	SpawnNeonTube(FVector(-83000.f, 5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
+
+	// === FLICKERING LIGHTS — damaged fixtures for atmosphere ===
+	FActorSpawnParameters FlickerParams;
+	FlickerParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	struct FFlickerDef { FVector Pos; FLinearColor Color; float Intensity; };
+	TArray<FFlickerDef> Flickers = {
+		// Industrial compound — damaged amber lights
+		{{-4000.f, 79000.f, 500.f}, FLinearColor(1.f, 0.6f, 0.15f), 6000.f},
+		{{6000.f, 81000.f, 450.f}, FLinearColor(1.f, 0.5f, 0.1f), 5000.f},
+		// Barracks corridor — red alert flickers
+		{{-79000.f, 3000.f, 400.f}, FLinearColor(1.f, 0.15f, 0.1f), 7000.f},
+		{{-81000.f, -4000.f, 400.f}, FLinearColor(1.f, 0.2f, 0.1f), 5500.f},
+		// Tunnel entrance — unstable white
+		{{40000.f, -40000.f, 300.f}, FLinearColor(0.8f, 0.85f, 1.f), 4000.f},
+		// Research labs — flickering green
+		{{1000.f, -81000.f, 450.f}, FLinearColor(0.3f, 1.f, 0.4f), 5000.f},
+	};
+
+	for (const FFlickerDef& F : Flickers)
+	{
+		AExoFlickerLight* FL = GetWorld()->SpawnActor<AExoFlickerLight>(
+			AExoFlickerLight::StaticClass(), F.Pos, FRotator::ZeroRotator, FlickerParams);
+		if (FL) FL->InitLight(F.Color, F.Intensity);
+	}
 }
 
 void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, float Scale)
