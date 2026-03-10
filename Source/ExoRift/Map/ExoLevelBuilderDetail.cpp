@@ -103,6 +103,23 @@ void AExoLevelBuilder::BuildGroundDetail()
 		}
 	}
 
+	// Ground mist pools — low-lying glowing haze near water and valleys
+	SpawnGroundMist(FVector(30000.f, -20000.f, 5.f), 4000.f, FLinearColor(0.1f, 0.15f, 0.25f));
+	SpawnGroundMist(FVector(-20000.f, 30000.f, 5.f), 3500.f, FLinearColor(0.1f, 0.15f, 0.25f));
+	SpawnGroundMist(FVector(80000.f, 5000.f, 5.f), 5000.f, FLinearColor(0.15f, 0.1f, 0.08f));
+	SpawnGroundMist(FVector(-5000.f, -80000.f, 5.f), 3000.f, FLinearColor(0.08f, 0.15f, 0.12f));
+	SpawnGroundMist(FVector(-80000.f, 8000.f, 5.f), 3000.f, FLinearColor(0.08f, 0.12f, 0.08f));
+	// River channel mist
+	SpawnGroundMist(FVector(40000.f, -40000.f, 10.f), 6000.f, FLinearColor(0.08f, 0.1f, 0.2f));
+	SpawnGroundMist(FVector(-40000.f, 40000.f, 10.f), 5000.f, FLinearColor(0.08f, 0.1f, 0.2f));
+
+	// Ground clutter — small debris near compounds
+	SpawnGroundClutter(FVector(0.f, 0.f, 0.f), 8000.f, 30);          // Hub
+	SpawnGroundClutter(FVector(0.f, 80000.f, 0.f), 6000.f, 25);      // North
+	SpawnGroundClutter(FVector(0.f, -80000.f, 0.f), 6000.f, 20);     // South
+	SpawnGroundClutter(FVector(80000.f, 0.f, 0.f), 6000.f, 22);      // East
+	SpawnGroundClutter(FVector(-80000.f, 0.f, 0.f), 5000.f, 18);     // West
+
 	// Hazard floor markings near dangerous areas
 	FLinearColor YellowStripe(0.6f, 0.5f, 0.05f);
 	struct FHazardMark { FVector Pos; float Yaw; };
@@ -258,5 +275,68 @@ void AExoLevelBuilder::SpawnCrater(const FVector& Center, float Radius)
 			FVector(S, S * 0.6f, S * 0.4f),
 			FRotator(FMath::RandRange(-15.f, 15.f), FMath::RandRange(0.f, 360.f), 0.f),
 			CubeMesh, FLinearColor(0.04f, 0.04f, 0.05f));
+	}
+}
+
+void AExoLevelBuilder::SpawnGroundMist(const FVector& Center, float Radius,
+	const FLinearColor& Color)
+{
+	// Large flat emissive cylinder = glowing low-lying mist pool
+	float S = Radius / 50.f;
+	UStaticMeshComponent* Mist = SpawnStaticMesh(Center,
+		FVector(S, S, 0.01f), FRotator::ZeroRotator, CylinderMesh, Color);
+	if (Mist)
+	{
+		UMaterialInterface* Mat = FExoMaterialFactory::GetEmissiveAdditive();
+		UMaterialInstanceDynamic* MM = UMaterialInstanceDynamic::Create(Mat, this);
+		MM->SetVectorParameterValue(TEXT("EmissiveColor"),
+			FLinearColor(Color.R * 0.6f, Color.G * 0.6f, Color.B * 0.6f));
+		Mist->SetMaterial(0, MM);
+	}
+	// Subtle glow light
+	UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
+	GL->SetupAttachment(RootComponent);
+	GL->SetWorldLocation(Center + FVector(0.f, 0.f, 50.f));
+	GL->SetIntensity(1500.f);
+	GL->SetAttenuationRadius(Radius * 0.8f);
+	GL->SetLightColor(Color);
+	GL->CastShadows = false;
+	GL->RegisterComponent();
+}
+
+void AExoLevelBuilder::SpawnGroundClutter(const FVector& Center, float Radius, int32 Count)
+{
+	FLinearColor DarkMetal(0.04f, 0.04f, 0.05f);
+	FLinearColor RustMetal(0.06f, 0.04f, 0.03f);
+	for (int32 i = 0; i < Count; i++)
+	{
+		float Angle = FMath::RandRange(0.f, 2.f * PI);
+		float Dist = FMath::RandRange(Radius * 0.2f, Radius);
+		FVector Pos = Center + FVector(
+			FMath::Cos(Angle) * Dist,
+			FMath::Sin(Angle) * Dist, 0.f);
+		float Yaw = FMath::RandRange(0.f, 360.f);
+		FLinearColor Col = (i % 3 == 0) ? RustMetal : DarkMetal;
+
+		if (i % 4 == 0)
+		{
+			// Small rock/rubble (sphere)
+			float S = FMath::RandRange(0.15f, 0.5f);
+			SpawnStaticMesh(Pos + FVector(0.f, 0.f, S * 25.f),
+				FVector(S, S * 0.8f, S * 0.6f),
+				FRotator(FMath::RandRange(-10.f, 10.f), Yaw, 0.f),
+				SphereMesh, Col);
+		}
+		else
+		{
+			// Metal fragment (stretched cube)
+			float SX = FMath::RandRange(0.2f, 0.8f);
+			float SY = FMath::RandRange(0.1f, 0.4f);
+			float SZ = FMath::RandRange(0.02f, 0.12f);
+			SpawnStaticMesh(Pos + FVector(0.f, 0.f, SZ * 50.f),
+				FVector(SX, SY, SZ),
+				FRotator(FMath::RandRange(-5.f, 5.f), Yaw, FMath::RandRange(-3.f, 3.f)),
+				CubeMesh, Col);
+		}
 	}
 }

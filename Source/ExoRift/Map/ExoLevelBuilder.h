@@ -68,6 +68,8 @@ private:
 	void SpawnFloorPanels(const FVector& Center, float Radius, int32 Count);
 	void SpawnEnergyPylon(const FVector& Base, float Height, const FLinearColor& Color);
 	void SpawnCrater(const FVector& Center, float Radius);
+	void SpawnGroundMist(const FVector& Center, float Radius, const FLinearColor& Color);
+	void SpawnGroundClutter(const FVector& Center, float Radius, int32 Count);
 
 	// --- Interiors (in ExoLevelBuilderInteriors.cpp) ---
 	void BuildInteriors();
