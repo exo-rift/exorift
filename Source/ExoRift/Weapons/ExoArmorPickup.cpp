@@ -29,8 +29,8 @@ AExoArmorPickup::AExoArmorPickup()
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
 	GlowLight->SetupAttachment(CollisionSphere);
 	GlowLight->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
-	GlowLight->SetIntensity(3000.f);
-	GlowLight->SetAttenuationRadius(400.f);
+	GlowLight->SetIntensity(7000.f);
+	GlowLight->SetAttenuationRadius(560.f);
 	GlowLight->CastShadows = false;
 
 	BobPhase = FMath::RandRange(0.f, 2.f * PI);
@@ -46,11 +46,11 @@ void AExoArmorPickup::BeginPlay()
 	{
 		FLinearColor Col = GetTierColor();
 		GlowLight->SetLightColor(Col);
-		float TierIntensity = (Tier == EArmorTier::Heavy) ? 6000.f :
-			(Tier == EArmorTier::Medium) ? 4000.f : 2000.f;
+		float TierIntensity = (Tier == EArmorTier::Heavy) ? 14000.f :
+			(Tier == EArmorTier::Medium) ? 9000.f : 4500.f;
 		GlowLight->SetIntensity(TierIntensity);
 		GlowLight->SetAttenuationRadius(
-			(Tier == EArmorTier::Heavy) ? 500.f : 350.f);
+			(Tier == EArmorTier::Heavy) ? 700.f : 490.f);
 	}
 }
 
@@ -83,6 +83,7 @@ void AExoArmorPickup::Tick(float DeltaTime)
 				if (LitEmissive)
 				{
 					DynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
+					if (!DynMat) { return; }
 					DisplayMesh->SetMaterial(0, DynMat);
 				}
 			}
@@ -96,8 +97,8 @@ void AExoArmorPickup::Tick(float DeltaTime)
 		// Pulse glow light
 		if (GlowLight)
 		{
-			float BaseInt = (Tier == EArmorTier::Heavy) ? 6000.f :
-				(Tier == EArmorTier::Medium) ? 4000.f : 2000.f;
+			float BaseInt = (Tier == EArmorTier::Heavy) ? 14000.f :
+				(Tier == EArmorTier::Medium) ? 9000.f : 4500.f;
 			GlowLight->SetIntensity(BaseInt * (0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f)));
 		}
 	}

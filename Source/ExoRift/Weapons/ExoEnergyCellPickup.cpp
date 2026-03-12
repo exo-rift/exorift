@@ -3,6 +3,8 @@
 #include "Player/ExoCharacter.h"
 #include "Core/ExoAudioManager.h"
 #include "Visual/ExoPickupFlash.h"
+#include "Visual/ExoPostProcess.h"
+#include "UI/ExoHUD.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -62,6 +64,7 @@ void AExoEnergyCellPickup::BuildCellModel()
 	if (LitMat && DisplayMesh)
 	{
 		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!BodyMat) { return; }
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.05f, 0.15f, 0.12f));
 		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -79,6 +82,7 @@ void AExoEnergyCellPickup::BuildCellModel()
 		TopCap->SetRelativeScale3D(FVector(1.1f, 1.1f, 0.3f));
 		TopCap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		UMaterialInstanceDynamic* CapMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!CapMat) { return; }
 		CapMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.25f, 0.2f));
 		CapMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		CapMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -110,8 +114,9 @@ void AExoEnergyCellPickup::BuildCellModel()
 		if (EmissiveMat)
 		{
 			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!RingMat) { return; }
 			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.3f, 2.7f, 1.8f));
+				FLinearColor(0.7f, 6.f, 4.f));
 			Ring->SetMaterial(0, RingMat);
 		}
 		Ring->RegisterComponent();
@@ -121,8 +126,8 @@ void AExoEnergyCellPickup::BuildCellModel()
 	GlowLight = NewObject<UPointLightComponent>(this);
 	GlowLight->SetupAttachment(DisplayMesh);
 	GlowLight->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	GlowLight->SetIntensity(3000.f);
-	GlowLight->SetAttenuationRadius(500.f);
+	GlowLight->SetIntensity(6000.f);
+	GlowLight->SetAttenuationRadius(750.f);
 	GlowLight->SetLightColor(FLinearColor(0.1f, 0.9f, 0.5f));
 	GlowLight->CastShadows = false;
 	GlowLight->RegisterComponent();
@@ -147,7 +152,7 @@ void AExoEnergyCellPickup::Tick(float DeltaTime)
 		if (GlowLight)
 		{
 			float Pulse = 0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f);
-			GlowLight->SetIntensity(2000.f + 2000.f * Pulse);
+			GlowLight->SetIntensity(4000.f + 4000.f * Pulse);
 		}
 	}
 	else if (bRespawns)
@@ -172,10 +177,28 @@ void AExoEnergyCellPickup::Interact(AExoCharacter* Interactor)
 	UE_LOG(LogExoRift, Log, TEXT("%s picked up energy cell (+%.0f)"),
 		*Interactor->GetName(), EnergyAmount);
 
-	// Pickup audio feedback
+	// Pickup audio feedback — ascending pitch for satisfying collect sound
 	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
 	{
-		Audio->PlayImpactSound(GetActorLocation(), false);
+		Audio->PlayAbilityActivateSound(GetActorLocation(), 1.3f);
+	}
+
+	// Screen flash — brief white-blue bloom via post-process
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		PP->TriggerEnergyPickupFlash();
+	}
+
+	// HUD notification
+	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
+	if (PC)
+	{
+		if (AExoHUD* HUD = Cast<AExoHUD>(PC->GetHUD()))
+		{
+			FString Msg = FString::Printf(TEXT("Energy Cell +%.0f"), EnergyAmount);
+			HUD->GetNotifications().AddNotification(Msg,
+				FLinearColor(0.3f, 0.9f, 1.f), 3.f);
+		}
 	}
 
 	SetPickupActive(false);

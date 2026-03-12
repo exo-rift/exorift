@@ -6,6 +6,7 @@
 #include "Visual/ExoScanPulseActor.h"
 #include "Visual/ExoShieldBubbleActor.h"
 #include "Visual/ExoScreenShake.h"
+#include "Core/ExoAudioManager.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -124,6 +125,11 @@ void UExoAbilityComponent::ExecuteDash()
 
 	Char->LaunchCharacter(LookDir * DashImpulse, true, false);
 
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayAbilityActivateSound(Char->GetActorLocation(), 1.2f);
+	}
+
 	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
 	{
 		PP->TriggerDashEffect();
@@ -156,6 +162,11 @@ void UExoAbilityComponent::ExecuteAreaScan()
 		}
 	}
 
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayAbilityActivateSound(Origin, 0.8f);
+	}
+
 	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
 	{
 		PP->TriggerScanPulse();
@@ -185,6 +196,11 @@ void UExoAbilityComponent::ExecuteShieldBubble()
 	if (Shield)
 	{
 		Shield->AddShield(ShieldRestoreAmount);
+	}
+
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayAbilityActivateSound(Char->GetActorLocation(), 0.6f);
 	}
 
 	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
@@ -238,6 +254,11 @@ void UExoAbilityComponent::ExecuteGrapple()
 
 		CreateGrappleBeam();
 
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayAbilityActivateSound(Start, 1.0f);
+		}
+
 		if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
 		{
 			PP->ApplyGrappleEffect(1.f);
@@ -270,6 +291,12 @@ void UExoAbilityComponent::ExecuteDecoy()
 	if (Decoy)
 	{
 		Decoy->SetLifeSpan(DecoyLifetime);
+
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayAbilityActivateSound(SpawnLoc, 1.4f);
+		}
+
 		UE_LOG(LogExoRift, Log, TEXT("Decoy deployed, auto-destroy in %.0fs"), DecoyLifetime);
 	}
 }

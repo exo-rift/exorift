@@ -1,5 +1,6 @@
 #include "Weapons/ExoWeaponGrenadeLauncher.h"
 #include "Weapons/ExoProjectile.h"
+#include "Core/ExoAudioManager.h"
 
 AExoWeaponGrenadeLauncher::AExoWeaponGrenadeLauncher()
 {
@@ -30,6 +31,17 @@ void AExoWeaponGrenadeLauncher::FireShot()
 	if (CurrentEnergy < EnergyPerShot) return;
 	CurrentEnergy = FMath::Max(CurrentEnergy - EnergyPerShot, 0.f);
 	OnEnergyChanged.Broadcast(CurrentEnergy);
+
+	// Low energy warning — plays once when dropping below 25%
+	float EnergyPct = (MaxEnergy > 0.f) ? CurrentEnergy / MaxEnergy : 0.f;
+	if (EnergyPct < 0.25f && !bLowEnergyWarningPlayed)
+	{
+		bLowEnergyWarningPlayed = true;
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			Audio->PlayOverheatSound();
+	}
+	if (EnergyPct >= 0.25f)
+		bLowEnergyWarningPlayed = false;
 
 	AddHeat(HeatPerShot);
 

@@ -104,8 +104,15 @@ void AExoBotController::AimAtTarget(float DeltaTime)
 
 void AExoBotController::TryFire()
 {
-	if (AExoCharacter* Bot = Cast<AExoCharacter>(GetPawn()))
-		if (CurrentTarget) Bot->StartFire();
+	if (AExoBotCharacter* Bot = Cast<AExoBotCharacter>(GetPawn()))
+	{
+		if (CurrentTarget)
+		{
+			// Audible fire callout — alerts nearby players when bot opens fire
+			Bot->PlayFireCallout();
+			Bot->StartFire();
+		}
+	}
 }
 
 void AExoBotController::StopFiring()

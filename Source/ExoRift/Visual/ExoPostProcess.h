@@ -45,6 +45,18 @@ public:
 	/** Brief bloom + exposure spike when firing weapon. Intensity 0-1 per weapon. */
 	void TriggerWeaponFireFlash(float Intensity);
 
+	/** Headshot hit pause — brief timescale dip for satisfying feedback. */
+	void TriggerHeadshotPause();
+
+	/** Enhanced headshot kill — stronger chromatic + desaturation + golden flash. */
+	void TriggerHeadshotKillEffect();
+
+	/** Energy pickup — brief white-blue bloom flash + slight tint. */
+	void TriggerEnergyPickupFlash();
+
+	/** Death cinematic — heavy desat, vignette, chromatic aberration, cold tint. */
+	void TriggerDeathEffect();
+
 	/** Cinematic endgame effect — desaturation, vignette, bloom ramp. */
 	void TriggerEndgameCinematic(bool bIsVictory);
 
@@ -95,6 +107,19 @@ protected:
 
 	// Weapon fire bloom kick
 	float WeaponFireFlash = 0.f;
+
+	// Headshot hit pause
+	float HitPauseRemaining = 0.f;
+	float HitPauseOriginalDilation = 1.f;
+
+	// Headshot kill
+	float HeadshotKillIntensity = 0.f;
+
+	// Energy pickup flash (white-blue bloom burst)
+	float EnergyPickupFlash = 0.f;
+
+	// Death cinematic effect (heavy desat + cold tint + vignette)
+	float DeathEffectIntensity = 0.f;
 
 	// Endgame cinematic
 	float EndgameBlend = 0.f;

@@ -58,6 +58,9 @@ protected:
 	float BobPhase = 0.f;
 	FVector BaseLocation;
 
+	// Proximity hum timer
+	float ProximityHumTimer = 0.f;
+
 	UPROPERTY()
 	class UPointLightComponent* RarityGlow = nullptr;
 

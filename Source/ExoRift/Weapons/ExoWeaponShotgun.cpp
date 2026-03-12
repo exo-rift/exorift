@@ -6,6 +6,7 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoTracerManager.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoMusicManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
 #include "ExoRift.h"
@@ -67,6 +68,17 @@ void AExoWeaponShotgun::FireShot()
 	if (CurrentEnergy < EnergyPerShot) return;
 	CurrentEnergy = FMath::Max(CurrentEnergy - EnergyPerShot, 0.f);
 	OnEnergyChanged.Broadcast(CurrentEnergy);
+
+	// Low energy warning — plays once when dropping below 25%
+	float EnergyPct = (MaxEnergy > 0.f) ? CurrentEnergy / MaxEnergy : 0.f;
+	if (EnergyPct < 0.25f && !bLowEnergyWarningPlayed)
+	{
+		bLowEnergyWarningPlayed = true;
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			Audio->PlayOverheatSound();
+	}
+	if (EnergyPct >= 0.25f)
+		bLowEnergyWarningPlayed = false;
 
 	AddHeat(HeatPerShot);
 
@@ -191,6 +203,10 @@ void AExoWeaponShotgun::FirePellet(
 	if (HitChar && OwnerPawn && OwnerPawn->IsLocallyControlled())
 	{
 		FExoHitMarker::AddHitMarker(bWillKill, bHeadshot);
+
+		// Notify adaptive music of combat (attacker dealing damage)
+		if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+			Music->NotifyCombatEvent();
 		if (bWillKill)
 		{
 			AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());

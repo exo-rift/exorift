@@ -5,15 +5,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
 
 void AExoWeaponPickup::BuildPickupModel()
 {
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(TEXT("/Engine/BasicShapes/Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFind(TEXT("/Engine/BasicShapes/Cylinder"));
-	UStaticMesh* CubeMesh = CubeFind.Succeeded() ? CubeFind.Object : nullptr;
-	UStaticMesh* CylMesh = CylFind.Succeeded() ? CylFind.Object : nullptr;
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube"));
+	UStaticMesh* CylMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder"));
 
 	if (!CubeMesh) return;
 
@@ -22,11 +19,11 @@ void AExoWeaponPickup::BuildPickupModel()
 	float EmMul;
 	switch (Rarity)
 	{
-	case EWeaponRarity::Common:    EmMul = 0.5f; break;
-	case EWeaponRarity::Rare:      EmMul = 1.2f; break;
-	case EWeaponRarity::Epic:      EmMul = 2.0f; break;
-	case EWeaponRarity::Legendary: EmMul = 4.0f; break;
-	default:                       EmMul = 0.5f; break;
+	case EWeaponRarity::Common:    EmMul = 2.5f; break;
+	case EWeaponRarity::Rare:      EmMul = 6.0f; break;
+	case EWeaponRarity::Epic:      EmMul = 11.0f; break;
+	case EWeaponRarity::Legendary: EmMul = 20.0f; break;
+	default:                       EmMul = 2.5f; break;
 	}
 
 	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
@@ -48,6 +45,7 @@ void AExoWeaponPickup::BuildPickupModel()
 		if (bIsAccent && EmissiveOpaque)
 		{
 			Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Color.R * EmMul, Color.G * EmMul, Color.B * EmMul));
 			C->SetMaterial(0, Mat);
@@ -58,6 +56,7 @@ void AExoWeaponPickup::BuildPickupModel()
 			if (LitMat)
 			{
 				Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+				if (!Mat) { return nullptr; }
 				Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -126,11 +125,11 @@ void AExoWeaponPickup::BuildPickupModel()
 	float GlowRadius;
 	switch (Rarity)
 	{
-	case EWeaponRarity::Common:    GlowIntensity = 1000.f; GlowRadius = 250.f; break;
-	case EWeaponRarity::Rare:      GlowIntensity = 2500.f; GlowRadius = 350.f; break;
-	case EWeaponRarity::Epic:      GlowIntensity = 5000.f; GlowRadius = 450.f; break;
-	case EWeaponRarity::Legendary: GlowIntensity = 8000.f; GlowRadius = 550.f; break;
-	default:                       GlowIntensity = 1000.f; GlowRadius = 250.f; break;
+	case EWeaponRarity::Common:    GlowIntensity = 4000.f; GlowRadius = 375.f; break;
+	case EWeaponRarity::Rare:      GlowIntensity = 10000.f; GlowRadius = 525.f; break;
+	case EWeaponRarity::Epic:      GlowIntensity = 20000.f; GlowRadius = 675.f; break;
+	case EWeaponRarity::Legendary: GlowIntensity = 32000.f; GlowRadius = 825.f; break;
+	default:                       GlowIntensity = 4000.f; GlowRadius = 375.f; break;
 	}
 	RarityGlow->SetIntensity(GlowIntensity);
 	RarityGlow->SetAttenuationRadius(GlowRadius);
@@ -147,6 +146,7 @@ void AExoWeaponPickup::BuildPickupModel()
 	if (EmissiveOpaque)
 	{
 		PedestalMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+		if (!PedestalMat) { return; }
 		PedestalMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * EmMul * 0.3f, RarityColor.G * EmMul * 0.3f,
 				RarityColor.B * EmMul * 0.3f));
@@ -167,6 +167,7 @@ void AExoWeaponPickup::BuildPickupModel()
 		if (EmissiveOpaque)
 		{
 			RingMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			if (!RingMat) { return; }
 			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(RarityColor.R * EmMul * 0.6f, RarityColor.G * EmMul * 0.6f,
 					RarityColor.B * EmMul * 0.6f));
@@ -200,7 +201,8 @@ void AExoWeaponPickup::BuildPickupModel()
 		BeaconBeam->RegisterComponent();
 
 		BeaconMat = UMaterialInstanceDynamic::Create(EmissiveAdditive, this);
-		float BeaconEm = EmMul * 2.f;
+		if (!BeaconMat) { return; }
+		float BeaconEm = EmMul * 4.f;
 		BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(RarityColor.R * BeaconEm, RarityColor.G * BeaconEm,
 				RarityColor.B * BeaconEm));

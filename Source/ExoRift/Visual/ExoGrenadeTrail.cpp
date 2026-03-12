@@ -51,7 +51,8 @@ void AExoGrenadeTrail::InitTrail(AActor* Parent, EGrenadeType Type)
 		D->RegisterComponent();
 
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(TrailMat, this);
-		FLinearColor Em(TrailColor.R * 8.f, TrailColor.G * 8.f, TrailColor.B * 8.f);
+		if (!M) { continue; }
+		FLinearColor Em(TrailColor.R * 18.f, TrailColor.G * 18.f, TrailColor.B * 18.f);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		D->SetMaterial(0, M);
 
@@ -112,8 +113,8 @@ void AExoGrenadeTrail::Tick(float DeltaTime)
 		UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(Dots[i]->GetMaterial(0));
 		if (M)
 		{
-			FLinearColor Em(TrailColor.R * 8.f * Alpha, TrailColor.G * 8.f * Alpha,
-				TrailColor.B * 8.f * Alpha);
+			FLinearColor Em(TrailColor.R * 18.f * Alpha, TrailColor.G * 18.f * Alpha,
+				TrailColor.B * 18.f * Alpha);
 			M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		}
 	}

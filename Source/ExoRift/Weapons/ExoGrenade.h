@@ -61,6 +61,7 @@ protected:
 	UMaterialInstanceDynamic* BodyMat = nullptr;
 
 	float FuseElapsed = 0.f;
+	float NextBeepTime = 0.f;
 	bool bIgnited = false;
 
 private:

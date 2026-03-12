@@ -10,6 +10,7 @@
 #include "Weapons/ExoGrenadeComponent.h"
 #include "Weapons/ExoTrapComponent.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoMusicManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -25,7 +26,6 @@
 #include "UI/ExoHitMarker.h"
 #include "UI/ExoHitDirectionIndicator.h"
 #include "UI/ExoPingSystem.h"
-#include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
 #include "ExoRift.h"
 
@@ -112,9 +112,22 @@ void AExoCharacter::Tick(float DeltaTime)
 	TickExecution(DeltaTime);
 	TickSlide(DeltaTime);
 	TickMantle(DeltaTime);
+
+	// Wall-running
+	if (!bIsWallRunning)
+		TryWallRun();
+	TickWallRun(DeltaTime);
+
+	// Zipline
+	TickZipline(DeltaTime);
+
 	TickFootsteps(DeltaTime);
 	TickFOV(DeltaTime);
 	if (EmoteComp) EmoteComp->TickEmote(DeltaTime);
+
+	// Tick combat stinger cooldown
+	if (CombatStingerCooldown > 0.f)
+		CombatStingerCooldown -= DeltaTime;
 
 	// Update post-process effects and HUD subsystems (local player only)
 	if (IsLocallyControlled())
@@ -169,63 +182,7 @@ void AExoCharacter::Tick(float DeltaTime)
 	}
 }
 
-float AExoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
-	AController* EventInstigator, AActor* DamageCauser)
-{
-	if (bIsDead) return 0.f;
-
-	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
-	// Track last damage source for DBNO bleed-out attribution
-	LastDamageInstigator = EventInstigator;
-	if (AExoWeaponBase* W = Cast<AExoWeaponBase>(DamageCauser)) LastDamageWeaponName = W->GetWeaponName();
-	else LastDamageWeaponName = TEXT("Zone");
-
-	// If already DBNO, damage goes to DBNO health
-	if (bIsDBNO)
-	{
-		DBNOHealthRemaining = FMath::Max(DBNOHealthRemaining - ActualDamage, 0.f);
-		if (DBNOHealthRemaining <= 0.f) Die(EventInstigator, LastDamageWeaponName);
-		return ActualDamage;
-	}
-
-	// Armor vest absorbs body damage, then shield absorbs remainder
-	if (ArmorComp) ActualDamage = ArmorComp->AbsorbBodyDamage(ActualDamage);
-	if (ShieldComp && ShieldComp->HasShield()) ActualDamage = ShieldComp->AbsorbDamage(ActualDamage);
-	Health = FMath::Clamp(Health - ActualDamage, 0.f, MaxHealth);
-
-	if (IsLocallyControlled())
-	{
-		AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
-		if (PP) PP->TriggerDamageFlash(FMath::Clamp(DamageAmount / 30.f, 0.2f, 1.f));
-		// Screen shake proportional to damage
-		FExoScreenShake::AddShake(FMath::Clamp(DamageAmount / 50.f, 0.1f, 0.8f), 0.25f);
-		if (DamageCauser && DamageCauser != this)
-		{
-			float RelativeAngle = (DamageCauser->GetActorLocation() - GetActorLocation()).Rotation().Yaw
-				- GetControlRotation().Yaw;
-			FExoHitMarker::AddDamageIndicator(RelativeAngle);
-			FExoHitDirectionIndicator::AddHit(DamageCauser->GetActorLocation());
-		}
-	}
-
-	// If executor takes damage, cancel the execution
-	if (bIsExecuting) CancelExecution();
-
-	// Cancel any active emote on damage
-	if (EmoteComp && EmoteComp->IsEmoting()) EmoteComp->CancelEmote();
-
-	// Track damage taken stat
-	if (AController* MyController = GetController())
-	{
-		if (AExoPlayerState* PS = MyController->GetPlayerState<AExoPlayerState>())
-			PS->DamageTaken += ActualDamage;
-	}
-
-	if (Health <= 0.f) EnterDBNO();
-
-	return ActualDamage;
-}
+// TakeDamage is in ExoCharacterDamage.cpp
 
 void AExoCharacter::StartFire()
 {
@@ -334,12 +291,27 @@ void AExoCharacter::TickLandingImpact(float DeltaTime)
 	bool bInAir = !GetCharacterMovement()->IsMovingOnGround();
 	if (bWasInAir && !bInAir)
 	{
+		// Reset double jump on landing
+		bHasDoubleJumped = false;
 		// Just landed — impact strength based on fall speed
 		float FallSpeed = FMath::Abs(GetCharacterMovement()->Velocity.Z);
 		if (FallSpeed > 200.f)
 		{
 			LandingImpact = FMath::Clamp(FallSpeed / 1500.f, 0.15f, 1.f);
 			FExoScreenShake::AddShake(LandingImpact * 0.3f, 0.15f);
+			// Landing audio — heavier thud for bigger falls
+			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			{
+				float LandVol = FMath::Clamp(LandingImpact * 0.5f, 0.1f, 0.5f);
+				float LandPitch = FMath::Lerp(0.5f, 0.25f, LandingImpact); // Lower pitch for harder falls
+				Audio->PlayWeaponFireSound(nullptr, GetActorLocation(), LandVol);
+			}
+			// Heavy landing post-process flash
+			if (LandingImpact > 0.5f)
+			{
+				AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+				if (PP) PP->TriggerDamageFlash((LandingImpact - 0.5f) * 0.4f);
+			}
 			AExoFootstepDust::SpawnLandingDust(GetWorld(), GetActorLocation(), FallSpeed);
 		}
 	}

@@ -1,6 +1,4 @@
 #include "Map/ExoSupplyDrop.h"
-#include "Weapons/ExoWeaponPickup.h"
-#include "Weapons/ExoEnergyCellPickup.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
 #include "Core/ExoAudioManager.h"
@@ -41,115 +39,7 @@ AExoSupplyDrop::AExoSupplyDrop()
 	// BaseMaterialRef no longer needed — LitEmissive used at runtime
 }
 
-void AExoSupplyDrop::BuildCrateMesh()
-{
-	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
-	auto MakePart = [&](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale,
-		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator) -> UStaticMeshComponent*
-	{
-		if (!Mesh) return nullptr;
-		UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(this);
-		C->SetupAttachment(RootComponent);
-		C->SetStaticMesh(Mesh);
-		C->SetRelativeLocation(Loc);
-		C->SetRelativeScale3D(Scale);
-		C->SetRelativeRotation(Rot);
-		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		C->CastShadow = true;
-		C->RegisterComponent();
-		if (LitMat)
-		{
-			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-			float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
-			if (Lum > 0.15f)
-			{
-				Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(Color.R * 5.f, Color.G * 5.f, Color.B * 5.f));
-				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.5f);
-				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.15f);
-			}
-			else
-			{
-				Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
-				Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
-				Mat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
-			}
-			C->SetMaterial(0, Mat);
-		}
-		return C;
-	};
-
-	FLinearColor CrateColor(0.1f, 0.12f, 0.08f);      // Military olive
-	FLinearColor AccentColor(0.9f, 0.7f, 0.1f);         // Gold accent
-	FLinearColor ParaColor(0.8f, 0.4f, 0.1f);           // Orange chute
-
-	// Main crate body
-	CrateBody = MakePart(CubeMeshRef, FVector(0.f, 0.f, 0.f),
-		FVector(1.2f, 0.8f, 0.6f), CrateColor);
-
-	// Lid (will animate open)
-	CrateLid = MakePart(CubeMeshRef, FVector(0.f, 0.f, 35.f),
-		FVector(1.25f, 0.85f, 0.05f), CrateColor);
-
-	// Gold accent stripes on sides
-	MakePart(CubeMeshRef, FVector(0.f, 42.f, 0.f), FVector(1.0f, 0.02f, 0.45f), AccentColor);
-	MakePart(CubeMeshRef, FVector(0.f, -42.f, 0.f), FVector(1.0f, 0.02f, 0.45f), AccentColor);
-
-	// Corner reinforcements
-	for (float cx : {-55.f, 55.f})
-		for (float cy : {-35.f, 35.f})
-			MakePart(CubeMeshRef, FVector(cx, cy, -20.f),
-				FVector(0.08f, 0.08f, 0.15f), FLinearColor(0.15f, 0.15f, 0.15f));
-
-	// Parachute dome (half sphere above)
-	ParachuteDome = MakePart(SphereMeshRef, FVector(0.f, 0.f, 350.f),
-		FVector(2.5f, 2.5f, 1.5f), ParaColor);
-
-	// Parachute struts (lines connecting dome to crate)
-	ParachuteStrut1 = MakePart(CylinderMeshRef, FVector(40.f, 0.f, 180.f),
-		FVector(0.02f, 0.02f, 2.f), FLinearColor(0.3f, 0.3f, 0.3f),
-		FRotator(0.f, 0.f, 8.f));
-	ParachuteStrut2 = MakePart(CylinderMeshRef, FVector(-40.f, 0.f, 180.f),
-		FVector(0.02f, 0.02f, 2.f), FLinearColor(0.3f, 0.3f, 0.3f),
-		FRotator(0.f, 0.f, -8.f));
-
-	// Top edge trim (gold lines)
-	MakePart(CubeMeshRef, FVector(60.f, 0.f, 32.f), FVector(0.02f, 0.7f, 0.02f), AccentColor);
-	MakePart(CubeMeshRef, FVector(-60.f, 0.f, 32.f), FVector(0.02f, 0.7f, 0.02f), AccentColor);
-
-	// Hazard stripe on front face
-	MakePart(CubeMeshRef, FVector(62.f, 0.f, 0.f), FVector(0.02f, 0.5f, 0.1f),
-		FLinearColor(0.6f, 0.5f, 0.05f));
-
-	// Lock hasp (front center)
-	MakePart(CubeMeshRef, FVector(62.f, 0.f, 25.f), FVector(0.04f, 0.08f, 0.06f),
-		FLinearColor(0.15f, 0.15f, 0.15f));
-
-	// Inner crate glow
-	CrateGlow = NewObject<UPointLightComponent>(this);
-	CrateGlow->SetupAttachment(RootComponent);
-	CrateGlow->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
-	CrateGlow->SetIntensity(0.f);
-	CrateGlow->SetAttenuationRadius(500.f);
-	CrateGlow->SetLightColor(FColor(255, 200, 50));
-	CrateGlow->RegisterComponent();
-
-	// Smoke trail — elongated cylinder trailing above during descent
-	SmokeTrail = MakePart(CylinderMeshRef, FVector(0.f, 0.f, 500.f),
-		FVector(0.8f, 0.8f, 5.f), FLinearColor(0.15f, 0.12f, 0.08f));
-	if (SmokeTrail) SmokeTrail->CastShadow = false;
-
-	// Trail light — warm glow from engine exhaust
-	TrailLight = NewObject<UPointLightComponent>(this);
-	TrailLight->SetupAttachment(RootComponent);
-	TrailLight->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	TrailLight->SetIntensity(15000.f);
-	TrailLight->SetAttenuationRadius(2000.f);
-	TrailLight->SetLightColor(FLinearColor(1.f, 0.5f, 0.1f));
-	TrailLight->CastShadows = false;
-	TrailLight->RegisterComponent();
-}
+// BuildCrateMesh and SpawnLoot moved to ExoSupplyDropVisuals.cpp
 
 void AExoSupplyDrop::BeginPlay()
 {
@@ -184,8 +74,40 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 		}
 		if (TrailLight)
 		{
-			float TLPulse = 12000.f + 6000.f * FMath::Sin(Time * 18.f);
+			float TLPulse = 60000.f + 30000.f * FMath::Sin(Time * 18.f);
 			TrailLight->SetIntensity(TLPulse);
+		}
+		// Descent beam — pulsing sky streak
+		if (DescentBeam && DescentBeamMat)
+		{
+			float BeamPulse = 1.f + 0.3f * FMath::Sin(Time * 8.f);
+			DescentBeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(9.f * BeamPulse, 4.5f * BeamPulse, 1.2f * BeamPulse));
+		}
+
+		// Beacon column — slow pulsing glow
+		if (BeaconColumn && BeaconColumnMat)
+		{
+			float ColPulse = 0.7f + 0.3f * FMath::Sin(Time * 3.f);
+			BeaconColumnMat->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(12.f * ColPulse, 1.5f * ColPulse, 1.5f * ColPulse));
+		}
+
+		// Flashing beacon light — alternates red/white every 0.4s
+		if (BeaconFlashLight)
+		{
+			BeaconFlashTimer += DeltaTime;
+			bool bWhitePhase = FMath::Fmod(BeaconFlashTimer, 0.8f) < 0.4f;
+			if (bWhitePhase)
+			{
+				BeaconFlashLight->SetLightColor(FLinearColor(1.f, 1.f, 1.f));
+				BeaconFlashLight->SetIntensity(150000.f);
+			}
+			else
+			{
+				BeaconFlashLight->SetLightColor(FLinearColor(1.f, 0.1f, 0.1f));
+				BeaconFlashLight->SetIntensity(120000.f);
+			}
 		}
 	}
 	else if (CurrentState == ESupplyDropState::Landed)
@@ -208,7 +130,7 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 			if (ImpactRingMat)
 			{
 				ImpactRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(1.5f * Alpha, 0.8f * Alpha, 0.2f * Alpha));
+					FLinearColor(3.5f * Alpha, 1.8f * Alpha, 0.5f * Alpha));
 			}
 			if (T01 >= 1.f)
 			{
@@ -232,7 +154,7 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 		if (CrateGlow)
 		{
 			float GlowPulse = 1.f + 0.2f * FMath::Sin(Time * 4.f);
-			CrateGlow->SetIntensity(LidOpenAlpha * 15000.f * GlowPulse);
+			CrateGlow->SetIntensity(LidOpenAlpha * 35000.f * GlowPulse);
 		}
 	}
 }
@@ -293,6 +215,9 @@ void AExoSupplyDrop::TransitionToState(ESupplyDropState NewState)
 		if (ParachuteStrut2) { ParachuteStrut2->DestroyComponent(); ParachuteStrut2 = nullptr; }
 		if (SmokeTrail) { SmokeTrail->DestroyComponent(); SmokeTrail = nullptr; }
 		if (TrailLight) { TrailLight->DestroyComponent(); TrailLight = nullptr; }
+		if (DescentBeam) { DescentBeam->DestroyComponent(); DescentBeam = nullptr; }
+		if (BeaconColumn) { BeaconColumn->DestroyComponent(); BeaconColumn = nullptr; }
+		if (BeaconFlashLight) { BeaconFlashLight->DestroyComponent(); BeaconFlashLight = nullptr; }
 
 		// Spawn impact ring — expanding dust cloud
 		if (CylinderMeshRef)
@@ -307,8 +232,9 @@ void AExoSupplyDrop::TransitionToState(ESupplyDropState NewState)
 			ImpactRing->RegisterComponent();
 			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			ImpactRingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!ImpactRingMat) { return; }
 			ImpactRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(1.5f, 0.8f, 0.2f));
+				FLinearColor(3.5f, 1.8f, 0.5f));
 			ImpactRing->SetMaterial(0, ImpactRingMat);
 			ImpactRingTimer = 0.f;
 		}
@@ -365,49 +291,4 @@ FString AExoSupplyDrop::GetInteractionPrompt()
 		return TEXT("[E] Open Supply Drop");
 	}
 	return FString();
-}
-
-void AExoSupplyDrop::SpawnLoot()
-{
-	FVector Origin = GetActorLocation();
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	// Spawn 2 weapons at Epic or Legendary rarity
-	const EWeaponType WeaponTypes[] = {
-		EWeaponType::Rifle, EWeaponType::Pistol, EWeaponType::GrenadeLauncher };
-	const EWeaponRarity HighRarities[] = {
-		EWeaponRarity::Epic, EWeaponRarity::Legendary };
-
-	for (int32 i = 0; i < 2; ++i)
-	{
-		float Angle = i * PI;
-		FVector Offset(FMath::Cos(Angle) * 120.f, FMath::Sin(Angle) * 120.f, 30.f);
-		FVector SpawnLoc = Origin + Offset;
-
-		AExoWeaponPickup* WeaponPickup = GetWorld()->SpawnActor<AExoWeaponPickup>(
-			AExoWeaponPickup::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-		if (WeaponPickup)
-		{
-			WeaponPickup->WeaponType = WeaponTypes[FMath::RandRange(0, 2)];
-			WeaponPickup->Rarity = HighRarities[FMath::RandRange(0, 1)];
-		}
-	}
-
-	// Spawn 2 energy cells
-	for (int32 i = 0; i < 2; ++i)
-	{
-		float Angle = (i * PI) + PI * 0.5f;
-		FVector Offset(FMath::Cos(Angle) * 100.f, FMath::Sin(Angle) * 100.f, 20.f);
-		FVector SpawnLoc = Origin + Offset;
-
-		AExoEnergyCellPickup* CellPickup = GetWorld()->SpawnActor<AExoEnergyCellPickup>(
-			AExoEnergyCellPickup::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-		if (CellPickup)
-		{
-			CellPickup->EnergyAmount = 100.f;
-		}
-	}
-
-	UE_LOG(LogExoRift, Log, TEXT("Supply drop spawned loot at %s"), *Origin.ToString());
 }

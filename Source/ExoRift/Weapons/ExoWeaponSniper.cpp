@@ -72,8 +72,9 @@ AExoWeaponSniper::AExoWeaponSniper()
 	{
 		UMaterialInstanceDynamic* GlintMat = UMaterialInstanceDynamic::Create(
 			EmissiveAdditive, this);
+		if (!GlintMat) { return; }
 		GlintMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(80.f, 70.f, 50.f, 1.f)); // Blazing white-gold
+			FLinearColor(180.f, 160.f, 110.f, 1.f)); // Blazing white-gold
 		GlintMesh->SetMaterial(0, GlintMat);
 	}
 
@@ -100,7 +101,7 @@ void AExoWeaponSniper::Tick(float DeltaTime)
 		float S = 0.08f * Intensity;
 		GlintMesh->SetVisibility(true);
 		GlintMesh->SetRelativeScale3D(FVector(S));
-		GlintLight->SetIntensity(60000.f * Intensity);
+		GlintLight->SetIntensity(140000.f * Intensity);
 	}
 	else
 	{
@@ -163,4 +164,17 @@ void AExoWeaponSniper::StopADS()
 float AExoWeaponSniper::GetScopeHoldProgress() const
 {
 	return FMath::Clamp(HoldBreathTimer / MaxHoldBreath, 0.f, 1.f);
+}
+
+float AExoWeaponSniper::GetBreathHoldFactor() const
+{
+	// 0 = holding breath (no sway), ramps to 1 as breath depletes
+	if (!bIsScoped) return 1.f;
+	if (bIsHoldingBreath)
+	{
+		// Smooth ramp: starts at 0.15 (near-still), grows as breath depletes
+		float Progress = GetScopeHoldProgress(); // 0 = full breath, 1 = empty
+		return FMath::Lerp(0.15f, 0.6f, Progress);
+	}
+	return 1.f; // Breath exhausted — full ADS sway
 }

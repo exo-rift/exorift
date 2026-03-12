@@ -7,6 +7,8 @@
 #include "Weapons/ExoWeaponMelee.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "UI/ExoPickupNotification.h"
+#include "Visual/ExoScreenShake.h"
+#include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
 
@@ -175,6 +177,21 @@ void UExoInventoryComponent::SwapToSlot(int32 SlotIndex)
 		New->PlayDrawAnimation();
 	}
 
+	// Weapon swap visual/audio feedback (local player only)
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwner());
+	if (Char && Char->IsLocallyControlled())
+	{
+		// Subtle screen shake for tactile feedback
+		FExoScreenShake::AddShake(0.05f, 0.06f);
+
+		// Weapon swap audio cue
+		FVector Location = Char->GetActorLocation();
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayWeaponFireSound(nullptr, Location, 0.15f);
+		}
+	}
+
 	OnWeaponChanged.Broadcast(New, CurrentSlotIndex);
 }
 
@@ -228,6 +245,20 @@ void UExoInventoryComponent::SwitchToMelee()
 
 	bMeleeActive = true;
 	MeleeWeapon->SetActorHiddenInGame(false);
+
+	// Weapon swap visual/audio feedback (local player only)
+	AExoCharacter* Char = Cast<AExoCharacter>(GetOwner());
+	if (Char && Char->IsLocallyControlled())
+	{
+		FExoScreenShake::AddShake(0.05f, 0.06f);
+
+		FVector Location = Char->GetActorLocation();
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayWeaponFireSound(nullptr, Location, 0.15f);
+		}
+	}
+
 	OnWeaponChanged.Broadcast(MeleeWeapon, -1);
 }
 

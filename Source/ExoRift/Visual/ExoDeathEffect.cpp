@@ -68,7 +68,7 @@ AExoDeathEffect::AExoDeathEffect()
 	// Bright burst light
 	BurstLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("BurstLight"));
 	BurstLight->SetupAttachment(CoreFlash);
-	BurstLight->SetIntensity(200000.f);
+	BurstLight->SetIntensity(450000.f);
 	BurstLight->SetAttenuationRadius(5000.f);
 	BurstLight->SetLightColor(FLinearColor(0.3f, 0.6f, 1.f));
 	BurstLight->CastShadows = false;
@@ -107,8 +107,9 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 	if (EmMat)
 	{
 		UMaterialInstanceDynamic* FlashMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!FlashMat) { return; }
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(30.f, 35.f, 50.f));
+			FLinearColor(70.f, 80.f, 115.f));
 		CoreFlash->SetMaterial(0, FlashMat);
 	}
 
@@ -116,6 +117,7 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 	if (EmMat)
 	{
 		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!RingMat) { return; }
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(AccentColor.R * 10.f, AccentColor.G * 10.f, AccentColor.B * 10.f));
 		ShockRing->SetMaterial(0, RingMat);
@@ -125,8 +127,9 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 	if (EmMat)
 	{
 		UMaterialInstanceDynamic* Sec = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!Sec) { return; }
 		Sec->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(8.f, 10.f, 15.f));
+			FLinearColor(18.f, 22.f, 35.f));
 		SecondaryRing->SetMaterial(0, Sec);
 	}
 
@@ -134,6 +137,7 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 	if (EmMat)
 	{
 		UMaterialInstanceDynamic* PilMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!PilMat) { return; }
 		PilMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(AccentColor.R * 6.f, AccentColor.G * 6.f, AccentColor.B * 6.f));
 		EnergyPillar->SetMaterial(0, PilMat);
@@ -143,6 +147,7 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 	if (EmOpaque)
 	{
 		UMaterialInstanceDynamic* ScMat = UMaterialInstanceDynamic::Create(EmOpaque, this);
+		if (!ScMat) { return; }
 		ScMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(AccentColor.R * 0.5f, AccentColor.G * 0.3f, AccentColor.B * 0.2f));
 		GroundScorch->SetMaterial(0, ScMat);
@@ -173,6 +178,7 @@ void AExoDeathEffect::Init(const FLinearColor& AccentColor)
 		if (EmMat)
 		{
 			UMaterialInstanceDynamic* FragMat = UMaterialInstanceDynamic::Create(EmMat, this);
+			if (!FragMat) { return; }
 			float Brightness = FMath::RandRange(3.f, 10.f);
 			FragMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(AccentColor.R * Brightness,
@@ -235,7 +241,7 @@ void AExoDeathEffect::Tick(float DeltaTime)
 			EnergyPillar->SetRelativeLocation(FVector(0.f, 0.f, PilHeight * 0.5f));
 			EnergyPillar->SetWorldScale3D(FVector(PilWidth, PilWidth, PilHeight / 100.f));
 			PillarLight->SetRelativeLocation(FVector(0.f, 0.f, PilHeight));
-			PillarLight->SetIntensity(40000.f * (1.f - PilT) * (1.f - PilT));
+			PillarLight->SetIntensity(90000.f * (1.f - PilT) * (1.f - PilT));
 			if (PilT >= 1.f) EnergyPillar->SetVisibility(false);
 		}
 	}
@@ -254,7 +260,7 @@ void AExoDeathEffect::Tick(float DeltaTime)
 	}
 
 	// Lights: fast decay
-	BurstLight->SetIntensity(200000.f * (1.f - T) * (1.f - T) * (1.f - T));
+	BurstLight->SetIntensity(450000.f * (1.f - T) * (1.f - T) * (1.f - T));
 
 	// Fragments: fly outward with gravity and spin
 	for (int32 i = 0; i < Fragments.Num(); i++)

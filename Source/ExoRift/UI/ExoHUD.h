@@ -57,6 +57,7 @@ protected:
 	void DrawZoneTimer();
 	void DrawVehicleHUD();
 	void DrawLocationBanner();
+	void DrawZiplinePrompt();
 
 	// Layout helpers
 	FVector2D GetScreenCenter() const;
@@ -77,6 +78,7 @@ protected:
 	void DrawFPS();
 	void DrawSprintLines();
 	void DrawGrenadeWarning();
+	void DrawGrenadeIndicator();
 
 	float CrosshairSpread = 0.f;
 	float SprintLineAlpha = 0.f;

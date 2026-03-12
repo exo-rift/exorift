@@ -49,6 +49,7 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddHullSection(
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!Mat) { return nullptr; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -75,6 +76,7 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddDamageGlow(
 
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+	if (!Mat) { return nullptr; }
 	Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Color);
 	Glow->SetMaterial(0, Mat);
 	DamageGlows.Add(Glow);
@@ -85,8 +87,8 @@ UStaticMeshComponent* AExoCrashedCapitalShip::AddDamageGlow(
 	UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
 	Light->SetupAttachment(RootComponent);
 	Light->SetRelativeLocation(Pos);
-	Light->SetIntensity(8000.f);
-	Light->SetAttenuationRadius(2000.f);
+	Light->SetIntensity(5000.f);
+	Light->SetAttenuationRadius(1500.f);
 	Light->SetLightColor(FLinearColor(Color.R, Color.G, Color.B));
 	Light->CastShadows = false;
 	Light->RegisterComponent();
@@ -152,6 +154,7 @@ void AExoCrashedCapitalShip::BuildShip()
 			if (EngLitMat)
 			{
 				UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EngLitMat, this);
+				if (!M) { return; }
 				M->SetVectorParameterValue(TEXT("BaseColor"), HullDark);
 				M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 				M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -165,8 +168,8 @@ void AExoCrashedCapitalShip::BuildShip()
 	}
 
 	// === DAMAGE GLOW POINTS — smoldering impact damage ===
-	FLinearColor FireGlow(8.f, 3.f, 0.5f);
-	FLinearColor PlasmaGlow(2.f, 5.f, 10.f);
+	FLinearColor FireGlow(18.f, 7.f, 1.2f);
+	FLinearColor PlasmaGlow(5.f, 12.f, 25.f);
 
 	// Impact crater at nose (buried in ground)
 	AddDamageGlow(FVector(3000.f, 0.f, 200.f), FVector(15.f, 10.f, 5.f), FireGlow);
@@ -221,6 +224,6 @@ void AExoCrashedCapitalShip::Tick(float DeltaTime)
 			FLinearColor(Base.R * Flicker, Base.G * Flicker, Base.B * Flicker));
 
 		if (DamageLights.IsValidIndex(i) && DamageLights[i])
-			DamageLights[i]->SetIntensity(8000.f * Flicker);
+			DamageLights[i]->SetIntensity(18000.f * Flicker);
 	}
 }

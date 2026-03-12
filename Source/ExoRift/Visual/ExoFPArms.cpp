@@ -42,6 +42,7 @@ UStaticMeshComponent* UExoFPArms::AddPart(const FVector& Offset, const FVector& 
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, GetOwner());
+		if (!Mat) { return nullptr; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 
 		float Lum = Color.R * 0.3f + Color.G * 0.6f + Color.B * 0.1f;
@@ -49,7 +50,7 @@ UStaticMeshComponent* UExoFPArms::AddPart(const FVector& Offset, const FVector& 
 		{
 			// Accent/display parts: strong emissive for glow
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f));
+				FLinearColor(Color.R * 35.f, Color.G * 35.f, Color.B * 35.f));
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.3f);
 			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.1f);
 		}

@@ -22,7 +22,7 @@ AExoSparkEmitter::AExoSparkEmitter()
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Flash"));
 	FlashLight->SetupAttachment(Root);
 	FlashLight->SetIntensity(0.f);
-	FlashLight->SetAttenuationRadius(800.f);
+	FlashLight->SetAttenuationRadius(1500.f);
 	FlashLight->CastShadows = false;
 }
 
@@ -51,7 +51,8 @@ void AExoSparkEmitter::InitSparks(const FLinearColor& Color, float BurstInterval
 		S->RegisterComponent();
 
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(SparkMat, this);
-		FLinearColor Em(Color.R * 30.f, Color.G * 30.f, Color.B * 30.f);
+		if (!M) { continue; }
+		FLinearColor Em(Color.R * 60.f, Color.G * 60.f, Color.B * 60.f);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		S->SetMaterial(0, M);
 
@@ -74,7 +75,7 @@ void AExoSparkEmitter::Tick(float DeltaTime)
 		Timer -= FMath::RandRange(0.f, Interval * 0.3f);
 
 		FlashDecay = 1.f;
-		FlashLight->SetIntensity(40000.f);
+		FlashLight->SetIntensity(100000.f);
 
 		for (int32 i = 0; i < MAX_SPARKS; i++)
 		{
@@ -93,7 +94,7 @@ void AExoSparkEmitter::Tick(float DeltaTime)
 	if (FlashDecay > 0.f)
 	{
 		FlashDecay = FMath::Max(0.f, FlashDecay - DeltaTime * 8.f);
-		FlashLight->SetIntensity(40000.f * FlashDecay * FlashDecay);
+		FlashLight->SetIntensity(100000.f * FlashDecay * FlashDecay);
 	}
 
 	// Update active sparks
@@ -128,8 +129,8 @@ void AExoSparkEmitter::Tick(float DeltaTime)
 		UMaterialInstanceDynamic* M = Cast<UMaterialInstanceDynamic>(SparkMeshes[i]->GetMaterial(0));
 		if (M)
 		{
-			FLinearColor Em(SparkColor.R * 30.f * Alpha, SparkColor.G * 30.f * Alpha,
-				SparkColor.B * 30.f * Alpha);
+			FLinearColor Em(SparkColor.R * 60.f * Alpha, SparkColor.G * 60.f * Alpha,
+				SparkColor.B * 60.f * Alpha);
 			M->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		}
 	}

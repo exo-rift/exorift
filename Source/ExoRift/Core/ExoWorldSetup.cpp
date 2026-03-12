@@ -4,9 +4,11 @@
 #include "Map/ExoLootSpawner.h"
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoFloatingDust.h"
-#include "Map/ExoEnvironmentAnimator.h"
+#include "Map/ExoShowcaseRoom.h"
+#include "Visual/ExoEnvironmentAnimator.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Visual/ExoPostProcess.h"
+#include "Visual/ExoAmbientMotes.h"
 #include "UI/ExoDamageNumbers.h"
 #include "Vehicles/ExoVehicleSpawner.h"
 #include "EngineUtils.h"
@@ -69,6 +71,13 @@ void UExoWorldSetup::OnWorldBeginPlay(UWorld& InWorld)
 			World->SpawnActor<AExoSpawnPoint>(AExoSpawnPoint::StaticClass(), Loc, FRotator::ZeroRotator, Params);
 		}
 	}
+
+	// Ambient floating energy motes for atmospheric depth
+	AExoAmbientMotes::SpawnClusters(World);
+
+	// Showcase room — high altitude, above all map geometry
+	FVector RoomPos(0.f, 0.f, 50000.f);
+	EnsureActorExists(World, AExoShowcaseRoom::StaticClass(), RoomPos);
 
 	UE_LOG(LogExoRift, Log, TEXT("ExoWorldSetup: all BR systems ready"));
 }

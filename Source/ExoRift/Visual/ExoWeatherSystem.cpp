@@ -32,7 +32,7 @@ void AExoWeatherSystem::BeginPlay()
 	WeatherLightComp->RegisterComponent();
 	WeatherLightComp->SetWorldRotation(FRotator(-60.f, 0.f, 0.f));
 	WeatherLightComp->SetIntensity(0.f); // Off by default
-	WeatherLightComp->SetLightColor(FLinearColor(0.3f, 0.35f, 0.5f));
+	WeatherLightComp->SetLightColor(FLinearColor(0.66f, 0.77f, 1.1f));
 	WeatherLightComp->CastShadows = false;
 
 	// Initialize current values from Clear state
@@ -220,9 +220,9 @@ void AExoWeatherSystem::ApplyToPostProcess()
 	AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
 	if (!PP || !PP->PostProcessComp) return;
 
-	// Bloom increases during fog, rain, and lightning
-	float WeatherBloom = 0.7f + CurrentFogDensity * 30.f + LightningAlpha * 1.5f;
-	PP->PostProcessComp->Settings.BloomIntensity = FMath::Min(WeatherBloom, 2.5f);
+	// Bloom increases modestly during fog, rain, and lightning
+	float WeatherBloom = 0.7f + CurrentFogDensity * 15.f + LightningAlpha * 0.5f;
+	PP->PostProcessComp->Settings.BloomIntensity = FMath::Min(WeatherBloom, 1.5f);
 
 	// Color grading shifts cooler during storms, whiter during lightning
 	float CoolShift = (1.f - CurrentVisibility) * 0.15f;

@@ -1,6 +1,8 @@
 #include "Weapons/ExoTrapComponent.h"
 #include "Weapons/ExoProximityMine.h"
 #include "Player/ExoCharacter.h"
+#include "Core/ExoAudioManager.h"
+#include "UI/ExoHUD.h"
 #include "ExoRift.h"
 
 UExoTrapComponent::UExoTrapComponent()
@@ -26,6 +28,23 @@ bool UExoTrapComponent::PlaceTrap(FVector Location, FRotator Rotation)
 	{
 		Mine->OwnerCharacter = OwnerChar;
 		--TrapCount;
+
+		// Audio feedback — placement confirmation chirp
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			Audio->PlayTrapPlacedSound();
+
+		// HUD notification — "Trap Placed"
+		APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
+		if (PC)
+		{
+			if (AExoHUD* HUD = Cast<AExoHUD>(PC->GetHUD()))
+			{
+				FString Msg = FString::Printf(TEXT("Trap Placed (%d remaining)"), TrapCount);
+				HUD->GetNotifications().AddNotification(Msg,
+					FLinearColor(1.f, 0.8f, 0.2f), 3.f);
+			}
+		}
+
 		UE_LOG(LogExoRift, Log, TEXT("%s placed mine (%d remaining)"),
 			*OwnerChar->GetName(), TrapCount);
 		return true;

@@ -17,6 +17,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void StartADS() override;
 	virtual void StopADS() override;
+	virtual float GetBreathHoldFactor() const override;
 
 	bool IsScoped() const { return bIsScoped; }
 	float GetScopeHoldProgress() const;

@@ -55,8 +55,8 @@ AExoTargetDummy::AExoTargetDummy()
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Glow"));
 	GlowLight->SetupAttachment(TorsoMesh);
 	GlowLight->SetRelativeLocation(FVector(0.f, 0.f, 30.f));
-	GlowLight->SetIntensity(3000.f);
-	GlowLight->SetAttenuationRadius(350.f);
+	GlowLight->SetIntensity(7000.f);
+	GlowLight->SetAttenuationRadius(600.f);
 	GlowLight->CastShadows = false;
 
 	AccentColor = FLinearColor(1.f, 0.3f, 0.1f); // Default orange-red
@@ -76,18 +76,21 @@ void AExoTargetDummy::BuildVisuals()
 
 	// Dark body with colored emissive edges
 	TorsoMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-	FLinearColor Em(AccentColor.R * 2.f, AccentColor.G * 2.f, AccentColor.B * 2.f);
+	if (!TorsoMat) { return; }
+	FLinearColor Em(AccentColor.R * 5.f, AccentColor.G * 5.f, AccentColor.B * 5.f);
 	TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	TorsoMesh->SetMaterial(0, TorsoMat);
 
 	HeadMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-	FLinearColor HeadEm(AccentColor.R * 3.f, AccentColor.G * 3.f, AccentColor.B * 3.f);
+	if (!HeadMat) { return; }
+	FLinearColor HeadEm(AccentColor.R * 8.f, AccentColor.G * 8.f, AccentColor.B * 8.f);
 	HeadMat->SetVectorParameterValue(TEXT("EmissiveColor"), HeadEm);
 	HeadMesh->SetMaterial(0, HeadMat);
 
 	// Base plate
 	UMaterialInstanceDynamic* PlateMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-	FLinearColor PlateEm(AccentColor.R * 0.5f, AccentColor.G * 0.5f, AccentColor.B * 0.5f);
+	if (!PlateMat) { return; }
+	FLinearColor PlateEm(AccentColor.R * 1.5f, AccentColor.G * 1.5f, AccentColor.B * 1.5f);
 	PlateMat->SetVectorParameterValue(TEXT("EmissiveColor"), PlateEm);
 	BasePlateMesh->SetMaterial(0, PlateMat);
 
@@ -106,7 +109,7 @@ float AExoTargetDummy::TakeDamage(float Damage, const FDamageEvent& DamageEvent,
 	// Bright flash on hit
 	if (TorsoMat)
 	{
-		FLinearColor Flash(AccentColor.R * 15.f, AccentColor.G * 15.f, AccentColor.B * 15.f);
+		FLinearColor Flash(AccentColor.R * 30.f, AccentColor.G * 30.f, AccentColor.B * 30.f);
 		TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Flash);
 	}
 
@@ -136,11 +139,11 @@ void AExoTargetDummy::Respawn()
 
 	TorsoMesh->SetVisibility(true);
 	HeadMesh->SetVisibility(true);
-	GlowLight->SetIntensity(3000.f);
+	GlowLight->SetIntensity(7000.f);
 
 	if (TorsoMat)
 	{
-		FLinearColor Em(AccentColor.R * 2.f, AccentColor.G * 2.f, AccentColor.B * 2.f);
+		FLinearColor Em(AccentColor.R * 5.f, AccentColor.G * 5.f, AccentColor.B * 5.f);
 		TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	}
 }
@@ -165,7 +168,7 @@ void AExoTargetDummy::Tick(float DeltaTime)
 		HitFlashTimer -= DeltaTime;
 		if (HitFlashTimer <= 0.f && TorsoMat)
 		{
-			FLinearColor Em(AccentColor.R * 2.f, AccentColor.G * 2.f, AccentColor.B * 2.f);
+			FLinearColor Em(AccentColor.R * 5.f, AccentColor.G * 5.f, AccentColor.B * 5.f);
 			TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		}
 	}
@@ -173,7 +176,7 @@ void AExoTargetDummy::Tick(float DeltaTime)
 	// Subtle idle glow pulse
 	float Time = GetWorld()->GetTimeSeconds();
 	float Pulse = 0.8f + 0.2f * FMath::Sin(Time * 2.5f);
-	GlowLight->SetIntensity(3000.f * Pulse);
+	GlowLight->SetIntensity(7000.f * Pulse);
 
 	// Health-based color shift toward red as damaged
 	float HealthPct = CurrentHealth / MaxHealth;
@@ -182,7 +185,7 @@ void AExoTargetDummy::Tick(float DeltaTime)
 		float RedShift = 1.f - (HealthPct * 2.f);
 		FLinearColor DmgColor = FMath::Lerp(AccentColor,
 			FLinearColor(1.f, 0.1f, 0.05f), RedShift);
-		FLinearColor Em(DmgColor.R * 2.f, DmgColor.G * 2.f, DmgColor.B * 2.f);
+		FLinearColor Em(DmgColor.R * 5.f, DmgColor.G * 5.f, DmgColor.B * 5.f);
 		TorsoMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	}
 }

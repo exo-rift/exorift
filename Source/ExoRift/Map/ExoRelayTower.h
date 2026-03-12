@@ -40,8 +40,11 @@ private:
 	UPROPERTY()
 	UStaticMeshComponent* DishHead = nullptr;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 
 	float DishAngle = 0.f;

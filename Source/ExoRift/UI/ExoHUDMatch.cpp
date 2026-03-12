@@ -1,36 +1,27 @@
-// ExoHUDMatch.cpp — Match state HUD: alive count, kill feed, phase, zone, timers, stats
+// ExoHUDMatch.cpp — Match state HUD: kill feed, match phase, zone warning, timers
 #include "UI/ExoHUD.h"
-#include "Core/ExoGameSettings.h"
 #include "Core/ExoGameState.h"
-#include "Core/ExoPlayerState.h"
 #include "Player/ExoCharacter.h"
-#include "Player/ExoKillStreakComponent.h"
 #include "Map/ExoZoneSystem.h"
 #include "UI/ExoCountdown.h"
 #include "Engine/Canvas.h"
 #include "EngineUtils.h"
 
-void AExoHUD::DrawAliveCount()
+static FLinearColor GetWeaponTypeColor(EWeaponType Type, bool bEnvironment)
 {
-	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
-	if (!GS) return;
+	if (bEnvironment) return FLinearColor(0.6f, 0.55f, 0.5f); // Muted tan for zone/fall
 
-	float X = Canvas->SizeX - 230.f;
-	float Y = 30.f;
-	float PW = 210.f, PH = 32.f;
-
-	// Panel background
-	DrawRect(ColorBgDark, X - 10.f, Y - 5.f, PW, PH);
-
-	// Left accent stripe (cyan)
-	FLinearColor AccCol(0.f, 0.6f, 1.f, 0.5f);
-	DrawRect(AccCol, X - 10.f, Y - 5.f, 2.f, PH);
-
-	// Icon: simple person silhouette as text
-	DrawText(TEXT("A"), AccCol, X - 2.f, Y - 1.f, HUDFont, 0.8f);
-
-	FString AliveText = FString::Printf(TEXT("Alive: %d / %d"), GS->AliveCount, GS->TotalPlayers);
-	DrawText(AliveText, ColorWhite, X + 18.f, Y, HUDFont, 1.f);
+	switch (Type)
+	{
+	case EWeaponType::Rifle:           return FLinearColor(0.3f, 0.7f, 1.f);   // Cyan-blue
+	case EWeaponType::Pistol:          return FLinearColor(0.9f, 0.75f, 0.2f);  // Gold
+	case EWeaponType::GrenadeLauncher: return FLinearColor(1.f, 0.45f, 0.15f);  // Orange
+	case EWeaponType::Sniper:          return FLinearColor(0.8f, 0.3f, 0.9f);   // Purple
+	case EWeaponType::Shotgun:         return FLinearColor(1.f, 0.35f, 0.3f);   // Red
+	case EWeaponType::SMG:             return FLinearColor(0.3f, 0.9f, 0.4f);   // Green
+	case EWeaponType::Melee:           return FLinearColor(1.f, 1.f, 1.f);      // White
+	default:                           return FLinearColor(0.5f, 0.6f, 0.7f);
+	}
 }
 
 void AExoHUD::DrawKillFeed()
@@ -38,8 +29,8 @@ void AExoHUD::DrawKillFeed()
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (!GS) return;
 
-	float X = Canvas->SizeX - 360.f;
-	float Y = 70.f;
+	float X = Canvas->SizeX - 380.f;
+	float Y = 155.f; // Below the elimination counter panel
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 
 	for (const FKillFeedEntry& Entry : GS->GetKillFeed())
@@ -56,40 +47,56 @@ void AExoHUD::DrawKillFeed()
 
 		float EX = X + SlideOffset;
 
-		// Background per entry
-		DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, Alpha * 0.5f),
-			EX - 5.f, Y - 2.f, 350.f, 22.f);
+		// Weapon type color (used for indicator, weapon text, and left accent)
+		FLinearColor WepBaseColor = GetWeaponTypeColor(Entry.WeaponType, Entry.bEnvironmentKill);
 
-		// Left accent — red stripe for kills
-		DrawRect(FLinearColor(0.8f, 0.15f, 0.1f, Alpha * 0.6f),
+		// Background per entry
+		DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, Alpha * 0.55f),
+			EX - 5.f, Y - 2.f, 370.f, 22.f);
+
+		// Left accent stripe — colored by weapon type
+		DrawRect(FLinearColor(WepBaseColor.R, WepBaseColor.G, WepBaseColor.B, Alpha * 0.6f),
 			EX - 5.f, Y - 2.f, 2.f, 22.f);
 
-		FLinearColor KillerColor(0.9f, 0.9f, 0.95f, Alpha);
-		FLinearColor WeaponColor(0.5f, 0.6f, 0.7f, Alpha * 0.8f);
+		FLinearColor KillerColor(0.95f, 0.95f, 1.f, Alpha);
 		FLinearColor VictimColor(0.9f, 0.4f, 0.4f, Alpha);
-		FLinearColor ArrowColor(0.45f, 0.5f, 0.6f, Alpha * 0.7f);
+		FLinearColor ArrowColor(0.4f, 0.45f, 0.55f, Alpha * 0.7f);
+		FLinearColor WeaponColor(WepBaseColor.R, WepBaseColor.G, WepBaseColor.B, Alpha * 0.9f);
 
 		float CurX = EX;
+
+		// Killer name
 		DrawText(Entry.KillerName, KillerColor, CurX, Y, HUDFont, 0.7f);
 		float KW, KH;
 		GetTextSize(Entry.KillerName, KW, KH, HUDFont, 0.7f);
-		CurX += KW + 6.f;
+		CurX += KW + 8.f;
 
-		// Arrow indicator instead of brackets
-		DrawText(TEXT(">"), ArrowColor, CurX, Y - 1.f, HUDFont, 0.65f);
-		float AW, AH;
-		GetTextSize(TEXT(">"), AW, AH, HUDFont, 0.65f);
-		CurX += AW + 3.f;
+		// Diamond indicator before weapon name — rotated square
+		{
+			float DiamondSize = 4.f;
+			float DX = CurX + DiamondSize;
+			float DY = Y + KH * 0.5f;
+			FLinearColor DiamondCol(WepBaseColor.R, WepBaseColor.G, WepBaseColor.B, Alpha * 0.85f);
+			DrawLine(DX, DY - DiamondSize, DX + DiamondSize, DY, DiamondCol, 1.5f);
+			DrawLine(DX + DiamondSize, DY, DX, DY + DiamondSize, DiamondCol, 1.5f);
+			DrawLine(DX, DY + DiamondSize, DX - DiamondSize, DY, DiamondCol, 1.5f);
+			DrawLine(DX - DiamondSize, DY, DX, DY - DiamondSize, DiamondCol, 1.5f);
+			CurX += DiamondSize * 2.f + 6.f;
+		}
 
-		FString WeaponBracket = FString::Printf(TEXT("[%s]"), *Entry.WeaponName);
-		DrawText(WeaponBracket, WeaponColor, CurX, Y, HUDFont, 0.65f);
+		// Weapon name in weapon-type color
+		DrawText(Entry.WeaponName, WeaponColor, CurX, Y, HUDFont, 0.65f);
 		float WW, WH;
-		GetTextSize(WeaponBracket, WW, WH, HUDFont, 0.65f);
-		CurX += WW + 3.f;
+		GetTextSize(Entry.WeaponName, WW, WH, HUDFont, 0.65f);
+		CurX += WW + 6.f;
 
-		DrawText(TEXT(">"), ArrowColor, CurX, Y - 1.f, HUDFont, 0.65f);
+		// Separator arrow
+		DrawText(TEXT(">"), ArrowColor, CurX, Y - 1.f, HUDFont, 0.6f);
+		float AW, AH;
+		GetTextSize(TEXT(">"), AW, AH, HUDFont, 0.6f);
 		CurX += AW + 6.f;
 
+		// Victim name
 		DrawText(Entry.VictimName, VictimColor, CurX, Y, HUDFont, 0.7f);
 		Y += 26.f;
 	}
@@ -189,78 +196,6 @@ void AExoHUD::DrawZoneWarning()
 	GetTextSize(SubText, SW, SH, HUDFont, 0.75f);
 	DrawText(SubText, FLinearColor(1.f, 0.5f, 0.4f, 0.6f + Pulse * 0.2f),
 		(Canvas->SizeX - SW) * 0.5f, WY + pH + 6.f, HUDFont, 0.75f);
-}
-
-void AExoHUD::DrawKillCount()
-{
-	AExoPlayerState* PS = GetOwningPawn() ?
-		GetOwningPawn()->GetPlayerState<AExoPlayerState>() : nullptr;
-	if (!PS) return;
-
-	float X = 30.f;
-	float Y = 230.f;
-	float PW = 110.f, PH = 28.f;
-
-	DrawRect(ColorBgDark, X - 5.f, Y - 3.f, PW, PH);
-
-	// Left accent stripe (orange for kills)
-	FLinearColor Acc(1.f, 0.5f, 0.1f, 0.5f);
-	DrawRect(Acc, X - 5.f, Y - 3.f, 2.f, PH);
-
-	FString KillText = FString::Printf(TEXT("Kills: %d"), PS->Kills);
-	DrawText(KillText, ColorWhite, X + 2.f, Y, HUDFont, 1.f);
-}
-
-void AExoHUD::DrawKillStreak()
-{
-	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
-	if (!Char) return;
-	UExoKillStreakComponent* SC = Char->GetKillStreakComponent();
-	if (!SC || SC->GetCurrentStreak() < 3) return;
-
-	int32 Streak = SC->GetCurrentStreak();
-	FString StreakText = FString::Printf(TEXT("x%d %s"), Streak, *SC->GetStreakName());
-	float TextW, TextH;
-	GetTextSize(StreakText, TextW, TextH, HUDFont, 1.f);
-
-	float Time = GetWorld()->GetTimeSeconds();
-	float Pulse = FMath::Abs(FMath::Sin(Time * 3.f));
-	float A = 0.8f + Pulse * 0.2f;
-	FLinearColor C = (Streak >= 8) ? FLinearColor(1.f, 0.2f, 0.2f, A)
-		: (Streak >= 5) ? FLinearColor(1.f, 0.5f, 0.1f, A)
-		: FLinearColor(1.f, 0.8f, 0.2f, A);
-
-	float X = 30.f, Y = 262.f;
-	float PW = TextW + 20.f, PH = TextH + 8.f;
-	DrawRect(FLinearColor(0.02f, 0.01f, 0.f, 0.6f), X - 5.f, Y - 3.f, PW, PH);
-
-	// Left accent stripe in streak color
-	DrawRect(FLinearColor(C.R, C.G, C.B, 0.6f), X - 5.f, Y - 3.f, 2.f, PH);
-	// Top accent line
-	DrawRect(FLinearColor(C.R, C.G, C.B, 0.3f), X - 5.f, Y - 3.f, PW, 1.f);
-
-	DrawText(StreakText, C, X, Y, HUDFont, 1.f);
-}
-
-void AExoHUD::DrawFPS()
-{
-	UExoGameSettings* Settings = UExoGameSettings::Get(GetWorld());
-	if (!Settings || !Settings->bShowFPS) return;
-
-	float DeltaSec = GetWorld()->GetDeltaSeconds();
-	float CurrentFPS = (DeltaSec > 0.f) ? (1.f / DeltaSec) : 0.f;
-	SmoothedFPS = FMath::FInterpTo(SmoothedFPS, CurrentFPS, DeltaSec, 5.f);
-
-	FString FPSText = FString::Printf(TEXT("FPS: %d"), FMath::RoundToInt(SmoothedFPS));
-	FLinearColor FPSColor = (SmoothedFPS >= 55.f)
-		? FLinearColor(0.2f, 1.f, 0.3f, 0.9f)
-		: FLinearColor(1.f, 0.3f, 0.2f, 0.9f);
-
-	float TextW, TextH;
-	GetTextSize(FPSText, TextW, TextH, HUDFont, 0.85f);
-	float X = Canvas->SizeX - TextW - 20.f;
-	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X - 6.f, 8.f, TextW + 12.f, TextH + 4.f);
-	DrawText(FPSText, FPSColor, X, 10.f, HUDFont, 0.85f);
 }
 
 void AExoHUD::DrawMatchTimer()

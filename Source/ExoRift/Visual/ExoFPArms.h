@@ -25,7 +25,10 @@ private:
 		const FLinearColor& Color, const FRotator& Rot = FRotator::ZeroRotator,
 		UStaticMesh* Mesh = nullptr);
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 };

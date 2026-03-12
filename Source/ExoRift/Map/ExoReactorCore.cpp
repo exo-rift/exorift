@@ -67,15 +67,15 @@ AExoReactorCore::AExoReactorCore()
 	// Lights
 	CoreLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CoreLight"));
 	CoreLight->SetupAttachment(BasePlate);
-	CoreLight->SetIntensity(200000.f);
-	CoreLight->SetAttenuationRadius(8000.f);
+	CoreLight->SetIntensity(60000.f);
+	CoreLight->SetAttenuationRadius(4000.f);
 	CoreLight->SetLightColor(FLinearColor(0.2f, 0.5f, 1.f));
 	CoreLight->CastShadows = false;
 
 	AmbientLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AmbientLight"));
 	AmbientLight->SetupAttachment(BasePlate);
-	AmbientLight->SetIntensity(50000.f);
-	AmbientLight->SetAttenuationRadius(15000.f);
+	AmbientLight->SetIntensity(20000.f);
+	AmbientLight->SetAttenuationRadius(6000.f);
 	AmbientLight->SetLightColor(FLinearColor(0.15f, 0.3f, 0.7f));
 	AmbientLight->CastShadows = false;
 }
@@ -88,6 +88,7 @@ void AExoReactorCore::InitReactor()
 	auto MakeStructMat = [&](const FLinearColor& Base) -> UMaterialInstanceDynamic*
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!M) { return nullptr; }
 		M->SetVectorParameterValue(TEXT("BaseColor"), Base);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		M->SetScalarParameterValue(TEXT("Metallic"), 0.9f);
@@ -100,6 +101,7 @@ void AExoReactorCore::InitReactor()
 	auto MakeEmissiveMat = [&](const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!M) { return nullptr; }
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 		return M;
 	};
@@ -116,19 +118,19 @@ void AExoReactorCore::InitReactor()
 	// Core sphere — bright pulsing energy ball
 	CoreSphere->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	CoreSphere->SetRelativeScale3D(FVector(8.f));
-	CoreMat = MakeEmissiveMat(FLinearColor(15.f, 25.f, 50.f));
+	CoreMat = MakeEmissiveMat(FLinearColor(25.f, 45.f, 90.f));
 	CoreSphere->SetMaterial(0, CoreMat);
 
 	// Inner ring — tilted, orbiting close to core
 	InnerRing->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	InnerRing->SetRelativeScale3D(FVector(14.f, 14.f, 0.4f));
-	InnerRingMat = MakeEmissiveMat(FLinearColor(3.f, 6.f, 15.f));
+	InnerRingMat = MakeEmissiveMat(FLinearColor(6.f, 12.f, 30.f));
 	InnerRing->SetMaterial(0, InnerRingMat);
 
 	// Outer ring — opposite tilt, wider orbit
 	OuterRing->SetRelativeLocation(FVector(0.f, 0.f, 3500.f));
 	OuterRing->SetRelativeScale3D(FVector(20.f, 20.f, 0.3f));
-	OuterRingMat = MakeEmissiveMat(FLinearColor(2.f, 4.f, 10.f));
+	OuterRingMat = MakeEmissiveMat(FLinearColor(4.f, 8.f, 20.f));
 	OuterRing->SetMaterial(0, OuterRingMat);
 
 	// Energy conduit beams — vertical beams around the core
@@ -141,7 +143,7 @@ void AExoReactorCore::InitReactor()
 		Conduits[i]->SetRelativeLocation(Pos);
 		Conduits[i]->SetRelativeScale3D(FVector(0.3f, 0.3f, 40.f));
 
-		ConduitMats[i] = MakeEmissiveMat(FLinearColor(5.f, 10.f, 25.f));
+		ConduitMats[i] = MakeEmissiveMat(FLinearColor(10.f, 20.f, 50.f));
 		Conduits[i]->SetMaterial(0, ConduitMats[i]);
 	}
 
@@ -164,7 +166,7 @@ void AExoReactorCore::Tick(float DeltaTime)
 		float Scale = 8.f * (0.95f + 0.05f * FMath::Sin(Time * 2.f));
 		CoreSphere->SetRelativeScale3D(FVector(Scale));
 		CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(15.f * Pulse, 25.f * Pulse, 50.f * Pulse));
+			FLinearColor(5.f * Pulse, 10.f * Pulse, 20.f * Pulse));
 	}
 
 	// Inner ring rotation — tilted spin
@@ -177,7 +179,7 @@ void AExoReactorCore::Tick(float DeltaTime)
 		{
 			float P = 1.f + 0.4f * FMath::Sin(Time * 3.f);
 			InnerRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(3.f * P, 6.f * P, 15.f * P));
+				FLinearColor(6.f * P, 12.f * P, 30.f * P));
 		}
 	}
 
@@ -191,7 +193,7 @@ void AExoReactorCore::Tick(float DeltaTime)
 		{
 			float P = 1.f + 0.3f * FMath::Sin(Time * 2.f + 1.f);
 			OuterRingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(2.f * P, 4.f * P, 10.f * P));
+				FLinearColor(1.f * P, 2.f * P, 5.f * P));
 		}
 	}
 
@@ -202,13 +204,13 @@ void AExoReactorCore::Tick(float DeltaTime)
 		float Phase = Time * 4.f + i * 1.5f;
 		float P = 1.f + 0.5f * FMath::Sin(Phase);
 		ConduitMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(5.f * P, 10.f * P, 25.f * P));
+			FLinearColor(2.f * P, 4.f * P, 10.f * P));
 	}
 
 	// Core light flicker
 	{
 		float LP = 1.f + 0.15f * FMath::Sin(Time * 2.f)
 			+ 0.05f * FMath::Sin(Time * 11.f);
-		CoreLight->SetIntensity(200000.f * LP);
+		CoreLight->SetIntensity(60000.f * LP);
 	}
 }

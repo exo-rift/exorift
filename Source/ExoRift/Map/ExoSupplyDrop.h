@@ -69,6 +69,25 @@ protected:
 	UPointLightComponent* TrailLight = nullptr;
 
 	UPROPERTY()
+	UStaticMeshComponent* DescentBeam = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DescentBeamMat = nullptr;
+
+	// Beacon column — tall glowing cylinder rising from the crate during descent
+	UPROPERTY()
+	UStaticMeshComponent* BeaconColumn = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* BeaconColumnMat = nullptr;
+
+	// Flashing light at the top of the beacon column (alternates red/white)
+	UPROPERTY()
+	UPointLightComponent* BeaconFlashLight = nullptr;
+
+	float BeaconFlashTimer = 0.f;
+
+	UPROPERTY()
 	UStaticMeshComponent* ImpactRing = nullptr;
 
 	UPROPERTY()
@@ -94,7 +113,10 @@ private:
 	float LidOpenAlpha = 0.f;
 
 	// Cached meshes
+	UPROPERTY()
 	UStaticMesh* CubeMeshRef = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMeshRef = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMeshRef = nullptr;
 };

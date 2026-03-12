@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Core/ExoTypes.h"
 #include "ExoGrenadeComponent.generated.h"
 
 class AExoGrenade;
@@ -22,6 +23,13 @@ public:
 
 	int32 GetCurrentGrenades() const { return CurrentGrenades; }
 	int32 GetMaxGrenades() const { return MaxGrenades; }
+	EGrenadeType GetGrenadeType() const { return GrenadeType; }
+
+	/** Set which grenade type this component currently holds. */
+	void SetGrenadeType(EGrenadeType NewType) { GrenadeType = NewType; }
+
+	UPROPERTY(EditDefaultsOnly, Category = "Grenade")
+	EGrenadeType GrenadeType = EGrenadeType::Frag;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade")
 	int32 MaxGrenades = 3;

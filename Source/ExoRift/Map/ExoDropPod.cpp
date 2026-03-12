@@ -6,6 +6,7 @@
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoScreenShake.h"
+#include "Visual/ExoKillScorch.h"
 #include "Core/ExoAudioManager.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -13,6 +14,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/StaticMesh.h"
+#include "GameFramework/PlayerController.h"
 #include "ExoRift.h"
 
 AExoDropPod::AExoDropPod()
@@ -34,8 +36,8 @@ AExoDropPod::AExoDropPod()
 	ThrusterLight->SetupAttachment(PodMesh);
 	ThrusterLight->SetRelativeLocation(FVector(0.f, 0.f, -150.f));
 	ThrusterLight->SetIntensity(0.f);
-	ThrusterLight->SetAttenuationRadius(3000.f);
-	ThrusterLight->SetLightColor(FColor(80, 160, 255));
+	ThrusterLight->SetAttenuationRadius(4200.f);
+	ThrusterLight->SetLightColor(FColor(180, 200, 255));
 
 	// Cache engine meshes
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(
@@ -55,6 +57,18 @@ AExoDropPod::AExoDropPod()
 	if (SphereFind.Succeeded()) SphereMesh = SphereFind.Object;
 
 	// BaseMaterial no longer needed — LitEmissive used at runtime
+
+	// Zero-init VFX arrays
+	for (int32 i = 0; i < CONTRAIL_SEGMENTS; i++)
+	{
+		ContrailSegments[i] = nullptr;
+		ContrailMats[i] = nullptr;
+	}
+	for (int32 i = 0; i < STEAM_PUFFS; i++)
+	{
+		SteamPuffs[i] = nullptr;
+		SteamMats[i] = nullptr;
+	}
 }
 
 void AExoDropPod::InitPod(AController* InPassenger, AExoDropPodManager* InManager)
@@ -63,6 +77,8 @@ void AExoDropPod::InitPod(AController* InPassenger, AExoDropPodManager* InManage
 	Manager = InManager;
 
 	BuildPodMesh();
+	BuildContrail();
+	PrevPodLocation = GetActorLocation();
 
 	if (Passenger)
 	{
@@ -70,6 +86,11 @@ void AExoDropPod::InitPod(AController* InPassenger, AExoDropPodManager* InManage
 		{
 			OldPawn->SetActorHiddenInGame(true);
 			OldPawn->SetActorEnableCollision(false);
+		}
+		// Set camera to follow the drop pod during descent
+		if (APlayerController* PC = Cast<APlayerController>(Passenger))
+		{
+			PC->SetViewTargetWithBlend(this, 0.f);
 		}
 	}
 
@@ -174,6 +195,7 @@ void AExoDropPod::Tick(float DeltaTime)
 		// Impact effects
 		FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), 800.f);
 		SpawnLandingDust();
+		SpawnLandingScorch();
 
 		// Camera shake on impact
 		ShakeIntensity = 12.f;
@@ -204,6 +226,7 @@ void AExoDropPod::Tick(float DeltaTime)
 		SetActorLocation(NewLoc);
 	}
 
+	UpdateContrail(DeltaTime);
 	UpdateThrusterVFX(DeltaTime, BrakeAlpha);
 
 	// Screen effects during descent
@@ -241,7 +264,7 @@ void AExoDropPod::UpdateLandedSequence(float DeltaTime)
 	// Impact flash fade
 	if (ImpactFlash)
 	{
-		float FlashIntensity = FMath::Max(0.f, 1.f - LandedTimer * 4.f) * 100000.f;
+		float FlashIntensity = FMath::Max(0.f, 1.f - LandedTimer * 4.f) * 220000.f;
 		ImpactFlash->SetIntensity(FlashIntensity);
 	}
 
@@ -253,7 +276,7 @@ void AExoDropPod::UpdateLandedSequence(float DeltaTime)
 		float DustAlpha = FMath::Max(0.f, 1.f - DustAge * 1.5f);
 		DustRing->SetWorldScale3D(FVector(Expand, Expand, 0.05f));
 		DustMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.3f * DustAlpha, 0.25f * DustAlpha, 0.15f * DustAlpha));
+			FLinearColor(0.66f * DustAlpha, 0.55f * DustAlpha, 0.33f * DustAlpha));
 		if (DustAlpha <= 0.01f)
 		{
 			DustRing->SetVisibility(false);
@@ -264,12 +287,65 @@ void AExoDropPod::UpdateLandedSequence(float DeltaTime)
 	if (ThrusterLight)
 	{
 		float Fade = FMath::Max(0.f, 1.f - LandedTimer * 2.f);
-		ThrusterLight->SetIntensity(80000.f * Fade);
+		ThrusterLight->SetIntensity(180000.f * Fade);
 	}
 	if (ThrusterFlame)
 	{
 		float Fade = FMath::Max(0.f, 1.f - LandedTimer * 3.f);
 		ThrusterFlame->SetRelativeScale3D(FVector(0.3f * Fade, 0.3f * Fade, 2.f * Fade));
+	}
+
+	// Contrail fade-out after landing
+	if (bContrailBuilt)
+	{
+		for (int32 i = 0; i < CONTRAIL_SEGMENTS; i++)
+		{
+			if (ContrailSegments[i] && ContrailMats[i])
+			{
+				float Fade = FMath::Max(0.f, 1.f - LandedTimer * 2.5f);
+				ContrailMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(8.f * Fade, 18.f * Fade, 50.f * Fade));
+				if (Fade <= 0.01f)
+					ContrailSegments[i]->SetVisibility(false);
+			}
+		}
+		if (ContrailLight)
+		{
+			float Fade = FMath::Max(0.f, 1.f - LandedTimer * 2.5f);
+			ContrailLight->SetIntensity(60000.f * Fade);
+		}
+	}
+
+	// Door steam burst — triggered 0.6s after landing (door opening moment)
+	if (LandedTimer > 0.6f && !bDoorSteamSpawned)
+	{
+		SpawnDoorSteam();
+		bDoorSteamSpawned = true;
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayDoorSlideSound(GetActorLocation(), true);
+		}
+	}
+
+	// Animate steam puffs
+	if (SteamAge >= 0.f)
+	{
+		SteamAge += DeltaTime;
+		float SteamFade = FMath::Max(0.f, 1.f - SteamAge * 1.8f);
+		for (int32 i = 0; i < STEAM_PUFFS; i++)
+		{
+			if (!SteamPuffs[i]) continue;
+			SteamPuffs[i]->AddWorldOffset(SteamVelocities[i] * DeltaTime);
+			float Expand = 0.15f + SteamAge * 0.6f;
+			SteamPuffs[i]->SetWorldScale3D(FVector(Expand, Expand, Expand * 0.6f));
+			if (SteamMats[i])
+			{
+				SteamMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(22.f * SteamFade, 28.f * SteamFade, 40.f * SteamFade));
+			}
+			if (SteamFade <= 0.01f)
+				SteamPuffs[i]->SetVisibility(false);
+		}
 	}
 
 	if (LandedTimer > 1.5f)
@@ -281,24 +357,34 @@ void AExoDropPod::UpdateLandedSequence(float DeltaTime)
 void AExoDropPod::OnLanded()
 {
 	if (Phase != EDropPodPhase::Landed) return;
+	Phase = EDropPodPhase::FreeFall; // Prevent re-entry
 
 	if (Passenger)
 	{
 		FVector SpawnLoc = GetActorLocation() + FVector(200.f, 0.f, 100.f);
 		FRotator SpawnRot = FRotator(0.f, GetActorRotation().Yaw, 0.f);
 
+		APawn* TargetPawn = nullptr;
 		if (APawn* ExistingPawn = Passenger->GetPawn())
 		{
 			ExistingPawn->SetActorLocation(SpawnLoc);
 			ExistingPawn->SetActorRotation(SpawnRot);
 			ExistingPawn->SetActorHiddenInGame(false);
 			ExistingPawn->SetActorEnableCollision(true);
+			TargetPawn = ExistingPawn;
 		}
 		else
 		{
 			AExoCharacter* NewChar = GetWorld()->SpawnActor<AExoCharacter>(
 				AExoCharacter::StaticClass(), SpawnLoc, SpawnRot);
-			if (NewChar) Passenger->Possess(NewChar);
+			if (NewChar) { Passenger->Possess(NewChar); TargetPawn = NewChar; }
+		}
+
+		// Transition camera back to the player character
+		if (APlayerController* PC = Cast<APlayerController>(Passenger))
+		{
+			if (TargetPawn)
+				PC->SetViewTargetWithBlend(TargetPawn, 0.5f);
 		}
 	}
 

@@ -44,7 +44,7 @@ private:
 
 	float Age = 0.f;
 	float Lifetime = 0.4f;
-	float BaseIntensity = 500000.f;
+	float BaseIntensity = 1125000.f;
 	FLinearColor BoltColor = FLinearColor(0.7f, 0.8f, 1.f);
 
 	UStaticMesh* CylinderMesh = nullptr;

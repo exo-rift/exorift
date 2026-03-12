@@ -45,7 +45,8 @@ void AExoFloatingDust::Tick(float DeltaTime)
 			FLinearColor Col(Brightness, Brightness * 1.1f, Brightness * 1.3f);
 			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-			float Glow = FMath::RandRange(0.15f, 0.5f);
+			if (!Mat) { continue; }
+			float Glow = FMath::RandRange(0.35f, 1.1f);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * Glow);
 			M.Mesh->SetMaterial(0, Mat);
 

@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoEnvironmentAnimator.h"
 #include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::BuildGroundDetail()
@@ -52,40 +53,20 @@ void AExoLevelBuilder::BuildGroundDetail()
 	SpawnCrater(FVector(40000.f, -80000.f, 0.f), 2200.f);
 
 	// === AMBIENT GROUND LIGHTS ===
-	// Scattered atmospheric glow spots across the map
+	// Very subtle ground-level lights at compound approaches only (not open field)
 	struct FGroundGlow { FVector Pos; FLinearColor Color; float Intensity; float Radius; };
 	TArray<FGroundGlow> Glows = {
-		// Hub approach — cool blue
-		{{15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
-		{{-15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
-		{{0.f, 15000.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
-		{{0.f, -15000.f, 20.f}, {0.1f, 0.3f, 0.8f}, 3000.f, 4000.f},
+		// Hub approach — cool blue (subtle)
+		{{15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 800.f, 2000.f},
+		{{-15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 800.f, 2000.f},
 		// North industrial — warm amber
-		{{0.f, 70000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 2000.f, 5000.f},
-		{{-8000.f, 85000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 2500.f, 3000.f},
+		{{0.f, 70000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 600.f, 2000.f},
 		// South research — teal
-		{{0.f, -70000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 2000.f, 4000.f},
-		{{5000.f, -85000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 1500.f, 3000.f},
+		{{0.f, -70000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 600.f, 2000.f},
 		// East power — red warning
-		{{70000.f, 0.f, 20.f}, {0.8f, 0.15f, 0.05f}, 2500.f, 5000.f},
-		{{85000.f, 5000.f, 20.f}, {0.8f, 0.15f, 0.05f}, 2000.f, 3000.f},
+		{{70000.f, 0.f, 20.f}, {0.8f, 0.15f, 0.05f}, 700.f, 2000.f},
 		// West barracks — green
-		{{-70000.f, 0.f, 20.f}, {0.1f, 0.5f, 0.2f}, 2000.f, 4000.f},
-		// Open field atmospheric — purple
-		{{50000.f, 50000.f, 20.f}, {0.3f, 0.1f, 0.5f}, 1500.f, 6000.f},
-		{{-50000.f, -50000.f, 20.f}, {0.3f, 0.1f, 0.5f}, 1500.f, 6000.f},
-		// Road intersections — white
-		{{0.f, 0.f, 30.f}, {0.5f, 0.6f, 0.8f}, 4000.f, 5000.f},
-		// Open field pockets — deep purple/blue for alien atmosphere
-		{{35000.f, -35000.f, 20.f}, {0.2f, 0.08f, 0.35f}, 1800.f, 5000.f},
-		{{-35000.f, 35000.f, 20.f}, {0.2f, 0.08f, 0.35f}, 1800.f, 5000.f},
-		{{-60000.f, 60000.f, 20.f}, {0.15f, 0.06f, 0.25f}, 1200.f, 4000.f},
-		{{60000.f, -60000.f, 20.f}, {0.15f, 0.06f, 0.25f}, 1200.f, 4000.f},
-		// Road midpoints — dim white for navigation
-		{{0.f, 40000.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
-		{{0.f, -40000.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
-		{{40000.f, 0.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
-		{{-40000.f, 0.f, 15.f}, {0.3f, 0.35f, 0.45f}, 1500.f, 3000.f},
+		{{-70000.f, 0.f, 20.f}, {0.1f, 0.5f, 0.2f}, 600.f, 2000.f},
 	};
 	for (const auto& G : Glows)
 	{
@@ -97,20 +78,6 @@ void AExoLevelBuilder::BuildGroundDetail()
 		GL->SetLightColor(G.Color);
 		GL->CastShadows = false;
 		GL->RegisterComponent();
-
-		// Small emissive ground disk at each glow
-		UStaticMeshComponent* Disk = SpawnStaticMesh(
-			G.Pos - FVector(0.f, 0.f, 15.f),
-			FVector(G.Radius / 2000.f, G.Radius / 2000.f, 0.02f),
-			FRotator::ZeroRotator, CylinderMesh, G.Color);
-		if (Disk)
-		{
-			UMaterialInterface* DiskEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DiskEmissiveMat, this);
-			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(G.Color.R * 0.3f, G.Color.G * 0.3f, G.Color.B * 0.3f));
-			Disk->SetMaterial(0, DM);
-		}
 	}
 
 	// Ground mist pools — low-lying glowing haze near water and valleys
@@ -157,12 +124,12 @@ void AExoLevelBuilder::BuildGroundDetail()
 			FVector(0.5f, 20.f, 0.05f), FRotator(0.f, M.Yaw, 0.f),
 			CubeMesh, YellowStripe);
 
-		// Hazard zone area tint light
+		// Hazard zone area tint light (subtle, localized)
 		UPointLightComponent* HZ = NewObject<UPointLightComponent>(this);
 		HZ->SetupAttachment(RootComponent);
 		HZ->SetWorldLocation(M.Pos + FVector(0.f, 0.f, 300.f));
-		HZ->SetIntensity(6000.f);
-		HZ->SetAttenuationRadius(8000.f);
+		HZ->SetIntensity(3000.f);
+		HZ->SetAttenuationRadius(5000.f);
 		HZ->SetLightColor(HazardTints[i]);
 		HZ->CastShadows = false;
 		HZ->RegisterComponent();
@@ -176,9 +143,10 @@ void AExoLevelBuilder::BuildGroundDetail()
 		{
 			UMaterialInterface* HMat = FExoMaterialFactory::GetEmissiveAdditive();
 			UMaterialInstanceDynamic* HD = UMaterialInstanceDynamic::Create(HMat, this);
+			if (!HD) { return; }
 			HD->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(HazardTints[i].R * 0.4f, HazardTints[i].G * 0.4f,
-					HazardTints[i].B * 0.4f));
+				FLinearColor(HazardTints[i].R * 1.2f, HazardTints[i].G * 1.2f,
+					HazardTints[i].B * 1.2f));
 			HPool->SetMaterial(0, HD);
 		}
 	}
@@ -220,8 +188,9 @@ void AExoLevelBuilder::SpawnFloorPanels(const FVector& Center, float Radius, int
 			{
 				UMaterialInterface* SeamEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 				UMaterialInstanceDynamic* SeamMat = UMaterialInstanceDynamic::Create(SeamEmissiveMat, this);
+				if (!SeamMat) { return; }
 				SeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(0.1f, 0.4f, 0.8f));
+					FLinearColor(0.15f, 0.6f, 1.2f));
 				Seam->SetMaterial(0, SeamMat);
 			}
 		}
@@ -248,6 +217,7 @@ void AExoLevelBuilder::SpawnEnergyPylon(const FVector& Base, float Height,
 	{
 		UMaterialInterface* RingEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(RingEmissiveMat, this);
+		if (!RingMat) { return; }
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
 		Ring->SetMaterial(0, RingMat);
@@ -262,6 +232,7 @@ void AExoLevelBuilder::SpawnEnergyPylon(const FVector& Base, float Height,
 	{
 		UMaterialInterface* MidEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* MidMat = UMaterialInstanceDynamic::Create(MidEmissiveMat, this);
+		if (!MidMat) { return; }
 		MidMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
 		MidRing->SetMaterial(0, MidMat);
@@ -274,15 +245,21 @@ void AExoLevelBuilder::SpawnEnergyPylon(const FVector& Base, float Height,
 		FRotator::ZeroRotator, SphereMesh,
 		FLinearColor(0.08f, 0.08f, 0.1f));
 
-	// Point light at top
+	// Point light at top (localized glow only)
 	UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
 	Light->SetupAttachment(RootComponent);
 	Light->SetWorldLocation(Base + FVector(0.f, 0.f, Height));
-	Light->SetIntensity(4000.f);
-	Light->SetAttenuationRadius(Height * 2.f);
+	Light->SetIntensity(3000.f);
+	Light->SetAttenuationRadius(Height * 1.5f);
 	Light->SetLightColor(Color);
 	Light->CastShadows = false;
 	Light->RegisterComponent();
+
+	// Register ring for rotation + pulse animation
+	if (AExoEnvironmentAnimator* Anim = AExoEnvironmentAnimator::Get(GetWorld()))
+	{
+		Anim->RegisterPylonRing(Ring, Light);
+	}
 }
 
 void AExoLevelBuilder::SpawnCrater(const FVector& Center, float Radius)
@@ -332,16 +309,17 @@ void AExoLevelBuilder::SpawnGroundMist(const FVector& Center, float Radius,
 	{
 		UMaterialInterface* Mat = FExoMaterialFactory::GetEmissiveAdditive();
 		UMaterialInstanceDynamic* MM = UMaterialInstanceDynamic::Create(Mat, this);
+		if (!MM) { return; }
 		MM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 0.6f, Color.G * 0.6f, Color.B * 0.6f));
+			FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
 		Mist->SetMaterial(0, MM);
 	}
 	// Subtle glow light
 	UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
 	GL->SetupAttachment(RootComponent);
 	GL->SetWorldLocation(Center + FVector(0.f, 0.f, 50.f));
-	GL->SetIntensity(1500.f);
-	GL->SetAttenuationRadius(Radius * 0.8f);
+	GL->SetIntensity(1000.f);
+	GL->SetAttenuationRadius(Radius * 0.6f);
 	GL->SetLightColor(Color);
 	GL->CastShadows = false;
 	GL->RegisterComponent();

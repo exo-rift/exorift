@@ -5,6 +5,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/Pawn.h"
+#include "Core/ExoAudioManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 AExoAutoSlidingDoor::AExoAutoSlidingDoor()
@@ -37,7 +38,7 @@ AExoAutoSlidingDoor::AExoAutoSlidingDoor()
 	DoorLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("DoorLight"));
 	DoorLight->SetupAttachment(Root);
 	DoorLight->SetIntensity(2000.f);
-	DoorLight->SetAttenuationRadius(500.f);
+	DoorLight->SetAttenuationRadius(800.f);
 	DoorLight->CastShadows = false;
 
 	// Load engine primitives
@@ -71,6 +72,7 @@ void AExoAutoSlidingDoor::BeginPlay()
 		if (BaseMat)
 		{
 			AccentMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			if (!AccentMat) { return; }
 			AccentMat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.06f, 0.065f, 0.08f));
 			DoorFrame->SetMaterial(0, AccentMat);
@@ -79,12 +81,14 @@ void AExoAutoSlidingDoor::BeginPlay()
 		// Panel materials — slightly lighter than frame
 		UMaterialInstanceDynamic* PanelMat = UMaterialInstanceDynamic::Create(
 			DoorPanelL->GetMaterial(0), this);
+		if (!PanelMat) { return; }
 		PanelMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.08f, 0.085f, 0.1f));
 		DoorPanelL->SetMaterial(0, PanelMat);
 
 		UMaterialInstanceDynamic* PanelMatR = UMaterialInstanceDynamic::Create(
 			DoorPanelR->GetMaterial(0), this);
+		if (!PanelMatR) { return; }
 		PanelMatR->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.08f, 0.085f, 0.1f));
 		DoorPanelR->SetMaterial(0, PanelMatR);
@@ -144,7 +148,7 @@ void AExoAutoSlidingDoor::Tick(float DeltaTime)
 	DoorPanelR->SetRelativeLocation(OffsetR);
 
 	// Pulse the door light brighter when open
-	float Intensity = FMath::Lerp(1500.f, 4000.f, OpenBlend);
+	float Intensity = FMath::Lerp(3000.f, 8000.f, OpenBlend);
 	DoorLight->SetIntensity(Intensity);
 }
 
@@ -155,6 +159,15 @@ void AExoAutoSlidingDoor::OnTriggerEnter(UPrimitiveComponent* /*OverlappedComp*/
 	if (Cast<APawn>(OtherActor))
 	{
 		OverlapCount++;
+
+		// Sci-fi door slide sound when opening
+		if (OverlapCount == 1)
+		{
+			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			{
+				Audio->PlayDoorSlideSound(GetActorLocation(), true);
+			}
+		}
 	}
 }
 
@@ -164,5 +177,14 @@ void AExoAutoSlidingDoor::OnTriggerExit(UPrimitiveComponent* /*OverlappedComp*/,
 	if (Cast<APawn>(OtherActor))
 	{
 		OverlapCount = FMath::Max(0, OverlapCount - 1);
+
+		// Sci-fi door slide sound when closing (descending pitch)
+		if (OverlapCount == 0)
+		{
+			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			{
+				Audio->PlayDoorSlideSound(GetActorLocation(), false);
+			}
+		}
 	}
 }

@@ -49,7 +49,8 @@ AExoAmbientParticles::AExoAmbientParticles()
 		for (int32 i = 0; i < NUM_MOTES; i++)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(DustMat, this);
-			FLinearColor EmissiveCol(0.3f, 0.28f, 0.25f, 1.f);
+			if (!Mat) { continue; }
+			FLinearColor EmissiveCol(0.65f, 0.6f, 0.55f, 1.f);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), EmissiveCol);
 			MoteMeshes[i]->SetMaterial(0, Mat);
 		}
@@ -67,30 +68,39 @@ void AExoAmbientParticles::SetStyle(bool bEnergyWisps)
 	for (int32 i = 0; i < MoteMeshes.Num(); i++)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ParentMat, this);
+		if (!Mat) { continue; }
 		if (bEnergyWisps)
 		{
-			// Varied energy wisps: cyan, teal, violet, white — some bright, some dim
+			// Varied energy wisps: cyan, teal, violet, white, amber, green
 			FLinearColor Col;
-			int32 Style = i % 5;
-			if (Style < 2) // Cyan
-				Col = FLinearColor(0.1f, 0.6f, 3.5f + FMath::RandRange(0.f, 2.f));
+			int32 Style = i % 8;
+			if (Style < 2)      // Cyan — most common
+				Col = FLinearColor(0.22f, 1.3f, 8.f + FMath::RandRange(0.f, 4.5f));
 			else if (Style < 3) // Teal-green
-				Col = FLinearColor(0.05f, 1.5f + FMath::RandRange(0.f, 1.f), 1.0f);
+				Col = FLinearColor(0.11f, 3.4f + FMath::RandRange(0.f, 2.2f), 2.2f);
 			else if (Style < 4) // Violet
-				Col = FLinearColor(0.8f + FMath::RandRange(0.f, 0.5f), 0.15f, 2.5f);
-			else // Warm white
-				Col = FLinearColor(1.5f, 1.3f, 1.0f);
+				Col = FLinearColor(1.8f + FMath::RandRange(0.f, 1.1f), 0.33f, 5.5f);
+			else if (Style < 5) // Warm white
+				Col = FLinearColor(3.4f, 2.9f, 2.2f);
+			else if (Style < 6) // Amber
+				Col = FLinearColor(4.5f, 2.2f, 0.33f);
+			else if (Style < 7) // Emerald green
+				Col = FLinearColor(0.33f, 4.0f, 0.9f);
+			else                // Deep blue
+				Col = FLinearColor(0.44f, 0.9f, 6.8f);
 
-			// Random brightness variance
-			float Bright = FMath::RandRange(0.6f, 1.4f);
+			float Bright = FMath::RandRange(1.1f, 3.5f);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col * Bright);
-			Motes[i].BaseScale = FMath::RandRange(0.015f, 0.06f);
+			// Some motes are larger "firefly" sized
+			Motes[i].BaseScale = (i % 12 == 0)
+				? FMath::RandRange(0.06f, 0.10f)
+				: FMath::RandRange(0.015f, 0.05f);
 		}
 		else
 		{
 			// Dust motes
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.3f, 0.28f, 0.25f, 1.f));
+				FLinearColor(0.65f, 0.6f, 0.55f, 1.f));
 		}
 		MoteMeshes[i]->SetMaterial(0, Mat);
 	}

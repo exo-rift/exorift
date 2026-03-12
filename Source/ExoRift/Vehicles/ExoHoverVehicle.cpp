@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Core/ExoAudioManager.h"
 #include "ExoRift.h"
 
 AExoHoverVehicle::AExoHoverVehicle()
@@ -67,7 +68,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	EngineGlowL = CreateDefaultSubobject<UPointLightComponent>(TEXT("EngineGlowL"));
 	EngineGlowL->SetupAttachment(VehicleMesh);
 	EngineGlowL->SetRelativeLocation(FVector(-80.f, -40.f, -30.f));
-	EngineGlowL->SetIntensity(5000.f);
+	EngineGlowL->SetIntensity(12000.f);
 	EngineGlowL->SetAttenuationRadius(300.f);
 	EngineGlowL->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
 	EngineGlowL->CastShadows = false;
@@ -75,7 +76,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	EngineGlowR = CreateDefaultSubobject<UPointLightComponent>(TEXT("EngineGlowR"));
 	EngineGlowR->SetupAttachment(VehicleMesh);
 	EngineGlowR->SetRelativeLocation(FVector(-80.f, 40.f, -30.f));
-	EngineGlowR->SetIntensity(5000.f);
+	EngineGlowR->SetIntensity(12000.f);
 	EngineGlowR->SetAttenuationRadius(300.f);
 	EngineGlowR->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
 	EngineGlowR->CastShadows = false;
@@ -85,7 +86,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	HeadlightL->SetupAttachment(VehicleMesh);
 	HeadlightL->SetRelativeLocation(FVector(90.f, -30.f, 5.f));
 	HeadlightL->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
-	HeadlightL->SetIntensity(80000.f);
+	HeadlightL->SetIntensity(180000.f);
 	HeadlightL->SetOuterConeAngle(30.f);
 	HeadlightL->SetInnerConeAngle(15.f);
 	HeadlightL->SetAttenuationRadius(5000.f);
@@ -96,7 +97,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	HeadlightR->SetupAttachment(VehicleMesh);
 	HeadlightR->SetRelativeLocation(FVector(90.f, 30.f, 5.f));
 	HeadlightR->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
-	HeadlightR->SetIntensity(80000.f);
+	HeadlightR->SetIntensity(180000.f);
 	HeadlightR->SetOuterConeAngle(30.f);
 	HeadlightR->SetInnerConeAngle(15.f);
 	HeadlightR->SetAttenuationRadius(5000.f);
@@ -210,6 +211,12 @@ void AExoHoverVehicle::EnterVehicle(AExoCharacter* Driver)
 		PC->Possess(this);
 	}
 
+	// Engine startup hum — ascending sci-fi whir
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayVehicleEngineSound(GetActorLocation(), true);
+	}
+
 	UE_LOG(LogExoRift, Log, TEXT("HoverVehicle: %s entered"), *Driver->GetName());
 }
 
@@ -241,6 +248,12 @@ void AExoHoverVehicle::ExitVehicle()
 	Driver->SetActorLocation(ExitLocation);
 	Driver->SetActorHiddenInGame(false);
 	Driver->SetActorEnableCollision(true);
+
+	// Engine shutdown sound
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayVehicleEngineSound(GetActorLocation(), false);
+	}
 
 	// Reset vehicle state
 	bIsOccupied = false;

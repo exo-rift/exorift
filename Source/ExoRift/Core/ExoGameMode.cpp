@@ -12,7 +12,9 @@
 #include "Map/ExoSpawnPoint.h"
 #include "Map/ExoMapConfig.h"
 #include "Map/ExoLevelBuilder.h"
+#include "Map/ExoShowcaseRoom.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoMusicManager.h"
 #include "Visual/ExoPostProcess.h"
 #include "Core/ExoCareerStats.h"
 #include "UI/ExoHUD.h"
@@ -62,7 +64,6 @@ void AExoGameMode::BeginPlay()
 	{
 		FActorSpawnParameters BuilderParams;
 		GetWorld()->SpawnActor<AExoLevelBuilder>(AExoLevelBuilder::StaticClass(), BuilderParams);
-		UE_LOG(LogExoRift, Log, TEXT("GameMode: Auto-spawned LevelBuilder"));
 	}
 
 	// Find zone system in level (may have been created by LevelBuilder)
@@ -79,6 +80,11 @@ void AExoGameMode::BeginPlay()
 
 	// Spawn supply drop manager
 	SupplyDropManager = GetWorld()->SpawnActor<AExoSupplyDropManager>(AExoSupplyDropManager::StaticClass(), SpawnParams);
+
+	// Showcase room — high altitude, above all map geometry
+	FTransform RoomTransform(FVector(0, 0, 50000.f));
+	GetWorld()->SpawnActor<AExoShowcaseRoom>(AExoShowcaseRoom::StaticClass(),
+		RoomTransform, SpawnParams);
 
 	TransitionToPhase(EBRMatchPhase::WaitingForPlayers);
 }
@@ -130,6 +136,7 @@ void AExoGameMode::HandleStartingNewPlayer_Implementation(APlayerController* New
 		if (AExoCharacter* Char = Cast<AExoCharacter>(NewPlayer->GetPawn()))
 			SetWarmupInvulnerability(Char, true);
 	}
+
 }
 
 void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController* Killer, const FString& WeaponName)
@@ -155,9 +162,31 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 		Entry.VictimName = EliminatedPlayer->GetPlayerState<AExoPlayerState>()->DisplayName;
 		Entry.WeaponName = WeaponName;
 		Entry.Timestamp = GetWorld()->GetTimeSeconds();
+
+		// Determine weapon type from name for kill feed color coding
+		Entry.bEnvironmentKill = false;
+		if (WeaponName == TEXT("Pulse Rifle"))            Entry.WeaponType = EWeaponType::Rifle;
+		else if (WeaponName == TEXT("Arc Pistol"))         Entry.WeaponType = EWeaponType::Pistol;
+		else if (WeaponName == TEXT("Nova Launcher"))      Entry.WeaponType = EWeaponType::GrenadeLauncher;
+		else if (WeaponName == TEXT("Void Lance"))         Entry.WeaponType = EWeaponType::Sniper;
+		else if (WeaponName == TEXT("Scatter Storm"))      Entry.WeaponType = EWeaponType::Shotgun;
+		else if (WeaponName == TEXT("Storm Needle"))       Entry.WeaponType = EWeaponType::SMG;
+		else if (WeaponName == TEXT("Plasma Blade"))       Entry.WeaponType = EWeaponType::Melee;
+		else if (WeaponName == TEXT("Execution"))          Entry.WeaponType = EWeaponType::Melee;
+		else
+		{
+			Entry.WeaponType = EWeaponType::Rifle;
+			Entry.bEnvironmentKill = (WeaponName == TEXT("Zone")
+				|| WeaponName == TEXT("Fall") || !Killer);
+		}
+
 		GS->AddKillFeedEntry(Entry);
 		GS->AliveCount = AliveCount;
 	}
+	// Notify music system of player count change for tension scaling
+	if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+		Music->NotifyAliveCountChanged(AliveCount, TotalPlayers);
+
 	// Milestone notifications
 	if (AliveCount == 10 || AliveCount == 5 || AliveCount == 3 || AliveCount == 2)
 	{
@@ -172,8 +201,7 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 void AExoGameMode::StartMatch()
 {
 	bMatchStarted = true;
-	for (AController* PC : AlivePlayers)
-		if (AExoCharacter* C = Cast<AExoCharacter>(PC->GetPawn())) SetWarmupInvulnerability(C, false);
+	// Keep invulnerability during drop — removed when Playing phase begins
 	SpawnBots();
 	PushNotification(GetWorld(),
 		FString::Printf(TEXT("Match started — %d players"), AliveCount),
@@ -193,12 +221,34 @@ void AExoGameMode::TransitionToPhase(EBRMatchPhase NewPhase)
 
 	UE_LOG(LogExoRift, Log, TEXT("Phase transition: %d"), static_cast<int32>(NewPhase));
 
+	// Drive adaptive music based on match phase
+	if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+	{
+		switch (NewPhase)
+		{
+		case EBRMatchPhase::WaitingForPlayers: Music->SetMusicState(EMusicState::Warmup); break;
+		case EBRMatchPhase::DropPhase:         Music->SetMusicState(EMusicState::Warmup); break;
+		case EBRMatchPhase::Playing:           Music->SetMusicState(EMusicState::Exploration); break;
+		case EBRMatchPhase::ZoneShrinking:     Music->SetMusicState(EMusicState::Exploration); break;
+		case EBRMatchPhase::EndGame:
+		{
+			APlayerController* PC = GetWorld()->GetFirstPlayerController();
+			bool bWin = PC && AlivePlayers.Contains(PC);
+			Music->SetMusicState(bWin ? EMusicState::Victory : EMusicState::Defeat);
+			break;
+		}
+		}
+	}
+
 	switch (NewPhase)
 	{
 	case EBRMatchPhase::DropPhase:
 		if (DropPodManager) DropPodManager->StartDropPhase(AlivePlayers);
 		break;
 	case EBRMatchPhase::Playing:
+		// Remove warmup invulnerability now that drop is complete
+		for (AController* PC : AlivePlayers)
+			if (AExoCharacter* C = Cast<AExoCharacter>(PC->GetPawn())) SetWarmupInvulnerability(C, false);
 		if (ZoneSystem) ZoneSystem->StartZoneSequence();
 		break;
 	case EBRMatchPhase::EndGame:
@@ -286,11 +336,15 @@ void AExoGameMode::TickPlaying(float DeltaTime)
 	{
 		CurrentPhase = EBRMatchPhase::ZoneShrinking;
 		if (GS) GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
+		if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+			Music->SetZoneShrinking(true);
 	}
 	else if (ZoneSystem && !ZoneSystem->IsShrinking() && CurrentPhase == EBRMatchPhase::ZoneShrinking)
 	{
 		CurrentPhase = EBRMatchPhase::Playing;
 		if (GS) GS->MatchPhase = EBRMatchPhase::Playing;
+		if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+			Music->SetZoneShrinking(false);
 	}
 }
 

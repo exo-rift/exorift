@@ -47,8 +47,8 @@ void AExoLevelBuilder::BuildCompoundLighting()
 			UPointLightComponent* Ambient = NewObject<UPointLightComponent>(this);
 			Ambient->SetupAttachment(RootComponent);
 			Ambient->SetWorldLocation(T.Center + Offset);
-			Ambient->SetIntensity(5000.f);
-			Ambient->SetAttenuationRadius(T.Radius * 0.5f);
+			Ambient->SetIntensity(3000.f); // Subtle accent, not overpowering
+			Ambient->SetAttenuationRadius(T.Radius * 0.4f);
 			Ambient->SetLightColor(T.AccentColor);
 			Ambient->CastShadows = false;
 			Ambient->RegisterComponent();
@@ -65,6 +65,7 @@ void AExoLevelBuilder::BuildCompoundLighting()
 				if (Strip)
 				{
 					UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+					if (!SM) { return; }
 					SM->SetVectorParameterValue(TEXT("EmissiveColor"),
 						FLinearColor(T.AccentColor.R * 0.6f, T.AccentColor.G * 0.6f,
 							T.AccentColor.B * 0.6f));
@@ -73,14 +74,14 @@ void AExoLevelBuilder::BuildCompoundLighting()
 			}
 		}
 
-		// Overhead color wash light (high above, wide radius)
+		// Overhead color wash light (subtle compound identity)
 		UPointLightComponent* Overhead = NewObject<UPointLightComponent>(this);
 		Overhead->SetupAttachment(RootComponent);
 		Overhead->SetWorldLocation(T.Center + FVector(0.f, 0.f, 5000.f));
-		Overhead->SetIntensity(12000.f);
+		Overhead->SetIntensity(2000.f); // Very subtle compound tint
 		Overhead->SetAttenuationRadius(T.Radius);
 		Overhead->SetLightColor(FLinearColor(
-			T.AccentColor.R * 0.3f, T.AccentColor.G * 0.3f, T.AccentColor.B * 0.3f));
+			T.AccentColor.R * 0.2f, T.AccentColor.G * 0.2f, T.AccentColor.B * 0.2f));
 		Overhead->CastShadows = false;
 		Overhead->RegisterComponent();
 
@@ -95,15 +96,50 @@ void AExoLevelBuilder::BuildCompoundLighting()
 			if (Perimeter)
 			{
 				UMaterialInstanceDynamic* PM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+				if (!PM) { return; }
 				PM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(T.AccentColor.R * 0.3f, T.AccentColor.G * 0.3f,
-						T.AccentColor.B * 0.3f));
+					FLinearColor(T.AccentColor.R * 1.f, T.AccentColor.G * 1.f,
+						T.AccentColor.B * 1.f));
 				Perimeter->SetMaterial(0, PM);
 			}
 		}
 
 		// Glowing ground markers at the compound center
 		SpawnCompoundGroundMarker(T.Center, T.AccentColor);
+	}
+
+	// === FIELD AMBIENT LIGHTS — subtle color wash across open terrain ===
+	// With sky atmosphere + sun + sky light, these should be much subtler
+	struct FFieldLight { FVector Pos; FLinearColor Color; float Intensity; float Radius; };
+	TArray<FFieldLight> FieldLights = {
+		// NE quadrant — cool teal transition
+		{{40000.f, 40000.f, 200.f}, FLinearColor(0.15f, 0.5f, 0.6f), 2000.f, 20000.f},
+		{{25000.f, 60000.f, 150.f}, FLinearColor(0.2f, 0.6f, 0.5f), 1500.f, 18000.f},
+		// NW quadrant — amber-red transition
+		{{-40000.f, 40000.f, 200.f}, FLinearColor(0.7f, 0.3f, 0.1f), 1800.f, 18000.f},
+		{{-60000.f, 25000.f, 150.f}, FLinearColor(0.8f, 0.25f, 0.1f), 1500.f, 16000.f},
+		// SE quadrant — electric blue transition
+		{{40000.f, -40000.f, 200.f}, FLinearColor(0.1f, 0.3f, 0.8f), 1800.f, 18000.f},
+		{{60000.f, -60000.f, 180.f}, FLinearColor(0.15f, 0.35f, 0.7f), 1200.f, 15000.f},
+		// SW quadrant — green-purple transition
+		{{-40000.f, -40000.f, 200.f}, FLinearColor(0.3f, 0.6f, 0.4f), 1800.f, 18000.f},
+		{{-60000.f, -60000.f, 180.f}, FLinearColor(0.4f, 0.15f, 0.6f), 1200.f, 15000.f},
+		// Far corners — subtle color washes
+		{{100000.f, 100000.f, 300.f}, FLinearColor(0.2f, 0.4f, 0.5f), 1000.f, 25000.f},
+		{{-100000.f, 100000.f, 300.f}, FLinearColor(0.6f, 0.2f, 0.15f), 1000.f, 25000.f},
+		{{100000.f, -100000.f, 300.f}, FLinearColor(0.1f, 0.25f, 0.6f), 1000.f, 25000.f},
+		{{-100000.f, -100000.f, 300.f}, FLinearColor(0.35f, 0.5f, 0.15f), 1000.f, 25000.f},
+	};
+	for (const FFieldLight& FL : FieldLights)
+	{
+		UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
+		Light->SetupAttachment(RootComponent);
+		Light->SetWorldLocation(FL.Pos);
+		Light->SetIntensity(FL.Intensity);
+		Light->SetAttenuationRadius(FL.Radius);
+		Light->SetLightColor(FL.Color);
+		Light->CastShadows = false;
+		Light->RegisterComponent();
 	}
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Compound ambient lighting placed"));
@@ -124,6 +160,7 @@ void AExoLevelBuilder::SpawnCompoundGroundMarker(const FVector& Center,
 	if (Ring)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(MarkerEmissiveMat, this);
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
 		Ring->SetMaterial(0, Mat);
@@ -150,8 +187,9 @@ void AExoLevelBuilder::SpawnCompoundGroundMarker(const FVector& Center,
 		if (Line)
 		{
 			UMaterialInstanceDynamic* LMat = UMaterialInstanceDynamic::Create(MarkerEmissiveMat, this);
+			if (!LMat) { return; }
 			LMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 0.3f, Color.G * 0.3f, Color.B * 0.3f));
+				FLinearColor(Color.R * 1.f, Color.G * 1.f, Color.B * 1.f));
 			Line->SetMaterial(0, LMat);
 		}
 	}
@@ -160,8 +198,8 @@ void AExoLevelBuilder::SpawnCompoundGroundMarker(const FVector& Center,
 	UPointLightComponent* CenterLight = NewObject<UPointLightComponent>(this);
 	CenterLight->SetupAttachment(RootComponent);
 	CenterLight->SetWorldLocation(Center + FVector(0.f, 0.f, 50.f));
-	CenterLight->SetIntensity(6000.f);
-	CenterLight->SetAttenuationRadius(RingRadius * 1.2f);
+	CenterLight->SetIntensity(3000.f);
+	CenterLight->SetAttenuationRadius(RingRadius * 0.8f);
 	CenterLight->SetLightColor(Color);
 	CenterLight->CastShadows = false;
 	CenterLight->RegisterComponent();

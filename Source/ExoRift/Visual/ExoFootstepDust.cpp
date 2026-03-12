@@ -33,7 +33,7 @@ AExoFootstepDust::AExoFootstepDust()
 	DustLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("DustLight"));
 	DustLight->SetupAttachment(Root);
 	DustLight->SetIntensity(0.f);
-	DustLight->SetAttenuationRadius(400.f);
+	DustLight->SetAttenuationRadius(560.f);
 	DustLight->CastShadows = false;
 }
 
@@ -45,7 +45,7 @@ void AExoFootstepDust::InitDust(bool bLanding, float Intensity, const FLinearCol
 	{
 		Lifetime = 0.6f + Intensity * 0.4f;
 		MaxScale = 0.6f + Intensity * 0.8f;
-		LightIntensity = 3000.f * Intensity;
+		LightIntensity = 7000.f * Intensity;
 	}
 	else
 	{
@@ -74,7 +74,8 @@ void AExoFootstepDust::InitDust(bool bLanding, float Intensity, const FLinearCol
 		if (EmMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmMat, this);
-			float Brightness = 0.3f + FMath::RandRange(0.f, 0.4f);
+			if (!Mat) { return; }
+			float Brightness = 0.7f + FMath::RandRange(0.f, 0.9f);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(SurfaceColor.R * Brightness,
 					SurfaceColor.G * Brightness, SurfaceColor.B * Brightness));

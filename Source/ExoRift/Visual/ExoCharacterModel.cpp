@@ -145,9 +145,10 @@ void UExoCharacterModel::SetAccentColor(const FLinearColor& Color)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
 			FExoMaterialFactory::GetLitEmissive(), GetOwner());
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 7.f, Color.G * 7.f, Color.B * 7.f));
 		AccentPart->SetMaterial(0, Mat);
 	}
 	if (IdentityLight)
@@ -178,9 +179,10 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
 			FExoMaterialFactory::GetLitEmissive(), GetOwner());
+		if (!Mat) { return nullptr; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 7.f, Color.G * 7.f, Color.B * 7.f));
 		Part->SetMaterial(0, Mat);
 	}
 	else
@@ -190,6 +192,7 @@ UStaticMeshComponent* UExoCharacterModel::AddPart(const FVector& Offset,
 		if (LitMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, GetOwner());
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.9f);

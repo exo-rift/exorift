@@ -1,11 +1,13 @@
-// ExoHUDPlayer.cpp — Player status elements: health, shield, armor, energy, DBNO
+// ExoHUDPlayer.cpp — Player status elements: health, shield, armor, energy, DBNO, grenade warning
 #include "UI/ExoHUD.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoShieldComponent.h"
 #include "Player/ExoArmorComponent.h"
 #include "Player/ExoInteractionComponent.h"
 #include "Weapons/ExoWeaponBase.h"
+#include "Weapons/ExoGrenade.h"
 #include "Engine/Canvas.h"
+#include "EngineUtils.h"
 
 void AExoHUD::DrawHealthBar()
 {
@@ -113,28 +115,72 @@ void AExoHUD::DrawEnergyBar()
 	float Pct = W->GetEnergyPercent();
 	bool bLow = Pct < 0.2f;
 	bool bEmpty = Pct < 0.01f;
-	FLinearColor EC(0.3f, 0.9f, 0.4f, 0.9f);
+	float Time = GetWorld()->GetTimeSeconds();
+
+	// Color: green → orange/red pulse when low
+	FLinearColor EC(0.15f, 0.85f, 0.95f, 0.9f); // Cyan-teal energy
 	if (bLow)
 	{
-		float F = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 5.f));
-		EC = FMath::Lerp(FLinearColor(0.9f, 0.2f, 0.1f, 0.9f), FLinearColor(1.f, 0.6f, 0.1f, 1.f), F);
+		float F = FMath::Abs(FMath::Sin(Time * 5.f));
+		EC = FMath::Lerp(FLinearColor(0.9f, 0.2f, 0.1f, 0.9f),
+			FLinearColor(1.f, 0.6f, 0.1f, 1.f), F);
 	}
-	float BarW = 300.f, X = (Canvas->SizeX - BarW) * 0.5f, Y = Canvas->SizeY - 70.f;
-	DrawProgressBar(X, Y, BarW, 10.f, Pct, EC, ColorBgDark);
-	FString EL = FString::Printf(TEXT("ENERGY: %d/%d"), FMath::CeilToInt(W->GetCurrentEnergy()), FMath::CeilToInt(W->GetMaxEnergy()));
-	float TW, TH; GetTextSize(EL, TW, TH, HUDFont, 0.7f);
-	DrawText(EL, bLow ? EC : ColorWhite, X + (BarW - TW) * 0.5f, Y - TH - 2.f, HUDFont, 0.7f);
+	else if (Pct < 0.5f)
+	{
+		// Transition from cyan to warm yellow in the 20-50% range
+		float T = (Pct - 0.2f) / 0.3f;
+		EC = FMath::Lerp(FLinearColor(0.9f, 0.7f, 0.2f, 0.9f),
+			FLinearColor(0.15f, 0.85f, 0.95f, 0.9f), T);
+	}
+
+	float BarW = 300.f;
+	float BarH = 12.f;
+	float X = (Canvas->SizeX - BarW) * 0.5f;
+	float Y = Canvas->SizeY - 70.f;
+	DrawProgressBar(X, Y, BarW, BarH, Pct, EC, ColorBgDark);
+
+	// --- "ENERGY" label on the left ---
+	FString ELabel = TEXT("ENERGY");
+	float LblW, LblH;
+	GetTextSize(ELabel, LblW, LblH, HUDFont, 0.6f);
+	FLinearColor LblCol(0.5f, 0.55f, 0.65f, 0.7f);
+	DrawText(ELabel, LblCol,
+		X - LblW - 8.f, Y + (BarH - LblH) * 0.5f, HUDFont, 0.6f);
+
+	// --- Numerical readout on the right: "75 / 100" ---
+	int32 CurE = FMath::CeilToInt(W->GetCurrentEnergy());
+	int32 MaxE = FMath::CeilToInt(W->GetMaxEnergy());
+	FString NumText = FString::Printf(TEXT("%d / %d"), CurE, MaxE);
+	float NumW, NumH;
+	GetTextSize(NumText, NumW, NumH, HUDFont, 0.75f);
+	FLinearColor NumCol = bLow ? EC : ColorWhite;
+	NumCol.A = 1.f;
+	// Shadow for readability
+	DrawText(NumText, FLinearColor(0.f, 0.f, 0.f, 0.6f),
+		X + BarW + 9.f, Y + (BarH - NumH) * 0.5f + 1.f, HUDFont, 0.75f);
+	DrawText(NumText, NumCol,
+		X + BarW + 8.f, Y + (BarH - NumH) * 0.5f, HUDFont, 0.75f);
+
+	// --- Segmented tick marks on the bar every 25% ---
+	for (int32 Seg = 1; Seg <= 3; Seg++)
+	{
+		float SegX = X + 1.f + (BarW - 2.f) * (Seg * 0.25f);
+		FLinearColor TickCol(0.f, 0.f, 0.f, 0.25f);
+		DrawRect(TickCol, SegX, Y + 1.f, 1.f, BarH - 2.f);
+	}
 
 	// Dramatic "NO ENERGY" warning when empty
 	if (bEmpty)
 	{
-		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 6.f));
+		float Pulse = FMath::Abs(FMath::Sin(Time * 6.f));
 		FLinearColor Warn(1.f, 0.15f, 0.1f, 0.5f + 0.5f * Pulse);
-		FString NoAmmo = TEXT("NO ENERGY — SWAP WEAPON");
-		float NW, NH; GetTextSize(NoAmmo, NW, NH, HUDFont, 1.1f);
+		FString NoAmmo = TEXT("NO ENERGY  —  SWAP WEAPON");
+		float NW, NH;
+		GetTextSize(NoAmmo, NW, NH, HUDFont, 1.1f);
 		float NX = (Canvas->SizeX - NW) * 0.5f;
 		float NY = Canvas->SizeY * 0.6f;
-		DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Pulse), NX - 10.f, NY - 4.f, NW + 20.f, NH + 8.f);
+		DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f * Pulse),
+			NX - 10.f, NY - 4.f, NW + 20.f, NH + 8.f);
 		DrawText(NoAmmo, Warn, NX, NY, HUDFont, 1.1f);
 	}
 }
@@ -250,4 +296,72 @@ void AExoHUD::DrawInteractionPrompt()
 	// Prompt text
 	DrawText(Prompt, FLinearColor(0.8f, 0.9f, 1.f, 0.95f),
 		X + (PanelW - TextW) * 0.5f, Y + (PanelH - TextH) * 0.5f, HUDFont, 0.9f);
+}
+
+void AExoHUD::DrawGrenadeWarning()
+{
+	APawn* Pawn = GetOwningPawn();
+	if (!Pawn) return;
+
+	FVector PlayerPos = Pawn->GetActorLocation();
+	const float WarnRadius = 2000.f;
+	float ClosestDist = WarnRadius;
+	FVector ClosestGrenadePos = FVector::ZeroVector;
+	bool bFound = false;
+
+	for (TActorIterator<AExoGrenade> It(GetWorld()); It; ++It)
+	{
+		AExoGrenade* G = *It;
+		if (!G->IsIgnited()) continue;
+
+		float Dist = FVector::Distance(PlayerPos, G->GetActorLocation());
+		if (Dist < ClosestDist)
+		{
+			ClosestDist = Dist;
+			ClosestGrenadePos = G->GetActorLocation();
+			bFound = true;
+		}
+	}
+
+	if (!bFound) return;
+
+	float CX = Canvas->SizeX * 0.5f;
+	float CY = Canvas->SizeY * 0.5f;
+
+	// Direction to grenade
+	FVector ToGrenade = ClosestGrenadePos - PlayerPos;
+	FVector2D Dir2D(ToGrenade.X, ToGrenade.Y);
+	Dir2D.Normalize();
+
+	// Rotate into screen space based on camera yaw
+	float CamYaw = FMath::DegreesToRadians(
+		Pawn->GetControlRotation().Yaw);
+	float RX = Dir2D.X * FMath::Cos(-CamYaw) - Dir2D.Y * FMath::Sin(-CamYaw);
+	float RY = Dir2D.X * FMath::Sin(-CamYaw) + Dir2D.Y * FMath::Cos(-CamYaw);
+
+	// Intensity -- closer = more urgent
+	float Urgency = 1.f - (ClosestDist / WarnRadius);
+	float Pulse = 0.5f + 0.5f * FMath::Sin(GetWorld()->GetTimeSeconds() * 12.f * Urgency);
+	float Alpha = Urgency * (0.6f + 0.4f * Pulse);
+
+	FLinearColor WarnCol(1.f, 0.3f, 0.1f, Alpha);
+
+	// Draw directional indicator arc
+	float IndicatorDist = FMath::Min(Canvas->SizeX, Canvas->SizeY) * 0.35f;
+	float IX = CX + RY * IndicatorDist; // Swap: RY is forward on screen
+	float IY = CY - RX * IndicatorDist;
+
+	// Warning indicator dot pointing toward grenade
+	float DotSize = 12.f + 8.f * Urgency;
+	DrawRect(WarnCol, IX - DotSize * 0.5f, IY - DotSize * 0.5f, DotSize, DotSize);
+
+	// "GRENADE" text
+	if (Urgency > 0.3f && HUDFont)
+	{
+		FString Text = TEXT("! GRENADE !");
+		float TW, TH;
+		GetTextSize(Text, TW, TH, HUDFont, 1.f);
+		DrawText(Text, WarnCol, CX - TW * 0.5f,
+			CY + Canvas->SizeY * 0.25f, HUDFont, 1.f);
+	}
 }

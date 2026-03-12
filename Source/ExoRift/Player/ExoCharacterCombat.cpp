@@ -1,20 +1,19 @@
-// ExoCharacterCombat.cpp — DBNO, revive, execution, and death systems
+// ExoCharacterCombat.cpp — DBNO, revive, and execution systems
+// Die() is in ExoCharacterDeath.cpp
 #include "Player/ExoCharacter.h"
 #include "Player/ExoPlayerController.h"
-#include "Player/ExoInventoryComponent.h"
 #include "Player/ExoKillStreakComponent.h"
-#include "Weapons/ExoWeaponBase.h"
-#include "Weapons/ExoDeathBox.h"
-#include "Core/ExoGameMode.h"
 #include "Core/ExoPlayerState.h"
-#include "Core/ExoAudioManager.h"
-#include "Visual/ExoDeathEffect.h"
-#include "Visual/ExoCharacterModel.h"
+#include "Visual/ExoExecutionEffect.h"
+#include "Visual/ExoKillScorch.h"
 #include "Visual/ExoScreenShake.h"
-#include "UI/ExoPickupNotification.h"
-#include "UI/ExoKillAnnouncer.h"
-#include "Components/CapsuleComponent.h"
+#include "Visual/ExoDBNOTrail.h"
+#include "Visual/ExoDBNOBeacon.h"
+#include "Visual/ExoMaterialFactory.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ExoRift.h"
 
 void AExoCharacter::EnterDBNO()
@@ -30,6 +29,9 @@ void AExoCharacter::EnterDBNO()
 	StopSprint();
 	if (bIsSliding) StopSlide();
 	GetCharacterMovement()->MaxWalkSpeed = DBNOCrawlSpeed;
+	LastDBNOTrailPos = GetActorLocation();
+	DBNOTrailTimer = 0.f;
+	DBNOBeacon = AExoDBNOBeacon::SpawnBeacon(GetWorld(), this);
 	UE_LOG(LogExoRift, Log, TEXT("%s is DBNO"), *GetName());
 }
 
@@ -42,6 +44,19 @@ void AExoCharacter::TickDBNO(float DeltaTime)
 
 	// Duration-based bleed-out timer (auto-eliminate after DBNODuration seconds)
 	DBNOTimer += DeltaTime;
+
+	// DBNO crawl trail — energy bleed marks on ground
+	DBNOTrailTimer -= DeltaTime;
+	if (DBNOTrailTimer <= 0.f)
+	{
+		float DistMoved = FVector::Dist2D(GetActorLocation(), LastDBNOTrailPos);
+		if (DistMoved > 30.f)
+		{
+			AExoDBNOTrail::SpawnMark(GetWorld(), GetActorLocation());
+			LastDBNOTrailPos = GetActorLocation();
+		}
+		DBNOTrailTimer = 0.25f;
+	}
 
 	if (DBNOHealthRemaining <= 0.f || DBNOTimer >= DBNODuration)
 	{
@@ -58,7 +73,37 @@ void AExoCharacter::TickDBNO(float DeltaTime)
 		if (ReviveProgress >= 1.f)
 		{
 			CompleteRevive();
+			return;
 		}
+	}
+
+	// Revive progress visual ring
+	if (bIsBeingRevived && ReviveProgress > 0.f)
+	{
+		if (!ReviveRing) SpawnReviveRingEffect();
+
+		if (ReviveRing)
+		{
+			float RingScale = 0.5f + ReviveProgress * 2.f;
+			ReviveRing->SetRelativeScale3D(FVector(RingScale, RingScale, 0.02f));
+
+			// Pulse the emissive brightness with progress
+			if (UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(
+				ReviveRing->GetMaterial(0)))
+			{
+				float Brightness = 2.f + ReviveProgress * 8.f;
+				MID->SetVectorParameterValue(TEXT("EmissiveColor"),
+					FLinearColor(0.5f * Brightness, 8.f * Brightness, 2.f * Brightness));
+			}
+		}
+		if (ReviveLight)
+		{
+			ReviveLight->SetIntensity(20000.f * ReviveProgress);
+		}
+	}
+	else if (ReviveRing)
+	{
+		DestroyReviveRingEffect();
 	}
 }
 
@@ -79,6 +124,7 @@ void AExoCharacter::StopRevive()
 	bIsBeingRevived = false;
 	ReviveProgress = 0.f;
 	CurrentReviver = nullptr;
+	DestroyReviveRingEffect();
 }
 
 void AExoCharacter::CompleteRevive()
@@ -98,10 +144,64 @@ void AExoCharacter::CompleteRevive()
 	DBNOTimer = 0.f;
 	DBNOHealthRemaining = 0.f;
 	CurrentReviver = nullptr;
+	DestroyReviveRingEffect();
+	if (DBNOBeacon) { DBNOBeacon->DestroyBeacon(); DBNOBeacon = nullptr; }
 
 	Health = ReviveHealthRestore;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 	UE_LOG(LogExoRift, Log, TEXT("%s has been revived with %.0f HP"), *GetName(), Health);
+}
+
+// --- Revive Ring Effect ---
+
+void AExoCharacter::SpawnReviveRingEffect()
+{
+	UStaticMesh* CylMesh = LoadObject<UStaticMesh>(nullptr,
+		TEXT("/Engine/BasicShapes/Cylinder"));
+	if (CylMesh)
+	{
+		ReviveRing = NewObject<UStaticMeshComponent>(this);
+		ReviveRing->SetupAttachment(GetRootComponent());
+		ReviveRing->SetStaticMesh(CylMesh);
+		ReviveRing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ReviveRing->CastShadow = false;
+		ReviveRing->SetRelativeLocation(FVector(0.f, 0.f, 5.f));
+		ReviveRing->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.02f));
+		ReviveRing->RegisterComponent();
+
+		UMaterialInterface* AddMat = FExoMaterialFactory::GetEmissiveAdditive();
+		if (AddMat)
+		{
+			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(AddMat, this);
+			if (!MID) { return; }
+			MID->SetVectorParameterValue(TEXT("EmissiveColor"),
+				FLinearColor(0.5f, 8.f, 2.f)); // Green revive glow
+			ReviveRing->SetMaterial(0, MID);
+		}
+	}
+
+	ReviveLight = NewObject<UPointLightComponent>(this);
+	ReviveLight->SetupAttachment(GetRootComponent());
+	ReviveLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+	ReviveLight->SetIntensity(0.f);
+	ReviveLight->SetAttenuationRadius(500.f);
+	ReviveLight->SetLightColor(FLinearColor(0.2f, 1.f, 0.3f));
+	ReviveLight->CastShadows = false;
+	ReviveLight->RegisterComponent();
+}
+
+void AExoCharacter::DestroyReviveRingEffect()
+{
+	if (ReviveRing)
+	{
+		ReviveRing->DestroyComponent();
+		ReviveRing = nullptr;
+	}
+	if (ReviveLight)
+	{
+		ReviveLight->DestroyComponent();
+		ReviveLight = nullptr;
+	}
 }
 
 // --- Execution (Finisher) ---
@@ -170,124 +270,30 @@ void AExoCharacter::TickExecution(float DeltaTime)
 		bIsExecuting = false;
 		ExecutionTarget = nullptr;
 
+		// Spawn execution-specific VFX before killing the target
+		{
+			FActorSpawnParameters FXParams;
+			FXParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AExoExecutionEffect* ExecFX = GetWorld()->SpawnActor<AExoExecutionEffect>(
+				AExoExecutionEffect::StaticClass(),
+				Target->GetActorLocation() + FVector(0.f, 0.f, 50.f),
+				FRotator::ZeroRotator, FXParams);
+			if (ExecFX)
+			{
+				ExecFX->Init(FLinearColor(1.f, 0.3f, 0.1f), GetActorLocation());
+			}
+		}
+		FExoScreenShake::AddExplosionShake(Target->GetActorLocation(),
+			Target->GetActorLocation(), 4000.f, 0.5f);
+
+		// Execution scorch (large, headshot-sized)
+		AExoKillScorch::SpawnScorch(GetWorld(), Target->GetActorLocation(), true);
+
 		// Eliminate the target — executor gets kill credit
 		Target->Die(GetController(), TEXT("Execution"));
 		UE_LOG(LogExoRift, Log, TEXT("%s finished executing %s"), *GetName(), *Target->GetName());
 	}
 }
 
-void AExoCharacter::Die(AController* Killer, const FString& WeaponName)
-{
-	if (bIsDead) return;
-	bIsDead = true;
-
-	StopFire();
-
-	// Ragdoll
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCharacterMovement()->DisableMovement();
-
-	// Collect weapon info, then spawn a death box containing all loot
-	if (InventoryComp)
-	{
-		TArray<TPair<EWeaponType, EWeaponRarity>> WeaponList;
-		for (int32 i = 0; i < InventoryComp->GetSlotCount(); i++)
-		{
-			AExoWeaponBase* W = InventoryComp->GetWeapon(i);
-			if (W)
-			{
-				WeaponList.Add(TPair<EWeaponType, EWeaponRarity>(W->GetWeaponType(), W->Rarity));
-				// Destroy weapon actor directly (don't spawn individual pickups)
-				W->StopFire();
-				W->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-				W->Destroy();
-			}
-		}
-
-		// Spawn death box
-		if (WeaponList.Num() > 0)
-		{
-			FActorSpawnParameters BoxParams;
-			BoxParams.SpawnCollisionHandlingOverride =
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			AExoDeathBox* Box = GetWorld()->SpawnActor<AExoDeathBox>(
-				AExoDeathBox::StaticClass(),
-				GetActorLocation() + FVector(0.f, 0.f, 30.f),
-				FRotator::ZeroRotator, BoxParams);
-			if (Box)
-			{
-				FString Name = GetPlayerState()
-					? GetPlayerState()->GetPlayerName() : GetName();
-				Box->InitFromPlayer(Name, WeaponList);
-			}
-		}
-	}
-
-	// Death energy burst effect
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride =
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AExoDeathEffect* FX = GetWorld()->SpawnActor<AExoDeathEffect>(
-			AExoDeathEffect::StaticClass(),
-			GetActorLocation() + FVector(0.f, 0.f, 50.f),
-			FRotator::ZeroRotator, SpawnParams);
-		if (FX)
-		{
-			FLinearColor AccentCol(0.2f, 0.5f, 1.f);
-			FX->Init(AccentCol);
-		}
-	}
-
-	// Death screen shake for nearby players
-	FExoScreenShake::AddExplosionShake(GetActorLocation(),
-		GetActorLocation(), 3000.f, 0.3f);
-
-	// Register kill streak for the killer
-	if (Killer)
-	{
-		AExoCharacter* KillerChar = Cast<AExoCharacter>(Killer->GetPawn());
-		if (KillerChar && KillerChar->KillStreakComp)
-		{
-			KillerChar->KillStreakComp->RegisterKill();
-			int32 Streak = KillerChar->KillStreakComp->GetCurrentStreak();
-
-			// Kill announcer (First Blood, Double Kill, etc.)
-			if (KillerChar->IsLocallyControlled())
-			{
-				FExoKillAnnouncer::RegisterKill();
-			}
-
-			// Streak audio and notification
-			if (KillerChar->IsLocallyControlled() && Streak >= 2)
-			{
-				FString StreakText;
-				if (Streak == 2) StreakText = TEXT("Double Kill!");
-				else if (Streak == 3) StreakText = TEXT("Triple Kill!");
-				else if (Streak == 4) StreakText = TEXT("Quad Kill!");
-				else if (Streak >= 5) StreakText = KillerChar->KillStreakComp->GetStreakName();
-
-				if (!StreakText.IsEmpty())
-				{
-					FExoPickupNotification::ShowElimination(StreakText, false);
-				}
-			}
-		}
-	}
-
-	// Notify game mode
-	if (AExoGameMode* GM = GetWorld()->GetAuthGameMode<AExoGameMode>())
-	{
-		GM->OnPlayerEliminated(GetController(), Killer, WeaponName);
-	}
-
-	// Transition the owning player controller to spectator mode
-	if (AExoPlayerController* ExoPC = Cast<AExoPlayerController>(GetController()))
-	{
-		ExoPC->OnCharacterDied(Killer);
-	}
-
-	UE_LOG(LogExoRift, Log, TEXT("%s eliminated"), *GetName());
-}
+// Die() moved to ExoCharacterDeath.cpp

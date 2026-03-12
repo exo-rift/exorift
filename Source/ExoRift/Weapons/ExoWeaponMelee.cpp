@@ -6,7 +6,9 @@
 #include "Visual/ExoPostProcess.h"
 #include "Visual/ExoTracerManager.h"
 #include "Visual/ExoScreenShake.h"
+#include "Visual/ExoMeleeSlash.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoMusicManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
 #include "ExoRift.h"
@@ -37,6 +39,10 @@ void AExoWeaponMelee::FireShot()
 
 	FVector Start; FRotator ViewDir;
 	PC->GetPlayerViewPoint(Start, ViewDir);
+
+	// Plasma blade slash arc VFX
+	AExoMeleeSlash::SpawnSlash(GetWorld(),
+		Start + ViewDir.Vector() * 60.f, ViewDir.Vector());
 	FCollisionQueryParams QParams;
 	QParams.AddIgnoredActor(this);
 	QParams.AddIgnoredActor(OwnerPawn);
@@ -78,6 +84,10 @@ void AExoWeaponMelee::FireShot()
 	if (HitChar && OwnerPawn->IsLocallyControlled())
 	{
 		FExoHitMarker::AddHitMarker(bWillKill, bHeadshot);
+
+		// Notify adaptive music of combat (attacker dealing damage)
+		if (auto* Music = UExoMusicManager::Get(GetWorld()))
+			Music->NotifyCombatEvent();
 		if (bWillKill) { if (auto* PP = AExoPostProcess::Get(GetWorld())) PP->TriggerKillEffect(); }
 		if (auto* Audio = UExoAudioManager::Get(GetWorld()))
 		{

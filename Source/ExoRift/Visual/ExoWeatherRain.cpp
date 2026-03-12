@@ -40,9 +40,10 @@ void AExoWeatherSystem::InitRainMeshes()
 		if (BaseMat)
 		{
 			UMaterialInstanceDynamic* RM = UMaterialInstanceDynamic::Create(BaseMat, this);
+			if (!RM) { return; }
 			// Cool blue-white rain streaks
 			RM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.4f, 0.5f, 0.8f));
+				FLinearColor(0.9f, 1.1f, 1.8f));
 			M->SetMaterial(0, RM);
 		}
 
@@ -113,8 +114,8 @@ void AExoWeatherSystem::UpdateLightning(float DeltaTime)
 
 				if (WeatherLightComp)
 				{
-					WeatherLightComp->SetIntensity(8.f * LightningAlpha);
-					WeatherLightComp->SetLightColor(FLinearColor(0.8f, 0.85f, 1.f));
+					WeatherLightComp->SetIntensity(18.f * LightningAlpha);
+					WeatherLightComp->SetLightColor(FLinearColor(1.8f, 1.9f, 2.2f));
 				}
 
 				if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
@@ -159,11 +160,11 @@ void AExoWeatherSystem::UpdateLightning(float DeltaTime)
 	{
 		if (WeatherLightComp)
 		{
-			float FillIntensity = (1.f - CurrentVisibility) * 0.5f;
+			float FillIntensity = (1.f - CurrentVisibility) * 1.1f;
 			WeatherLightComp->SetIntensity(
 				FMath::FInterpTo(WeatherLightComp->Intensity, FillIntensity,
 					DeltaTime, 5.f));
-			WeatherLightComp->SetLightColor(FLinearColor(0.3f, 0.35f, 0.5f));
+			WeatherLightComp->SetLightColor(FLinearColor(0.66f, 0.77f, 1.1f));
 		}
 	}
 }

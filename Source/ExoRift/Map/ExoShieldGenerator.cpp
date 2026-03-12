@@ -50,7 +50,7 @@ AExoShieldGenerator::AExoShieldGenerator()
 	CoreLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CoreLight"));
 	CoreLight->SetupAttachment(BaseMesh);
 	CoreLight->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	CoreLight->SetIntensity(8000.f);
+	CoreLight->SetIntensity(18000.f);
 	CoreLight->SetAttenuationRadius(ShieldRadius * 1.5f);
 	CoreLight->CastShadows = false;
 }
@@ -64,6 +64,7 @@ void AExoShieldGenerator::BeginPlay()
 	{
 		UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(
 			BaseMesh->GetMaterial(0), this);
+		if (!BM) { return; }
 		BM->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.06f, 0.065f, 0.08f));
 		BaseMesh->SetMaterial(0, BM);
@@ -72,15 +73,17 @@ void AExoShieldGenerator::BeginPlay()
 	if (PylonMesh->GetStaticMesh())
 	{
 		UMaterialInstanceDynamic* PM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!PM) { return; }
 		PM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			ShieldColor * 3.f);
+			ShieldColor * 7.f);
 		PylonMesh->SetMaterial(0, PM);
 	}
 	if (ShieldDome->GetStaticMesh())
 	{
 		DomeMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!DomeMat) { return; }
 		DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			ShieldColor * 2.f);
+			ShieldColor * 5.f);
 		ShieldDome->SetMaterial(0, DomeMat);
 	}
 	CoreLight->SetLightColor(ShieldColor);
@@ -110,9 +113,9 @@ void AExoShieldGenerator::Tick(float DeltaTime)
 	if (DomeMat)
 	{
 		DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			ShieldColor * 2.f * Pulse * HealthPct);
+			ShieldColor * 5.f * Pulse * HealthPct);
 	}
-	CoreLight->SetIntensity(8000.f * Pulse * HealthPct);
+	CoreLight->SetIntensity(18000.f * Pulse * HealthPct);
 }
 
 float AExoShieldGenerator::TakeDamage(float Damage, const FDamageEvent& Event,

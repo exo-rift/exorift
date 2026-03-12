@@ -74,7 +74,14 @@ struct FKillFeedEntry
 	FString WeaponName;
 
 	UPROPERTY()
+	EWeaponType WeaponType = EWeaponType::Rifle;
+
+	UPROPERTY()
 	float Timestamp = 0.f;
+
+	/** True when the kill was from environment (zone, fall, etc.) rather than a weapon. */
+	UPROPERTY()
+	bool bEnvironmentKill = false;
 };
 
 USTRUCT()

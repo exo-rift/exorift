@@ -59,7 +59,7 @@ AExoShieldBubbleActor::AExoShieldBubbleActor()
 	// Interior shield glow
 	ShieldLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ShieldLight"));
 	ShieldLight->SetupAttachment(DomeMesh);
-	ShieldLight->SetIntensity(60000.f);
+	ShieldLight->SetIntensity(140000.f);
 	ShieldLight->SetAttenuationRadius(3000.f);
 	ShieldLight->SetLightColor(FLinearColor(0.1f, 0.8f, 1.f));
 	ShieldLight->CastShadows = false;
@@ -68,7 +68,7 @@ AExoShieldBubbleActor::AExoShieldBubbleActor()
 	TopLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("TopLight"));
 	TopLight->SetupAttachment(DomeMesh);
 	TopLight->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	TopLight->SetIntensity(20000.f);
+	TopLight->SetIntensity(45000.f);
 	TopLight->SetAttenuationRadius(1500.f);
 	TopLight->SetLightColor(FLinearColor(0.2f, 0.9f, 1.f));
 	TopLight->CastShadows = false;
@@ -94,26 +94,30 @@ void AExoShieldBubbleActor::Init()
 
 	// Outer dome — translucent cyan
 	DomeMat = UMaterialInstanceDynamic::Create(EmMat, this);
+	if (!DomeMat) { return; }
 	DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(0.5f, 3.f, 5.f));
+		FLinearColor(1.2f, 7.f, 12.f));
 	DomeMesh->SetMaterial(0, DomeMat);
 
 	// Inner dome — dimmer, slightly different hue
 	InnerMat = UMaterialInstanceDynamic::Create(EmMat, this);
+	if (!InnerMat) { return; }
 	InnerMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(0.3f, 1.5f, 3.f));
+		FLinearColor(0.7f, 3.5f, 7.f));
 	InnerDome->SetMaterial(0, InnerMat);
 
 	// Base ring — bright accent
 	RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
+	if (!RingMat) { return; }
 	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(1.f, 6.f, 10.f));
+		FLinearColor(2.5f, 14.f, 22.f));
 	BaseRing->SetMaterial(0, RingMat);
 
 	// Top crown — bright white-cyan
 	UMaterialInstanceDynamic* CrownMat = UMaterialInstanceDynamic::Create(EmMat, this);
+	if (!CrownMat) { return; }
 	CrownMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(2.f, 8.f, 12.f));
+		FLinearColor(5.f, 18.f, 28.f));
 	TopCrown->SetMaterial(0, CrownMat);
 
 	// Surface arcs — bright energy crawlers
@@ -121,7 +125,7 @@ void AExoShieldBubbleActor::Init()
 	{
 		ArcMats[i] = UMaterialInstanceDynamic::Create(EmMat, this);
 		ArcMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(3.f, 10.f, 15.f));
+			FLinearColor(7.f, 22.f, 35.f));
 		SurfaceArcs[i]->SetMaterial(0, ArcMats[i]);
 	}
 }
@@ -174,20 +178,20 @@ void AExoShieldBubbleActor::Tick(float DeltaTime)
 	if (DomeMat)
 	{
 		DomeMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.5f * EmScale, 3.f * EmScale, 5.f * EmScale));
+			FLinearColor(1.2f * EmScale, 7.f * EmScale, 12.f * EmScale));
 	}
 	// Inner dome — counter-phase pulse
 	if (InnerMat)
 	{
 		float InnerPulse = 1.f + 0.2f * FMath::Sin(Time * 5.f + PI * 0.5f);
 		InnerMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.3f * EmScale * InnerPulse,
-				1.5f * EmScale * InnerPulse, 3.f * EmScale * InnerPulse));
+			FLinearColor(0.7f * EmScale * InnerPulse,
+				3.5f * EmScale * InnerPulse, 7.f * EmScale * InnerPulse));
 	}
 
 	// Lights follow intensity
-	ShieldLight->SetIntensity(60000.f * EmScale * (1.f - T * 0.5f));
-	TopLight->SetIntensity(20000.f * EmScale * (1.f - T * 0.5f));
+	ShieldLight->SetIntensity(140000.f * EmScale * (1.f - T * 0.5f));
+	TopLight->SetIntensity(45000.f * EmScale * (1.f - T * 0.5f));
 
 	// Surface arcs — crawl across dome surface
 	for (int32 i = 0; i < NUM_ARCS; i++)

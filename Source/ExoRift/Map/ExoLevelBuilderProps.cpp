@@ -69,16 +69,24 @@ void AExoLevelBuilder::BuildProps()
 	};
 	for (const FVector& CP : CornerPositions)
 	{
-		// Dish = flat cylinder tilted upward
-		SpawnStaticMesh(CP + FVector(0.f, 0.f, 200.f),
-			FVector(8.f, 8.f, 0.5f),
-			FRotator(30.f, FMath::RandRange(0.f, 360.f), 0.f),
-			CylinderMesh, FLinearColor(0.15f, 0.15f, 0.17f));
-
-		// Dish support pillar
-		SpawnStaticMesh(CP,
-			FVector(1.f, 1.f, 2.f), FRotator::ZeroRotator,
-			CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
+		// Use KayKit solar panel if available
+		if (bHasKayKitAssets && KK_SolarPanel)
+		{
+			SpawnRawMesh(CP - FVector(0.f, 0.f, 2000.f), FVector(3.f),
+				FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f), KK_SolarPanel);
+		}
+		else
+		{
+			// Dish = flat cylinder tilted upward
+			SpawnStaticMesh(CP + FVector(0.f, 0.f, 200.f),
+				FVector(8.f, 8.f, 0.5f),
+				FRotator(30.f, FMath::RandRange(0.f, 360.f), 0.f),
+				CylinderMesh, FLinearColor(0.15f, 0.15f, 0.17f));
+			// Dish support pillar
+			SpawnStaticMesh(CP,
+				FVector(1.f, 1.f, 2.f), FRotator::ZeroRotator,
+				CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
+		}
 	}
 
 	// === ROAD INTERSECTION FURNITURE ===
@@ -110,8 +118,9 @@ void AExoLevelBuilder::BuildProps()
 			{
 				UMaterialInterface* CapEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 				UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CapEmissiveMat, this);
+				if (!CM) { return; }
 				CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(2.f, 1.2f, 0.3f));
+					FLinearColor(5.f, 3.f, 0.8f));
 				Cap->SetMaterial(0, CM);
 			}
 		}
@@ -135,10 +144,25 @@ void AExoLevelBuilder::BuildProps()
 		// Central hub
 		{{6500.f, 3000.f, 300.f},    45.f,  FLinearColor(0.1f, 0.08f, 0.04f)},
 	};
-	for (const auto& C : Containers)
+	for (int32 ci = 0; ci < Containers.Num(); ci++)
 	{
-		SpawnStaticMesh(C.Pos, FVector(12.f, 5.f, 6.f),
-			FRotator(0.f, C.Yaw, 0.f), CubeMesh, C.Color);
+		const auto& C = Containers[ci];
+		// Use KayKit container mesh if available, else fall back to primitive
+		if (bHasKayKitAssets && KK_Container && (ci % 2 == 0))
+		{
+			SpawnRawMesh(C.Pos - FVector(0.f, 0.f, 300.f), FVector(2.f),
+				FRotator(0.f, C.Yaw, 0.f), KK_Container);
+		}
+		else if (bHasKayKitAssets && KK_Cargo && (ci % 2 == 1))
+		{
+			SpawnRawMesh(C.Pos - FVector(0.f, 0.f, 300.f), FVector(2.f),
+				FRotator(0.f, C.Yaw, 0.f), KK_Cargo);
+		}
+		else
+		{
+			SpawnStaticMesh(C.Pos, FVector(12.f, 5.f, 6.f),
+				FRotator(0.f, C.Yaw, 0.f), CubeMesh, C.Color);
+		}
 	}
 
 	// === CRASHED VEHICLE HULKS at road intersections ===
@@ -158,10 +182,31 @@ void AExoLevelBuilder::BuildProps()
 			FVector(0.6f, 4.f, 0.6f), WRot, CylinderMesh, FLinearColor(0.04f, 0.04f, 0.04f));
 	};
 
-	SpawnWreck(FVector(15000.f, 3000.f, GroundZ), 35.f, 3.f);
-	SpawnWreck(FVector(-25000.f, -1500.f, GroundZ), -10.f, -2.f);
-	SpawnWreck(FVector(45000.f, 45000.f, GroundZ), 70.f, 5.f);
-	SpawnWreck(FVector(-60000.f, -50000.f, GroundZ), 140.f, -4.f);
+	struct FWreckData { FVector Pos; float Yaw; float Tilt; };
+	TArray<FWreckData> Wrecks = {
+		{{15000.f, 3000.f, GroundZ}, 35.f, 3.f},
+		{{-25000.f, -1500.f, GroundZ}, -10.f, -2.f},
+		{{45000.f, 45000.f, GroundZ}, 70.f, 5.f},
+		{{-60000.f, -50000.f, GroundZ}, 140.f, -4.f},
+	};
+	for (int32 wi = 0; wi < Wrecks.Num(); wi++)
+	{
+		const auto& W = Wrecks[wi];
+		if (bHasKayKitAssets && KK_SpaceTruck && (wi % 2 == 0))
+		{
+			SpawnRawMesh(W.Pos, FVector(2.5f),
+				FRotator(W.Tilt, W.Yaw, 0.f), KK_SpaceTruck);
+		}
+		else if (bHasKayKitAssets && KK_Lander && (wi % 2 == 1))
+		{
+			SpawnRawMesh(W.Pos, FVector(2.f),
+				FRotator(W.Tilt * 2.f, W.Yaw, W.Tilt), KK_Lander);
+		}
+		else
+		{
+			SpawnWreck(W.Pos, W.Yaw, W.Tilt);
+		}
+	}
 
 	// === BARRICADES — tactical cover between compounds ===
 	auto SpawnBarricade = [&](const FVector& Pos, float Yaw, float Width)
@@ -232,6 +277,43 @@ void AExoLevelBuilder::BuildProps()
 	SpawnDamagedWall(FVector(-20000.f, -60000.f, GroundZ), 120.f);
 	SpawnDamagedWall(FVector(35000.f, -55000.f, GroundZ), 45.f);
 
+	// === QUATERNIUS CRATES & CONTAINERS at cargo areas ===
+	if (bHasQuaterniusAssets)
+	{
+		if (QT_PropsContainerFull)
+		{
+			// North compound cargo staging
+			SpawnRawMesh(FVector(-6000.f, 85000.f, 0.f), FVector(2.f), FRotator(0.f, 10.f, 0.f), QT_PropsContainerFull);
+			SpawnRawMesh(FVector(-3000.f, 85000.f, 0.f), FVector(2.f), FRotator(0.f, -5.f, 0.f), QT_PropsContainerFull);
+			// East power yard
+			SpawnRawMesh(FVector(83000.f, -3000.f, 0.f), FVector(2.f), FRotator(0.f, 85.f, 0.f), QT_PropsContainerFull);
+		}
+		if (QT_PropsCrate)
+		{
+			// Central hub interior crates
+			SpawnRawMesh(FVector(5000.f, 2000.f, 0.f), FVector(1.5f), FRotator(0.f, 20.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(5000.f, -2000.f, 0.f), FVector(1.5f), FRotator(0.f, -15.f, 0.f), QT_PropsCrate);
+			// West barracks supply crates
+			SpawnRawMesh(FVector(-79000.f, 7000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(-79000.f, -7000.f, 0.f), FVector(1.5f), FRotator(0.f, 30.f, 0.f), QT_PropsCrate);
+		}
+		if (QT_PropsComputer)
+		{
+			// South research lab computers
+			SpawnRawMesh(FVector(2000.f, -81000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsComputer);
+			SpawnRawMesh(FVector(-4000.f, -80000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsComputer);
+		}
+		if (QT_PropsShelf)
+		{
+			// North warehouse storage shelves
+			SpawnRawMesh(FVector(-7000.f, 82000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
+			SpawnRawMesh(FVector(-7000.f, 83500.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
+			// East compound
+			SpawnRawMesh(FVector(80000.f, 4000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsShelf);
+		}
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Quaternius props placed at compounds"));
+	}
+
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Props, containers, barricades, and vehicles placed"));
 }
 
@@ -243,6 +325,14 @@ void AExoLevelBuilder::SpawnLightPost(const FVector& Base, float Height, const F
 		SpawnStaticMesh(Base + FVector(0.f, 0.f, Height * 0.5f),
 			FVector(0.3f, 0.3f, Height / 100.f), FRotator::ZeroRotator,
 			CylinderMesh, FLinearColor(0.12f, 0.12f, 0.14f));
+		// Base plate (wider foot)
+		SpawnStaticMesh(Base + FVector(0.f, 0.f, 10.f),
+			FVector(0.5f, 0.5f, 0.1f), FRotator::ZeroRotator,
+			CylinderMesh, FLinearColor(0.1f, 0.1f, 0.12f));
+		// Fixture housing (downward-facing lamp shade)
+		SpawnStaticMesh(Base + FVector(0.f, 0.f, Height + 5.f),
+			FVector(0.5f, 0.5f, 0.12f), FRotator::ZeroRotator,
+			CylinderMesh, FLinearColor(0.08f, 0.08f, 0.1f));
 	}
 
 	// Light fixture at top
@@ -251,15 +341,15 @@ void AExoLevelBuilder::SpawnLightPost(const FVector& Base, float Height, const F
 	UPointLightComponent* Light = NewObject<UPointLightComponent>(this);
 	Light->SetupAttachment(RootComponent);
 	Light->SetWorldLocation(LightPos);
-	Light->SetIntensity(3000.f);
-	Light->SetAttenuationRadius(1500.f);
+	Light->SetIntensity(6000.f);
+	Light->SetAttenuationRadius(2500.f);
 	Light->SetLightColor(Color);
 	Light->CastShadows = false;
 	Light->RegisterComponent();
 
 	// Small visible bulb sphere
 	SpawnStaticMesh(LightPos, FVector(0.15f, 0.15f, 0.1f),
-		FRotator::ZeroRotator, SphereMesh, Color * 3.f);
+		FRotator::ZeroRotator, SphereMesh, Color * 8.f);
 }
 
 void AExoLevelBuilder::SpawnAntenna(const FVector& Base, float Height)
@@ -274,8 +364,8 @@ void AExoLevelBuilder::SpawnAntenna(const FVector& Base, float Height)
 	UPointLightComponent* Beacon = NewObject<UPointLightComponent>(this);
 	Beacon->SetupAttachment(RootComponent);
 	Beacon->SetWorldLocation(TopPos);
-	Beacon->SetIntensity(5000.f);
-	Beacon->SetAttenuationRadius(3000.f);
+	Beacon->SetIntensity(3000.f);
+	Beacon->SetAttenuationRadius(2000.f);
 	Beacon->SetLightColor(FLinearColor(1.f, 0.05f, 0.02f));
 	Beacon->CastShadows = false;
 	Beacon->RegisterComponent();
@@ -307,6 +397,13 @@ void AExoLevelBuilder::SpawnPipeRun(const FVector& Start, const FVector& End, fl
 	SpawnStaticMesh(Mid, FVector(ScaleXY, ScaleXY, ScaleZ), Rot,
 		CylinderMesh, FLinearColor(0.08f, 0.09f, 0.1f));
 
+	// Junction nodes at start and end (rounded fittings)
+	float NodeScale = Radius / 30.f;
+	SpawnStaticMesh(Start, FVector(NodeScale), FRotator::ZeroRotator,
+		SphereMesh, FLinearColor(0.07f, 0.07f, 0.09f));
+	SpawnStaticMesh(End, FVector(NodeScale), FRotator::ZeroRotator,
+		SphereMesh, FLinearColor(0.07f, 0.07f, 0.09f));
+
 	// Support pylons every 20000 units
 	int32 NumSupports = FMath::Max(1, FMath::FloorToInt(Length / 20000.f));
 	FVector DirNorm = Dir.GetSafeNormal();
@@ -321,6 +418,11 @@ void AExoLevelBuilder::SpawnPipeRun(const FVector& Start, const FVector& End, fl
 				FVector(SupportPos.X, SupportPos.Y, GroundZ + SupportHeight * 0.5f),
 				FVector(0.4f, 0.4f, SupportHeight / 100.f), FRotator::ZeroRotator,
 				CubeMesh, FLinearColor(0.1f, 0.1f, 0.12f));
+
+			// Insulation wrap at support (thicker pipe collar)
+			SpawnStaticMesh(SupportPos,
+				FVector(ScaleXY * 1.3f, ScaleXY * 1.3f, 1.f), Rot,
+				CylinderMesh, FLinearColor(0.06f, 0.06f, 0.07f));
 		}
 	}
 }

@@ -59,7 +59,7 @@ private:
 	TArray<FVector> SparkVelocities;
 
 	// Helix orbiters — small spheres spiraling around the beam
-	static constexpr int32 NUM_HELIX = 2;
+	static constexpr int32 NUM_HELIX = 4;
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> HelixOrbs;
 	float HelixAngle = 0.f;
@@ -109,7 +109,10 @@ private:
 	FLinearColor GlowColor;
 	FLinearColor BaseWeaponColor;
 
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
 };

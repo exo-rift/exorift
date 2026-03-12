@@ -8,6 +8,7 @@ class UCameraComponent;
 class UStaticMeshComponent;
 class UPointLightComponent;
 class AExoDropPodManager;
+class AExoKillScorch;
 
 UENUM()
 enum class EDropPodPhase : uint8
@@ -39,6 +40,10 @@ protected:
 	void UpdateThrusterVFX(float DeltaTime, float BrakeAlpha);
 	void UpdateLandedSequence(float DeltaTime);
 	void SpawnLandingDust();
+	void SpawnLandingScorch();
+	void BuildContrail();
+	void UpdateContrail(float DeltaTime);
+	void SpawnDoorSteam();
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* PodMesh;
@@ -112,9 +117,37 @@ protected:
 	UPointLightComponent* ImpactFlash = nullptr;
 	float DustAge = 0.f;
 
+	// Contrail (energy trail during descent)
+	static constexpr int32 CONTRAIL_SEGMENTS = 8;
+	UPROPERTY()
+	UStaticMeshComponent* ContrailSegments[CONTRAIL_SEGMENTS];
+	UPROPERTY()
+	UMaterialInstanceDynamic* ContrailMats[CONTRAIL_SEGMENTS];
+	UPROPERTY()
+	UPointLightComponent* ContrailLight = nullptr;
+	FVector PrevPodLocation = FVector::ZeroVector;
+	bool bContrailBuilt = false;
+
+	// Door open steam burst
+	static constexpr int32 STEAM_PUFFS = 6;
+	UPROPERTY()
+	UStaticMeshComponent* SteamPuffs[STEAM_PUFFS];
+	UPROPERTY()
+	UMaterialInstanceDynamic* SteamMats[STEAM_PUFFS];
+	FVector SteamVelocities[STEAM_PUFFS];
+	float SteamAge = -1.f; // Negative = not active
+	bool bDoorSteamSpawned = false;
+
+	// Landing scorch mark
+	bool bScorchSpawned = false;
+
 	// Cached meshes
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* ConeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 };

@@ -34,8 +34,8 @@ AExoRotatingProp::AExoRotatingProp()
 
 	AccentLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Accent"));
 	AccentLight->SetupAttachment(SpinningPart);
-	AccentLight->SetIntensity(3000.f);
-	AccentLight->SetAttenuationRadius(500.f);
+	AccentLight->SetIntensity(7000.f);
+	AccentLight->SetAttenuationRadius(900.f);
 	AccentLight->CastShadows = false;
 }
 
@@ -54,6 +54,7 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 	// Base pillar
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!M) { return; }
 		M->SetVectorParameterValue(TEXT("BaseColor"), DarkMetal);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -68,6 +69,7 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 	{
 	case 0: // Fan — flat blades rotating horizontally
 		SpinMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!SpinMat) { return; }
 		SpinningPart->SetRelativeScale3D(FVector(3.f, 0.1f, 0.5f) * PropScale);
 		SpinningPart->SetRelativeLocation(FVector(0.f, 0.f, 60.f * PropScale));
 		SpinMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
@@ -80,6 +82,7 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 
 	case 1: // Radar dish — tilted disk rotating
 		SpinMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!SpinMat) { return; }
 		SpinningPart->SetRelativeScale3D(FVector(2.f, 2.f, 0.08f) * PropScale);
 		SpinningPart->SetRelativeLocation(FVector(0.f, 0.f, 80.f * PropScale));
 		SpinningPart->SetRelativeRotation(FRotator(25.f, 0.f, 0.f));
@@ -94,13 +97,14 @@ void AExoRotatingProp::InitProp(int32 PropType, const FLinearColor& AccentColor,
 	case 2: // Energy coil — glowing ring that spins and bobs
 		SpinMat = UMaterialInstanceDynamic::Create(
 			FExoMaterialFactory::GetEmissiveAdditive(), this);
+		if (!SpinMat) { return; }
 		SpinningPart->SetRelativeScale3D(FVector(1.5f, 1.5f, 0.15f) * PropScale);
 		SpinningPart->SetRelativeLocation(FVector(0.f, 0.f, 100.f * PropScale));
 		SpinMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(AccentColor.R * 8.f, AccentColor.G * 8.f, AccentColor.B * 8.f));
+			FLinearColor(AccentColor.R * 18.f, AccentColor.G * 18.f, AccentColor.B * 18.f));
 		BobAmplitude = 15.f * PropScale;
 		BobFrequency = 1.5f;
-		AccentLight->SetIntensity(6000.f);
+		AccentLight->SetIntensity(14000.f);
 		break;
 	}
 

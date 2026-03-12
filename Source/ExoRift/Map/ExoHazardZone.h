@@ -5,6 +5,7 @@
 #include "ExoHazardZone.generated.h"
 
 class AExoCharacter;
+class USoundBase;
 class UStaticMeshComponent;
 class UPointLightComponent;
 class UMaterialInstanceDynamic;
@@ -54,6 +55,7 @@ protected:
 private:
 	void ApplyHazardDamage(float DeltaTime);
 	void UpdateVFX(float DeltaTime);
+	void UpdateHazardAudio(float DeltaTime);
 	FLinearColor GetHazardColor() const;
 
 	// Visual components
@@ -72,5 +74,12 @@ private:
 	UPROPERTY()
 	UMaterialInstanceDynamic* RingMat = nullptr;
 
+	// Ambient hum audio
+	UPROPERTY()
+	USoundBase* HumSound = nullptr;
+
 	float Age = 0.f;
+	float HumTimer = 0.f;
+	float BaseLightIntensity = 30000.f;
+	bool bPlayerInsideZone = false;
 };

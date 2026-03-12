@@ -33,7 +33,7 @@ AExoSteamVent::AExoSteamVent()
 	VentLight->SetupAttachment(Root);
 	VentLight->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
 	VentLight->SetIntensity(0.f);
-	VentLight->SetAttenuationRadius(600.f);
+	VentLight->SetAttenuationRadius(1000.f);
 	VentLight->CastShadows = false;
 
 	// Randomize initial timer so vents don't all fire simultaneously
@@ -54,8 +54,9 @@ void AExoSteamVent::InitVent(float InInterval, float InDuration,
 	for (auto* P : PuffMeshes)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(PuffMat, this);
+		if (!Mat) { continue; }
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(InColor.R * 2.f, InColor.G * 2.f, InColor.B * 2.f));
+			FLinearColor(InColor.R * 5.f, InColor.G * 5.f, InColor.B * 5.f));
 		P->SetMaterial(0, Mat);
 	}
 }
@@ -81,7 +82,7 @@ void AExoSteamVent::Tick(float DeltaTime)
 
 	// Light intensity: bright flash then fade
 	float LightAlpha = (T < 0.3f) ? T / 0.3f : (1.f - (T - 0.3f) / 0.7f);
-	VentLight->SetIntensity(15000.f * FMath::Max(LightAlpha, 0.f));
+	VentLight->SetIntensity(35000.f * FMath::Max(LightAlpha, 0.f));
 
 	// Animate each puff: rise upward, expand, then fade
 	for (int32 i = 0; i < PuffMeshes.Num(); i++)

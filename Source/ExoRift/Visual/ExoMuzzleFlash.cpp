@@ -45,15 +45,15 @@ AExoMuzzleFlash::AExoMuzzleFlash()
 
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(FlashCore);
-	FlashLight->SetIntensity(80000.f);
-	FlashLight->SetAttenuationRadius(1200.f);
+	FlashLight->SetIntensity(180000.f);
+	FlashLight->SetAttenuationRadius(1700.f);
 	FlashLight->CastShadows = false;
 
 	BounceLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("BounceLight"));
 	BounceLight->SetupAttachment(FlashCore);
 	BounceLight->SetRelativeLocation(FVector(0.f, 0.f, -100.f));
-	BounceLight->SetIntensity(25000.f);
-	BounceLight->SetAttenuationRadius(600.f);
+	BounceLight->SetIntensity(55000.f);
+	BounceLight->SetAttenuationRadius(850.f);
 	BounceLight->CastShadows = false;
 }
 
@@ -66,24 +66,24 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	switch (WeaponType)
 	{
 	case EWeaponType::Shotgun:
-		CoreScale = 0.80f; CrossScale = 0.90f; FlareScale = 0.75f;
-		RingScale = 1.3f; Lifetime = 0.16f;
+		CoreScale = 1.6f; CrossScale = 1.8f; FlareScale = 1.5f;
+		RingScale = 2.6f; Lifetime = 0.18f;
 		break;
 	case EWeaponType::Sniper:
-		CoreScale = 1.0f; CrossScale = 0.45f; FlareScale = 0.35f;
-		RingScale = 0.90f; Lifetime = 0.18f;
+		CoreScale = 2.0f; CrossScale = 0.9f; FlareScale = 0.7f;
+		RingScale = 1.8f; Lifetime = 0.22f;
 		break;
 	case EWeaponType::SMG:
-		CoreScale = 0.55f; CrossScale = 0.45f; FlareScale = 0.35f;
-		RingScale = 0.70f; Lifetime = 0.12f;
+		CoreScale = 1.0f; CrossScale = 0.9f; FlareScale = 0.7f;
+		RingScale = 1.4f; Lifetime = 0.12f;
 		break;
 	case EWeaponType::Pistol:
-		CoreScale = 0.65f; CrossScale = 0.55f; FlareScale = 0.45f;
-		RingScale = 0.85f; Lifetime = 0.14f;
+		CoreScale = 1.2f; CrossScale = 1.1f; FlareScale = 0.9f;
+		RingScale = 1.7f; Lifetime = 0.15f;
 		break;
 	default: // Rifle
-		CoreScale = 0.70f; CrossScale = 0.60f; FlareScale = 0.50f;
-		RingScale = 0.95f; Lifetime = 0.13f;
+		CoreScale = 1.4f; CrossScale = 1.2f; FlareScale = 1.0f;
+		RingScale = 1.9f; Lifetime = 0.14f;
 		break;
 	}
 
@@ -94,17 +94,17 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 
 	// Blazing emissive energy burst (extreme bloom for dramatic flash)
 	FLinearColor HotCenter(
-		WeaponColor.R * 120.f + 60.f,
-		WeaponColor.G * 120.f + 60.f,
-		WeaponColor.B * 120.f + 60.f);
+		WeaponColor.R * 550.f + 220.f,
+		WeaponColor.G * 550.f + 220.f,
+		WeaponColor.B * 550.f + 220.f);
 	FLinearColor FlareColor(
-		WeaponColor.R * 150.f,
-		WeaponColor.G * 150.f,
-		WeaponColor.B * 150.f);
+		WeaponColor.R * 700.f,
+		WeaponColor.G * 700.f,
+		WeaponColor.B * 700.f);
 	FLinearColor RingColor(
-		WeaponColor.R * 70.f,
-		WeaponColor.G * 70.f,
-		WeaponColor.B * 70.f);
+		WeaponColor.R * 320.f,
+		WeaponColor.G * 320.f,
+		WeaponColor.B * 320.f);
 
 	UMaterialInterface* BaseMat = FExoMaterialFactory::GetEmissiveAdditive();
 	if (BaseMat)
@@ -112,6 +112,7 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 		auto ApplyMat = [&](UStaticMeshComponent* Mesh, const FLinearColor& Col)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+			if (!Mat) { return; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), Col);
 			Mesh->SetMaterial(0, Mat);
 		};
@@ -122,12 +123,12 @@ void AExoMuzzleFlash::InitFlash(const FRotator& FireDirection,
 	}
 
 	FlashLight->SetLightColor(WeaponColor);
-	FlashLight->SetIntensity(400000.f);
-	FlashLight->SetAttenuationRadius(4000.f);
+	FlashLight->SetIntensity(1800000.f);
+	FlashLight->SetAttenuationRadius(8500.f);
 	BaseIntensity = FlashLight->Intensity;
 
 	BounceLight->SetLightColor(WeaponColor);
-	BounceLight->SetIntensity(120000.f);
+	BounceLight->SetIntensity(550000.f);
 }
 
 void AExoMuzzleFlash::Tick(float DeltaTime)
@@ -140,7 +141,7 @@ void AExoMuzzleFlash::Tick(float DeltaTime)
 	float AlphaCubed = Alpha * Alpha * Alpha;
 
 	FlashLight->SetIntensity(BaseIntensity * AlphaCubed);
-	BounceLight->SetIntensity(25000.f * AlphaCubed);
+	BounceLight->SetIntensity(55000.f * AlphaCubed);
 
 	if (FlashCore)
 	{

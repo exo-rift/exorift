@@ -1,6 +1,8 @@
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "ExoRift.h"
 
 UExoInteractionComponent::UExoInteractionComponent()
@@ -14,6 +16,7 @@ void UExoInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	UpdateTrace();
+	UpdateHighlight(DeltaTime);
 }
 
 void UExoInteractionComponent::TryInteract()
@@ -73,5 +76,79 @@ void UExoInteractionComponent::UpdateTrace()
 		{
 			CurrentInteractable = Hit.GetActor();
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Interactable highlight — custom depth + pulsing point light
+// ---------------------------------------------------------------------------
+
+void UExoInteractionComponent::UpdateHighlight(float DeltaTime)
+{
+	AActor* Current = CurrentInteractable.Get();
+	AActor* Previous = PreviousInteractable.Get();
+
+	// Focus changed — swap highlight
+	if (Current != Previous)
+	{
+		ClearHighlight(Previous);
+		ApplyHighlight(Current);
+		PreviousInteractable = Current;
+		HighlightPulsePhase = 0.f;
+	}
+
+	// Pulse the highlight light while focused
+	if (Current && HighlightLight)
+	{
+		HighlightPulsePhase += DeltaTime * 4.f;
+		float Pulse = 0.6f + 0.4f * FMath::Sin(HighlightPulsePhase);
+		HighlightLight->SetIntensity(3000.f * Pulse);
+		HighlightLight->SetWorldLocation(Current->GetActorLocation());
+	}
+}
+
+void UExoInteractionComponent::ApplyHighlight(AActor* Target)
+{
+	if (!Target) return;
+
+	// Enable custom depth on all primitive components for outline support
+	TArray<UPrimitiveComponent*> Primitives;
+	Target->GetComponents<UPrimitiveComponent>(Primitives);
+	for (UPrimitiveComponent* Prim : Primitives)
+	{
+		Prim->SetRenderCustomDepth(true);
+		Prim->SetCustomDepthStencilValue(1);
+	}
+
+	// Spawn a small pulsing light attached to the owner (interaction component)
+	// positioned at the interactable for an immediate glow effect
+	HighlightLight = NewObject<UPointLightComponent>(GetOwner());
+	if (HighlightLight)
+	{
+		HighlightLight->RegisterComponent();
+		HighlightLight->SetWorldLocation(Target->GetActorLocation());
+		HighlightLight->SetIntensity(3000.f);
+		HighlightLight->SetAttenuationRadius(200.f);
+		HighlightLight->SetLightColor(FLinearColor(0.3f, 0.7f, 1.f)); // Sci-fi cyan-blue
+		HighlightLight->SetCastShadows(false);
+	}
+}
+
+void UExoInteractionComponent::ClearHighlight(AActor* Target)
+{
+	if (Target)
+	{
+		TArray<UPrimitiveComponent*> Primitives;
+		Target->GetComponents<UPrimitiveComponent>(Primitives);
+		for (UPrimitiveComponent* Prim : Primitives)
+		{
+			Prim->SetRenderCustomDepth(false);
+		}
+	}
+
+	if (HighlightLight)
+	{
+		HighlightLight->DestroyComponent();
+		HighlightLight = nullptr;
 	}
 }

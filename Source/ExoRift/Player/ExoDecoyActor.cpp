@@ -47,7 +47,7 @@ AExoDecoyActor::AExoDecoyActor()
 	HoloLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("HoloLight"));
 	HoloLight->SetupAttachment(BodyMesh);
 	HoloLight->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
-	HoloLight->SetIntensity(8000.f);
+	HoloLight->SetIntensity(16000.f);
 	HoloLight->SetAttenuationRadius(500.f);
 	HoloLight->SetLightColor(FLinearColor(0.1f, 0.6f, 1.f));
 	HoloLight->CastShadows = false;
@@ -71,15 +71,17 @@ void AExoDecoyActor::BeginPlay()
 	if (EmissiveAdd)
 	{
 		HoloMat = UMaterialInstanceDynamic::Create(EmissiveAdd, this);
+		if (!HoloMat) { return; }
 		HoloMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.2f, 1.5f, 4.f));
+			FLinearColor(0.5f, 3.5f, 9.f));
 		BodyMesh->SetMaterial(0, HoloMat);
 		HeadMesh->SetMaterial(0, HoloMat);
 
 		// Base disk — dimmer accent
 		BaseMat = UMaterialInstanceDynamic::Create(EmissiveAdd, this);
+		if (!BaseMat) { return; }
 		BaseMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.1f, 0.8f, 2.f));
+			FLinearColor(0.25f, 1.8f, 4.5f));
 		BaseDisk->SetMaterial(0, BaseMat);
 	}
 
@@ -91,12 +93,8 @@ void AExoDecoyActor::BeginPlay()
 
 void AExoDecoyActor::BuildDetailParts()
 {
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeF(
-		TEXT("/Engine/BasicShapes/Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
-		TEXT("/Engine/BasicShapes/Cylinder"));
-	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
-	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube"));
+	UStaticMesh* CylMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder"));
 
 	if (!CubeMesh || !HoloMat) return;
 
@@ -160,7 +158,8 @@ void AExoDecoyActor::BuildDetailParts()
 	if (ScanEmissive)
 	{
 		ScanMat = UMaterialInstanceDynamic::Create(ScanEmissive, this);
-		ScanMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.5f, 3.f, 8.f));
+		if (!ScanMat) { return; }
+		ScanMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(1.2f, 7.f, 18.f));
 		ScanLineMesh->SetMaterial(0, ScanMat);
 	}
 
@@ -168,7 +167,7 @@ void AExoDecoyActor::BuildDetailParts()
 	ScanLight = NewObject<UPointLightComponent>(this);
 	ScanLight->SetupAttachment(RootComponent);
 	ScanLight->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	ScanLight->SetIntensity(3000.f);
+	ScanLight->SetIntensity(6000.f);
 	ScanLight->SetAttenuationRadius(200.f);
 	ScanLight->SetLightColor(FLinearColor(0.2f, 0.7f, 1.f));
 	ScanLight->CastShadows = false;
@@ -224,7 +223,7 @@ void AExoDecoyActor::UpdateHologram(float DeltaTime)
 
 	if (HoloMat)
 	{
-		FLinearColor EmCol(0.2f * EmScale, 1.5f * EmScale, 4.f * EmScale);
+		FLinearColor EmCol(0.5f * EmScale, 3.5f * EmScale, 9.f * EmScale);
 		HoloMat->SetVectorParameterValue(TEXT("EmissiveColor"), EmCol);
 	}
 
@@ -232,7 +231,7 @@ void AExoDecoyActor::UpdateHologram(float DeltaTime)
 	if (BaseMat)
 	{
 		float BasePulse = 0.8f + 0.4f * FMath::Sin(T * 6.f);
-		FLinearColor BaseEm(0.1f * BasePulse, 0.8f * BasePulse, 2.f * BasePulse);
+		FLinearColor BaseEm(0.25f * BasePulse, 1.8f * BasePulse, 4.5f * BasePulse);
 		BaseMat->SetVectorParameterValue(TEXT("EmissiveColor"), BaseEm);
 	}
 
@@ -240,7 +239,7 @@ void AExoDecoyActor::UpdateHologram(float DeltaTime)
 	if (HoloLight)
 	{
 		float LF = FMath::Sin(T * 35.f) * 0.12f + FMath::Sin(T * 73.f) * 0.08f;
-		float LightPulse = (6000.f + 4000.f * Flicker) * (1.f + LF);
+		float LightPulse = (12000.f + 8000.f * Flicker) * (1.f + LF);
 		HoloLight->SetIntensity(LightPulse);
 	}
 
@@ -256,13 +255,13 @@ void AExoDecoyActor::UpdateHologram(float DeltaTime)
 		if (ScanMat)
 		{
 			ScanMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.5f * ScanAlpha, 3.f * ScanAlpha, 8.f * ScanAlpha));
+				FLinearColor(1.2f * ScanAlpha, 7.f * ScanAlpha, 18.f * ScanAlpha));
 		}
 
 		if (ScanLight)
 		{
 			ScanLight->SetRelativeLocation(FVector(0.f, 0.f, ScanZ));
-			ScanLight->SetIntensity(3000.f * ScanAlpha);
+			ScanLight->SetIntensity(6000.f * ScanAlpha);
 		}
 	}
 
@@ -273,7 +272,7 @@ void AExoDecoyActor::UpdateHologram(float DeltaTime)
 		float FadeAlpha = LifeRemaining / 2.f;
 		BodyMesh->SetRelativeScale3D(FVector(0.35f, 0.35f, 0.9f) * FadeAlpha);
 		HeadMesh->SetRelativeScale3D(FVector(0.7f, 0.7f, 0.7f) * FadeAlpha);
-		if (HoloLight) HoloLight->SetIntensity(8000.f * FadeAlpha);
+		if (HoloLight) HoloLight->SetIntensity(16000.f * FadeAlpha);
 
 		// Fade detail parts too
 		for (UStaticMeshComponent* P : DetailParts)

@@ -56,8 +56,8 @@ AExoPowerUpTerminal::AExoPowerUpTerminal()
 	TerminalLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
 	TerminalLight->SetupAttachment(ScreenMesh);
 	TerminalLight->SetRelativeLocation(FVector(10.f, 0.f, 0.f));
-	TerminalLight->SetIntensity(5000.f);
-	TerminalLight->SetAttenuationRadius(500.f);
+	TerminalLight->SetIntensity(12000.f);
+	TerminalLight->SetAttenuationRadius(800.f);
 	TerminalLight->CastShadows = false;
 
 	TypeColor = FLinearColor(0.2f, 0.8f, 1.f);
@@ -84,6 +84,7 @@ void AExoPowerUpTerminal::BuildVisuals()
 	auto ApplyStructMat = [&](UStaticMeshComponent* C, const FLinearColor& Color)
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!M) { return; }
 		M->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		M->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -96,9 +97,10 @@ void AExoPowerUpTerminal::BuildVisuals()
 
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 	ScreenMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+	if (!ScreenMat) { return; }
 	FLinearColor ScreenColor = TypeColor * 0.3f;
 	ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(ScreenColor.R * 4.f, ScreenColor.G * 4.f, ScreenColor.B * 4.f));
+		FLinearColor(ScreenColor.R * 10.f, ScreenColor.G * 10.f, ScreenColor.B * 10.f));
 	ScreenMesh->SetMaterial(0, ScreenMat);
 	TerminalLight->SetLightColor(TypeColor);
 }
@@ -114,7 +116,7 @@ void AExoPowerUpTerminal::Tick(float DeltaTime)
 		{
 			bUsed = false;
 			ScreenMesh->SetVisibility(true);
-			TerminalLight->SetIntensity(5000.f);
+			TerminalLight->SetIntensity(12000.f);
 		}
 		return;
 	}
@@ -125,10 +127,10 @@ void AExoPowerUpTerminal::Tick(float DeltaTime)
 	if (ScreenMat)
 	{
 		ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(TypeColor.R * 4.f * Pulse, TypeColor.G * 4.f * Pulse,
-				TypeColor.B * 4.f * Pulse));
+			FLinearColor(TypeColor.R * 3.f * Pulse, TypeColor.G * 3.f * Pulse,
+				TypeColor.B * 3.f * Pulse));
 	}
-	TerminalLight->SetIntensity(5000.f * Pulse);
+	TerminalLight->SetIntensity(4000.f * Pulse);
 }
 
 void AExoPowerUpTerminal::Interact(AExoCharacter* Interactor)
@@ -141,7 +143,7 @@ void AExoPowerUpTerminal::Interact(AExoCharacter* Interactor)
 
 	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation() + FVector(0, 0, 80.f), TypeColor);
 	ScreenMesh->SetVisibility(false);
-	TerminalLight->SetIntensity(500.f);
+	TerminalLight->SetIntensity(1000.f);
 }
 
 void AExoPowerUpTerminal::ApplyPowerUp(AExoCharacter* Target)

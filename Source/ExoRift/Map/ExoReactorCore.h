@@ -63,7 +63,10 @@ private:
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*> ConduitMats;
 
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
 };

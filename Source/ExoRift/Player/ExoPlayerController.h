@@ -85,4 +85,8 @@ protected:
 private:
 	void SetupEnhancedInput();
 	bool bIsSpectating = false;
+
+	// Death slow-mo state
+	FTimerHandle DeathSlowMoHandle;
+	float DeathSlowMoDilation = 1.f;
 };

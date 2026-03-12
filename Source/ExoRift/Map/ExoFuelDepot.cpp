@@ -52,6 +52,7 @@ UStaticMeshComponent* AExoFuelDepot::AddPart(
 		if (EmMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
 			Part->SetMaterial(0, Mat);
@@ -63,6 +64,7 @@ UStaticMeshComponent* AExoFuelDepot::AddPart(
 		if (LitMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -128,8 +130,9 @@ void AExoFuelDepot::BuildDepot()
 			{
 				UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 				UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+				if (!SM) { return; }
 				SM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(0.5f, 4.f, 1.5f));
+					FLinearColor(1.2f, 10.f, 3.5f));
 				Strip->SetMaterial(0, SM);
 				TankGlowMats.Add(SM);
 			}
@@ -181,16 +184,17 @@ void AExoFuelDepot::BuildDepot()
 		{
 			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!BM) { return; }
 			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Amber.R * 20.f, Amber.G * 20.f, Amber.B * 20.f));
+				FLinearColor(Amber.R * 8.f, Amber.G * 8.f, Amber.B * 8.f));
 			Bulb->SetMaterial(0, BM);
 		}
 
 		UPointLightComponent* WL = NewObject<UPointLightComponent>(this);
 		WL->SetupAttachment(RootComponent);
 		WL->SetRelativeLocation(LP + FVector(0.f, 0.f, 260.f));
-		WL->SetIntensity(8000.f);
-		WL->SetAttenuationRadius(1500.f);
+		WL->SetIntensity(18000.f);
+		WL->SetAttenuationRadius(2500.f);
 		WL->SetLightColor(Amber);
 		WL->CastShadows = false;
 		WL->RegisterComponent();
@@ -217,7 +221,7 @@ void AExoFuelDepot::Tick(float DeltaTime)
 		if (!WarnLights[i]) continue;
 		float Phase = Time * 2.f + i * 1.57f; // Quarter-cycle offset each
 		float Pulse = 0.3f + 0.7f * FMath::Max(0.f, FMath::Sin(Phase));
-		WarnLights[i]->SetIntensity(8000.f * Pulse);
+		WarnLights[i]->SetIntensity(18000.f * Pulse);
 	}
 
 	// Animate tank level indicators — slow breathe
@@ -227,6 +231,6 @@ void AExoFuelDepot::Tick(float DeltaTime)
 		float Phase = Time * 0.8f + i * 2.1f;
 		float Level = 0.5f + 0.5f * FMath::Sin(Phase);
 		TankGlowMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.5f * Level, 4.f * Level, 1.5f * Level));
+			FLinearColor(1.2f * Level, 10.f * Level, 3.5f * Level));
 	}
 }

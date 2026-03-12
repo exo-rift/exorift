@@ -15,7 +15,7 @@ AExoPickupFlash::AExoPickupFlash()
 	// Light flash
 	FlashLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FlashLight"));
 	FlashLight->SetupAttachment(RootComponent);
-	FlashLight->SetIntensity(20000.f);
+	FlashLight->SetIntensity(45000.f);
 	FlashLight->SetAttenuationRadius(600.f);
 	FlashLight->CastShadows = false;
 
@@ -42,8 +42,9 @@ void AExoPickupFlash::Init(const FLinearColor& Color)
 	{
 		FlashMat = UMaterialInstanceDynamic::Create(
 			FExoMaterialFactory::GetEmissiveAdditive(), this);
+		if (!FlashMat) { return; }
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+			FLinearColor(Color.R * 18.f, Color.G * 18.f, Color.B * 18.f));
 		FlashSphere->SetMaterial(0, FlashMat);
 	}
 }
@@ -73,8 +74,8 @@ void AExoPickupFlash::Tick(float DeltaTime)
 	if (FlashMat)
 	{
 		FlashMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(FlashColor.R * 8.f * Alpha, FlashColor.G * 8.f * Alpha,
-				FlashColor.B * 8.f * Alpha));
+			FLinearColor(FlashColor.R * 18.f * Alpha, FlashColor.G * 18.f * Alpha,
+				FlashColor.B * 18.f * Alpha));
 	}
 }
 

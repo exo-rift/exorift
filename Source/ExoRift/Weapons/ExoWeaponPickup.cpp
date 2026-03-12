@@ -1,6 +1,7 @@
 // ExoWeaponPickup.cpp — Tick, interaction, weapon spawning
 #include "Weapons/ExoWeaponPickup.h"
 #include "Weapons/ExoWeaponBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "Weapons/ExoWeaponRifle.h"
 #include "Weapons/ExoWeaponPistol.h"
 #include "Weapons/ExoWeaponGrenadeLauncher.h"
@@ -59,7 +60,7 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 		if (RarityGlow && (Rarity == EWeaponRarity::Epic || Rarity == EWeaponRarity::Legendary))
 		{
 			float Pulse = 0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f);
-			float Base = (Rarity == EWeaponRarity::Legendary) ? 8000.f : 5000.f;
+			float Base = (Rarity == EWeaponRarity::Legendary) ? 16000.f : 10000.f;
 			RarityGlow->SetIntensity(Base * Pulse);
 		}
 
@@ -70,11 +71,11 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 			float BaseEm;
 			switch (Rarity)
 			{
-			case EWeaponRarity::Common:    BaseEm = 0.5f; break;
-			case EWeaponRarity::Rare:      BaseEm = 1.2f; break;
-			case EWeaponRarity::Epic:      BaseEm = 2.0f; break;
-			case EWeaponRarity::Legendary: BaseEm = 4.0f; break;
-			default:                       BaseEm = 0.5f; break;
+			case EWeaponRarity::Common:    BaseEm = 1.1f; break;
+			case EWeaponRarity::Rare:      BaseEm = 2.8f; break;
+			case EWeaponRarity::Epic:      BaseEm = 4.5f; break;
+			case EWeaponRarity::Legendary: BaseEm = 9.0f; break;
+			default:                       BaseEm = 1.1f; break;
 			}
 			float EmPulse = BaseEm * (0.7f + 0.3f * FMath::Sin(BobPhase * 1.5f));
 			AccentMat->SetVectorParameterValue(TEXT("EmissiveColor"),
@@ -85,7 +86,7 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 		if (PedestalMat)
 		{
 			FLinearColor RC = AExoWeaponBase::GetRarityColor(Rarity);
-			float PedPulse = 0.2f + 0.15f * FMath::Sin(BobPhase * 2.f);
+			float PedPulse = 0.45f + 0.35f * FMath::Sin(BobPhase * 2.f);
 			PedestalMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(RC.R * PedPulse, RC.G * PedPulse, RC.B * PedPulse));
 		}
@@ -108,14 +109,34 @@ void AExoWeaponPickup::Tick(float DeltaTime)
 			float BaseEm;
 			switch (Rarity)
 			{
-			case EWeaponRarity::Rare:      BaseEm = 1.8f; break;
-			case EWeaponRarity::Epic:      BaseEm = 3.0f; break;
-			case EWeaponRarity::Legendary: BaseEm = 6.0f; break;
-			default:                       BaseEm = 1.0f; break;
+			case EWeaponRarity::Rare:      BaseEm = 4.0f; break;
+			case EWeaponRarity::Epic:      BaseEm = 7.0f; break;
+			case EWeaponRarity::Legendary: BaseEm = 14.0f; break;
+			default:                       BaseEm = 2.2f; break;
 			}
 			float Shimmer = BaseEm * (0.6f + 0.4f * FMath::Sin(BobPhase * 2.5f));
 			BeaconMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(RC.R * Shimmer, RC.G * Shimmer, RC.B * Shimmer));
+		}
+
+		// Proximity audio hum for nearby players
+		ProximityHumTimer -= DeltaTime;
+		if (ProximityHumTimer <= 0.f)
+		{
+			ProximityHumTimer = 2.5f;
+			// Find nearest player pawn
+			APawn* NearestPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+			if (NearestPawn)
+			{
+				float Dist = FVector::Dist(GetActorLocation(), NearestPawn->GetActorLocation());
+				if (Dist < 800.f)
+				{
+					float Volume = FMath::Lerp(0.15f, 0.02f, Dist / 800.f);
+					float Pitch = 1.5f + (int32)Rarity * 0.3f; // Higher for rarer weapons
+					if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+						Audio->PlayWeaponFireSound(nullptr, GetActorLocation(), Volume);
+				}
+			}
 		}
 	}
 	else if (bRespawns)

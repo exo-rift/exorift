@@ -1,0 +1,2 @@
+HighResShot 1920x1080
+quit

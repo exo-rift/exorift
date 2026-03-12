@@ -121,11 +121,11 @@ FLinearColor FExoTracerManager::GetWeaponTracerColor(EWeaponType Type)
 {
 	switch (Type)
 	{
-	case EWeaponType::Rifle:  return FLinearColor(0.3f, 0.7f, 1.f);   // Cyan-blue energy
-	case EWeaponType::SMG:    return FLinearColor(0.2f, 1.f, 0.4f);   // Green plasma
-	case EWeaponType::Pistol: return FLinearColor(1.f, 0.9f, 0.5f);   // Hot yellow arc
-	case EWeaponType::Shotgun: return FLinearColor(1.f, 0.35f, 0.1f); // Orange scatter
-	case EWeaponType::Sniper: return FLinearColor(0.7f, 0.2f, 1.f);   // Purple void
-	default:                  return FLinearColor(0.3f, 0.7f, 1.f);
+	case EWeaponType::Rifle:  return FLinearColor(0.2f, 0.65f, 1.f);    // Deep cyan energy
+	case EWeaponType::SMG:    return FLinearColor(0.1f, 1.f, 0.3f);     // Vivid green plasma
+	case EWeaponType::Pistol: return FLinearColor(1.f, 0.85f, 0.3f);    // Hot amber arc
+	case EWeaponType::Shotgun: return FLinearColor(1.f, 0.3f, 0.05f);   // Intense orange scatter
+	case EWeaponType::Sniper: return FLinearColor(0.6f, 0.1f, 1.f);     // Deep violet void
+	default:                  return FLinearColor(0.2f, 0.65f, 1.f);
 	}
 }

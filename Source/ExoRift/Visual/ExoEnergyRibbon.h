@@ -38,6 +38,7 @@ private:
 	TArray<UMaterialInstanceDynamic*> SegmentMats;
 
 	TArray<FVector> SegmentDrifts;
+	TArray<FVector> InitialScales;
 
 	FLinearColor RibbonColor;
 	float RibbonThickness = 1.f;

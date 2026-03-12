@@ -32,8 +32,8 @@ AExoTracerWake::AExoTracerWake()
 
 	DotLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("DotLight"));
 	DotLight->SetupAttachment(DotMesh);
-	DotLight->SetIntensity(5000.f);
-	DotLight->SetAttenuationRadius(400.f);
+	DotLight->SetIntensity(27600.f);
+	DotLight->SetAttenuationRadius(980.f);
 	DotLight->CastShadows = false;
 }
 
@@ -47,20 +47,22 @@ void AExoTracerWake::InitWake(const FLinearColor& Color, float Scale)
 
 	// Core dot — bright emissive
 	DotMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor Emissive(Color.R * 50.f, Color.G * 50.f, Color.B * 50.f);
+	if (!DotMat) { return; }
+	FLinearColor Emissive(Color.R * 230.f, Color.G * 230.f, Color.B * 230.f);
 	DotMat->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 	DotMesh->SetMaterial(0, DotMat);
 	DotMesh->SetRelativeScale3D(FVector(Scale));
 
 	// Halo — larger, softer glow
 	HaloMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-	FLinearColor HaloCol(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f);
+	if (!HaloMat) { return; }
+	FLinearColor HaloCol(Color.R * 69.f, Color.G * 69.f, Color.B * 69.f);
 	HaloMat->SetVectorParameterValue(TEXT("EmissiveColor"), HaloCol);
 	HaloMesh->SetMaterial(0, HaloMat);
-	HaloMesh->SetRelativeScale3D(FVector(3.5f));
+	HaloMesh->SetRelativeScale3D(FVector(4.5f));
 
 	DotLight->SetLightColor(Color);
-	DotLight->SetIntensity(15000.f * Scale / 0.1f);
+	DotLight->SetIntensity(69000.f * Scale / 0.1f);
 }
 
 void AExoTracerWake::Tick(float DeltaTime)
@@ -78,18 +80,18 @@ void AExoTracerWake::Tick(float DeltaTime)
 
 	if (DotMat)
 	{
-		FLinearColor Em(BaseColor.R * 50.f * Alpha, BaseColor.G * 50.f * Alpha,
-			BaseColor.B * 50.f * Alpha);
+		FLinearColor Em(BaseColor.R * 230.f * Alpha, BaseColor.G * 230.f * Alpha,
+			BaseColor.B * 230.f * Alpha);
 		DotMat->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 	}
 	if (HaloMat)
 	{
-		FLinearColor HEm(BaseColor.R * 15.f * Alpha, BaseColor.G * 15.f * Alpha,
-			BaseColor.B * 15.f * Alpha);
+		FLinearColor HEm(BaseColor.R * 69.f * Alpha, BaseColor.G * 69.f * Alpha,
+			BaseColor.B * 69.f * Alpha);
 		HaloMat->SetVectorParameterValue(TEXT("EmissiveColor"), HEm);
 	}
 
-	DotLight->SetIntensity(15000.f * Alpha * BaseScale / 0.1f);
+	DotLight->SetIntensity(69000.f * Alpha * BaseScale / 0.1f);
 
 	if (Age >= Lifetime) Destroy();
 }
@@ -122,7 +124,7 @@ void AExoTracerWake::SpawnWake(UWorld* World, const FVector& Start, const FVecto
 			AExoTracerWake::StaticClass(), Pos, FRotator::ZeroRotator, Params);
 		if (Wake)
 		{
-			float Scale = FMath::RandRange(0.10f, 0.20f);
+			float Scale = FMath::RandRange(0.18f, 0.35f);
 			Wake->InitWake(Color, Scale);
 		}
 	}

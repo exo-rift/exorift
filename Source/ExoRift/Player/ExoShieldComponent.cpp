@@ -1,4 +1,5 @@
 #include "Player/ExoShieldComponent.h"
+#include "Core/ExoAudioManager.h"
 #include "Net/UnrealNetwork.h"
 
 UExoShieldComponent::UExoShieldComponent()
@@ -30,6 +31,9 @@ void UExoShieldComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		{
 			bWasBroken = false;
 			OnShieldFullyRecharged.Broadcast();
+			// Shield fully recharged — satisfying confirmation tone
+			if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+				Audio->PlayShieldRechargeSound();
 		}
 	}
 }

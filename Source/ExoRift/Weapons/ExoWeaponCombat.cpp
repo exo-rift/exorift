@@ -11,6 +11,7 @@
 #include "Visual/ExoBulletWhiz.h"
 #include "Visual/ExoHeatShimmer.h"
 #include "Core/ExoAudioManager.h"
+#include "Core/ExoMusicManager.h"
 #include "Core/ExoPlayerState.h"
 #include "UI/ExoPickupNotification.h"
 #include "Components/CapsuleComponent.h"
@@ -23,13 +24,24 @@ void AExoWeaponBase::FireShot()
 	CurrentEnergy = FMath::Max(CurrentEnergy - EnergyPerShot, 0.f);
 	OnEnergyChanged.Broadcast(CurrentEnergy);
 
+	// Low energy warning — plays once when dropping below 25%
+	float EnergyPct = (MaxEnergy > 0.f) ? CurrentEnergy / MaxEnergy : 0.f;
+	if (EnergyPct < 0.25f && !bLowEnergyWarningPlayed)
+	{
+		bLowEnergyWarningPlayed = true;
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			Audio->PlayOverheatSound();
+	}
+	if (EnergyPct >= 0.25f)
+		bLowEnergyWarningPlayed = false;
+
 	AddHeat(HeatPerShot);
 	CurrentSpread = FMath::Min(CurrentSpread + SpreadPerShot, MaxSpread);
 
 	UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld());
 	if (Audio)
 	{
-		Audio->PlayWeaponFireSound(nullptr, GetActorLocation());
+		Audio->PlayWeaponFireByType(WeaponType, GetActorLocation());
 	}
 
 	// Recoil
@@ -186,10 +198,28 @@ void AExoWeaponBase::FireShot()
 	if (HitChar && OwnerPawn && OwnerPawn->IsLocallyControlled())
 	{
 		FExoHitMarker::AddHitMarker(bWillKill, bHeadshot);
+
+		// Notify adaptive music of combat (attacker dealing damage)
+		if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
+			Music->NotifyCombatEvent();
+
+		// Headshot hit pause (even on non-kill)
+		if (bHeadshot && !bWillKill)
+		{
+			AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
+			if (PP) PP->TriggerHeadshotPause();
+		}
+
 		if (bWillKill)
 		{
 			AExoPostProcess* PP = AExoPostProcess::Get(GetWorld());
-			if (PP) PP->TriggerKillEffect();
+			if (PP)
+			{
+				if (bHeadshot)
+					PP->TriggerHeadshotKillEffect();
+				else
+					PP->TriggerKillEffect();
+			}
 
 			AExoPlayerState* VictimPS = HitChar->GetController()
 				? HitChar->GetController()->GetPlayerState<AExoPlayerState>() : nullptr;

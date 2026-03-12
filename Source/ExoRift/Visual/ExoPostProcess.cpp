@@ -1,5 +1,6 @@
 #include "Visual/ExoPostProcess.h"
 #include "Components/PostProcessComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "ExoRift.h"
 
@@ -12,21 +13,21 @@ AExoPostProcess::AExoPostProcess()
 	PostProcessComp->bUnbound = true; // Affects entire scene
 	PostProcessComp->Priority = 1.f;
 
-	// Base settings for dramatic sci-fi look
+	// Base settings for realistic sci-fi look
 	PostProcessComp->Settings.bOverride_BloomIntensity = true;
-	PostProcessComp->Settings.BloomIntensity = 1.5f; // Higher bloom for visible energy glow
+	PostProcessComp->Settings.BloomIntensity = 0.7f; // Moderate bloom — bright emissives glow, surfaces don't
 
 	PostProcessComp->Settings.bOverride_BloomThreshold = true;
-	PostProcessComp->Settings.BloomThreshold = 0.3f; // Lower threshold — emissives bloom visibly
+	PostProcessComp->Settings.BloomThreshold = 1.5f; // Only truly bright things bloom
 
-	PostProcessComp->Settings.bOverride_AutoExposureBias = true;
-	PostProcessComp->Settings.AutoExposureBias = 0.f;
+	// NOTE: Do NOT override AutoExposureBias here — ExoLevelBuilder sets it to 1.2
+	// and this PP (priority 1) would clobber that baseline. Only override during effects.
 
 	PostProcessComp->Settings.bOverride_VignetteIntensity = true;
 	PostProcessComp->Settings.VignetteIntensity = 0.3f;
 
 	PostProcessComp->Settings.bOverride_FilmGrainIntensity = true;
-	PostProcessComp->Settings.FilmGrainIntensity = 0.03f;
+	PostProcessComp->Settings.FilmGrainIntensity = 0.015f;
 
 	// Cool shadow tint — blue-shifted shadows for sci-fi atmosphere
 	PostProcessComp->Settings.bOverride_ColorContrastShadows = true;
@@ -57,66 +58,54 @@ void AExoPostProcess::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Decay damage flash
+	// Decay / interpolate effect intensities
 	if (DamageFlashIntensity > 0.f)
-	{
 		DamageFlashIntensity = FMath::Max(0.f, DamageFlashIntensity - DamageFlashDecayRate * DeltaTime);
-	}
-
-	// Smooth low health blend
 	LowHealthBlend = FMath::FInterpTo(LowHealthBlend, TargetLowHealthBlend, DeltaTime, 3.f);
-
-	// Decay kill effect
 	if (KillEffectIntensity > 0.f)
-	{
 		KillEffectIntensity = FMath::Max(0.f, KillEffectIntensity - KillEffectDecayRate * DeltaTime);
-	}
-
-	// Smooth zone damage
 	ZoneDamageIntensity = FMath::FInterpTo(ZoneDamageIntensity, TargetZoneDamageIntensity, DeltaTime, 5.f);
-
-	// Smooth low-health heartbeat pulse
 	LowHealthPulseBlend = FMath::FInterpTo(LowHealthPulseBlend, TargetLowHealthPulseBlend, DeltaTime, 4.f);
-
-	// Smooth speed boost
 	SpeedBoostAlpha = FMath::FInterpTo(SpeedBoostAlpha, TargetSpeedBoostAlpha, DeltaTime, 6.f);
-
-	// Decay dash effect (fast burst)
 	if (DashEffectIntensity > 0.f)
-	{
 		DashEffectIntensity = FMath::Max(0.f, DashEffectIntensity - DeltaTime * 5.f);
-	}
-
-	// Smooth grapple effect
 	GrappleEffectAlpha = FMath::FInterpTo(GrappleEffectAlpha, TargetGrappleAlpha, DeltaTime, 8.f);
-
-	// Decay scan pulse (medium burst)
 	if (ScanPulseIntensity > 0.f)
-	{
 		ScanPulseIntensity = FMath::Max(0.f, ScanPulseIntensity - DeltaTime * 3.f);
-	}
-
-	// Decay shield flash (fast burst)
 	if (ShieldFlashIntensity > 0.f)
-	{
 		ShieldFlashIntensity = FMath::Max(0.f, ShieldFlashIntensity - DeltaTime * 6.f);
-	}
-
-	// Decay weapon fire flash (very fast)
 	if (WeaponFireFlash > 0.f)
-	{
 		WeaponFireFlash = FMath::Max(0.f, WeaponFireFlash - DeltaTime * 12.f);
+	if (HeadshotKillIntensity > 0.f)
+		HeadshotKillIntensity = FMath::Max(0.f, HeadshotKillIntensity - DeltaTime * 3.f);
+	if (EnergyPickupFlash > 0.f)
+		EnergyPickupFlash = FMath::Max(0.f, EnergyPickupFlash - DeltaTime * 4.f);
+	if (DeathEffectIntensity > 0.f)
+		DeathEffectIntensity = FMath::Max(0.f, DeathEffectIntensity - DeltaTime * 0.4f);
+
+	// Hit pause recovery — restore timescale after headshot pause
+	if (HitPauseRemaining > 0.f)
+	{
+		float RealDelta = DeltaTime / FMath::Max(UGameplayStatics::GetGlobalTimeDilation(GetWorld()), 0.01f);
+		HitPauseRemaining -= RealDelta;
+		if (HitPauseRemaining <= 0.f)
+		{
+			HitPauseRemaining = 0.f;
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), HitPauseOriginalDilation);
+		}
 	}
 
 	// --- Combine all effects ---
 
-	// Vignette: base + damage flash + low health + zone damage + heartbeat + abilities
+	// Vignette: base + damage flash + low health + zone damage + heartbeat + abilities + death
 	float TotalVignette = 0.3f;
 	TotalVignette += DamageFlashIntensity * 0.5f;
 	TotalVignette += LowHealthBlend * 0.3f;
 	TotalVignette += ZoneDamageIntensity * 0.4f;
 	TotalVignette += GrappleEffectAlpha * 0.6f;  // Tunnel vision during grapple
 	TotalVignette += DashEffectIntensity * 0.4f;  // Brief vignette burst on dash
+	TotalVignette += SpeedBoostAlpha * 0.15f;      // Subtle edge darkening while sprinting
+	TotalVignette += DeathEffectIntensity * 0.7f;  // Heavy vignette on death
 
 	// Heartbeat pulse at critical health (<25%)
 	if (LowHealthPulseBlend > 0.01f)
@@ -145,16 +134,28 @@ void AExoPostProcess::Tick(float DeltaTime)
 	float ScanTintB = ScanPulseIntensity * 0.2f;       // Blue shift
 	float ShieldTintC = ShieldFlashIntensity * 0.25f;   // Cyan shift
 
+	// Headshot kill golden flash
+	float HeadshotGold = HeadshotKillIntensity * 0.15f;
+
+	// Energy pickup white-blue flash
+	float EnergyTintW = EnergyPickupFlash * 0.12f;  // White lift
+	float EnergyTintB = EnergyPickupFlash * 0.18f;  // Blue shift
+
+	// Death cold blue tint
+	float DeathTintB = DeathEffectIntensity * 0.2f;   // Blue shift
+	float DeathTintR = DeathEffectIntensity * 0.12f;   // Red drain
+
 	bool bHasTint = (CombinedTint > 0.01f || GrappleTintG > 0.01f ||
-		ScanTintB > 0.01f || ShieldTintC > 0.01f);
+		ScanTintB > 0.01f || ShieldTintC > 0.01f || HeadshotGold > 0.01f ||
+		EnergyPickupFlash > 0.01f || DeathEffectIntensity > 0.01f);
 
 	PostProcessComp->Settings.bOverride_SceneColorTint = bHasTint;
 	if (bHasTint)
 	{
 		PostProcessComp->Settings.SceneColorTint = FLinearColor(
-			1.f + CombinedTint - ScanTintB * 0.3f,
-			1.f - CombinedTint * 0.5f + GrappleTintG + ShieldTintC * 0.5f,
-			1.f - CombinedTint * 0.5f + ScanTintB + ShieldTintC, 1.f);
+			1.f + CombinedTint - ScanTintB * 0.3f + HeadshotGold + EnergyTintW - DeathTintR,
+			1.f - CombinedTint * 0.5f + GrappleTintG + ShieldTintC * 0.5f + HeadshotGold * 0.8f + EnergyTintW - DeathTintR * 0.5f,
+			1.f - CombinedTint * 0.5f + ScanTintB + ShieldTintC - HeadshotGold * 0.3f + EnergyTintW + EnergyTintB + DeathTintB, 1.f);
 	}
 
 	// Low health: desaturation + pulsing vignette
@@ -171,6 +172,8 @@ void AExoPostProcess::Tick(float DeltaTime)
 	}
 	// Dash brief desaturation for "speed blur" feel
 	TotalDesat += DashEffectIntensity * 0.25f;
+	// Death heavy desaturation — world drains of color
+	TotalDesat += DeathEffectIntensity * 0.65f;
 
 	PostProcessComp->Settings.bOverride_ColorSaturation = (TotalDesat > 0.01f);
 	if (TotalDesat > 0.01f)
@@ -179,21 +182,35 @@ void AExoPostProcess::Tick(float DeltaTime)
 		PostProcessComp->Settings.ColorSaturation = FVector4(Desat, Desat, Desat, 1.f);
 	}
 
-	// Chromatic aberration: kill + zone + scan + dash
-	float TotalFringe = KillEffectIntensity * 3.f + ZoneDamageIntensity * 2.f
-		+ ScanPulseIntensity * 2.5f + DashEffectIntensity * 1.5f;
+	// Chromatic aberration: kill + headshot kill + zone + scan + dash + sprint + death
+	float TotalFringe = KillEffectIntensity * 3.f + HeadshotKillIntensity * 5.f
+		+ ZoneDamageIntensity * 2.f + ScanPulseIntensity * 2.5f + DashEffectIntensity * 1.5f
+		+ SpeedBoostAlpha * 0.8f  // Subtle chromatic aberration while sprinting
+		+ DeathEffectIntensity * 6.f;  // Strong aberration on death
 	PostProcessComp->Settings.SceneFringeIntensity = TotalFringe;
 
 	// Speed boost + dash: motion blur + bloom increase
-	float TotalMotionBlur = SpeedBoostAlpha + DashEffectIntensity * 0.8f;
+	// Sprint caps at 0.3 for a subtle speed feel; dash adds a stronger burst
+	float SprintMotionBlur = SpeedBoostAlpha * 0.3f;
+	float DashMotionBlur = DashEffectIntensity * 0.5f;
+	float TotalMotionBlur = SprintMotionBlur + DashMotionBlur;
 	PostProcessComp->Settings.bOverride_MotionBlurAmount = (TotalMotionBlur > 0.01f);
 	if (TotalMotionBlur > 0.01f)
 	{
-		PostProcessComp->Settings.MotionBlurAmount = TotalMotionBlur * 0.6f;
+		PostProcessComp->Settings.MotionBlurAmount = TotalMotionBlur;
 	}
-	PostProcessComp->Settings.BloomIntensity = 1.5f + SpeedBoostAlpha * 0.5f
-		+ ShieldFlashIntensity * 0.8f + ScanPulseIntensity * 0.4f
-		+ WeaponFireFlash * 2.f;
+
+	// Sprint motion blur max target — also increase MotionBlurMax so UE doesn't clamp it
+	PostProcessComp->Settings.bOverride_MotionBlurMax = (TotalMotionBlur > 0.01f);
+	if (TotalMotionBlur > 0.01f)
+	{
+		PostProcessComp->Settings.MotionBlurMax = FMath::Lerp(5.f, 8.f, SpeedBoostAlpha);
+	}
+	PostProcessComp->Settings.BloomIntensity = 0.7f + SpeedBoostAlpha * 0.3f
+		+ ShieldFlashIntensity * 0.5f + ScanPulseIntensity * 0.3f
+		+ WeaponFireFlash * 1.2f + HeadshotKillIntensity * 0.8f
+		+ EnergyPickupFlash * 0.6f
+		+ DeathEffectIntensity * 1.0f;
 
 	// Weapon fire: brief auto-exposure kick for visible muzzle bloom
 	PostProcessComp->Settings.AutoExposureBias = WeaponFireFlash * 0.4f;
@@ -303,6 +320,31 @@ void AExoPostProcess::TriggerShieldFlash()
 void AExoPostProcess::TriggerWeaponFireFlash(float Intensity)
 {
 	WeaponFireFlash = FMath::Max(WeaponFireFlash, FMath::Clamp(Intensity, 0.f, 1.f));
+}
+
+void AExoPostProcess::TriggerHeadshotPause()
+{
+	// 60ms timescale dip to 0.15 for visceral headshot feedback
+	HitPauseOriginalDilation = UGameplayStatics::GetGlobalTimeDilation(GetWorld());
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.15f);
+	HitPauseRemaining = 0.06f;
+}
+
+void AExoPostProcess::TriggerHeadshotKillEffect()
+{
+	KillEffectIntensity = 1.f;
+	HeadshotKillIntensity = 1.f;
+	TriggerHeadshotPause();
+}
+
+void AExoPostProcess::TriggerEnergyPickupFlash()
+{
+	EnergyPickupFlash = 1.f;
+}
+
+void AExoPostProcess::TriggerDeathEffect()
+{
+	DeathEffectIntensity = 1.f;
 }
 
 void AExoPostProcess::TriggerEndgameCinematic(bool bIsVictory)

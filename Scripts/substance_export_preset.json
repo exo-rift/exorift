@@ -1,0 +1,106 @@
+{
+  "name": "ExoRift_UE5",
+  "description": "ExoRift UE5.7 export preset — BaseColor + Normal(DX) + ORM packed + Emissive. Output as PNG to Assets_Raw/Custom/Textures/.",
+  "maps": [
+    {
+      "fileName": "T_$mesh_BaseColor",
+      "channels": [
+        {
+          "destChannel": "R",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "baseColor"
+        },
+        {
+          "destChannel": "G",
+          "srcChannel": "G",
+          "srcMapType": "documentMap",
+          "srcMapName": "baseColor"
+        },
+        {
+          "destChannel": "B",
+          "srcChannel": "B",
+          "srcMapType": "documentMap",
+          "srcMapName": "baseColor"
+        }
+      ]
+    },
+    {
+      "fileName": "T_$mesh_Normal",
+      "channels": [
+        {
+          "destChannel": "R",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "normal"
+        },
+        {
+          "destChannel": "G",
+          "srcChannel": "G",
+          "srcMapType": "virtualMap",
+          "srcMapName": "normal_directx"
+        },
+        {
+          "destChannel": "B",
+          "srcChannel": "B",
+          "srcMapType": "documentMap",
+          "srcMapName": "normal"
+        }
+      ]
+    },
+    {
+      "fileName": "T_$mesh_ORM",
+      "channels": [
+        {
+          "destChannel": "R",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "ambientOcclusion"
+        },
+        {
+          "destChannel": "G",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "roughness"
+        },
+        {
+          "destChannel": "B",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "metallic"
+        }
+      ]
+    },
+    {
+      "fileName": "T_$mesh_Emissive",
+      "channels": [
+        {
+          "destChannel": "R",
+          "srcChannel": "R",
+          "srcMapType": "documentMap",
+          "srcMapName": "emissive"
+        },
+        {
+          "destChannel": "G",
+          "srcChannel": "G",
+          "srcMapType": "documentMap",
+          "srcMapName": "emissive"
+        },
+        {
+          "destChannel": "B",
+          "srcChannel": "B",
+          "srcMapType": "documentMap",
+          "srcMapName": "emissive"
+        }
+      ]
+    }
+  ],
+  "parameters": {
+    "fileFormat": "png",
+    "bitDepth": "8",
+    "dithering": false,
+    "paddingAlgorithm": "diffusion",
+    "dilationDistance": 16,
+    "sizeLog2": 11
+  }
+}

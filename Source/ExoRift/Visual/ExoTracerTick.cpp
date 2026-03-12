@@ -56,18 +56,19 @@ void AExoTracer::UpdateTraveling(float DeltaTime)
 	float TrailLen = FMath::Min(TraveledDist, BeamLength * 2.2f);
 	BeamTrail->SetRelativeScale3D(FVector(TrailRadius, TrailRadius, TrailLen / 100.f));
 
-	// Head: elongated energy ball at front, pulsing
+	// Head: elongated energy ball at front, pulsing dramatically
 	float HeadHalf = VisibleLen * 0.5f;
-	float HeadPulse = HeadScale * (1.f + 0.25f * FMath::Sin(Time * 55.f));
+	float HeadPulse = HeadScale * (1.f + 0.35f * FMath::Sin(Time * 55.f)
+		+ 0.15f * FMath::Sin(Time * 120.f));
 	HeadMesh->SetRelativeLocation(FVector(0.f, 0.f, HeadHalf));
 	HeadMesh->SetRelativeScale3D(FVector(
-		HeadPulse, HeadPulse * 0.65f, HeadPulse * 1.4f));
+		HeadPulse, HeadPulse * 0.6f, HeadPulse * 1.6f));
 
 	// Head shockwave ring — pulsing expansion at bolt front
-	float RingPulse = 1.f + 0.4f * FMath::Sin(Time * 45.f);
-	float RingS = HeadScale * 0.6f * RingPulse;
+	float RingPulse = 1.f + 0.5f * FMath::Sin(Time * 45.f);
+	float RingS = HeadScale * 0.8f * RingPulse;
 	HeadRing->SetRelativeLocation(FVector(0.f, 0.f, HeadHalf));
-	HeadRing->SetRelativeScale3D(FVector(RingS, RingS, 0.015f));
+	HeadRing->SetRelativeScale3D(FVector(RingS, RingS, 0.02f));
 
 	// Helix orbiters — spiral around the beam axis
 	HelixAngle += HelixSpeed * DeltaTime;
@@ -157,10 +158,10 @@ void AExoTracer::UpdateFading(float DeltaTime)
 		TrailRadius * TrailAlpha, TrailRadius * TrailAlpha, TS.Z));
 
 	if (TrailMat)
-		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.4f * TrailAlpha);
+		TrailMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowColor * 0.92f * TrailAlpha);
 	if (CoronaMat)
 		CoronaMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			GlowColor * 0.15f * AlphaSq);
+			GlowColor * 0.345f * AlphaSq);
 
 	// Sparks scatter outward and fade
 	for (int32 i = 0; i < SparkMeshes.Num(); i++)

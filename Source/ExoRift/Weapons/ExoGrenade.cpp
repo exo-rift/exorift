@@ -43,6 +43,7 @@ AExoGrenade::AExoGrenade()
 	if (LitEmissive)
 	{
 		BodyMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
+		if (!BodyMat) { return; }
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.08f, 0.08f, 0.08f));
 		MeshComp->SetMaterial(0, BodyMat);
@@ -50,8 +51,8 @@ AExoGrenade::AExoGrenade()
 
 	FuseLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FuseLight"));
 	FuseLight->SetupAttachment(CollisionComp);
-	FuseLight->SetIntensity(2000.f);
-	FuseLight->SetAttenuationRadius(300.f);
+	FuseLight->SetIntensity(4000.f);
+	FuseLight->SetAttenuationRadius(450.f);
 	FuseLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
 	FuseLight->CastShadows = false;
 
@@ -68,12 +69,8 @@ AExoGrenade::AExoGrenade()
 
 void AExoGrenade::BuildGrenadeVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeF(
-		TEXT("/Engine/BasicShapes/Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
-		TEXT("/Engine/BasicShapes/Cylinder"));
-	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
-	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube"));
+	UStaticMesh* CylMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder"));
 
 	UMaterialInterface* LitMatG = FExoMaterialFactory::GetLitEmissive();
 	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
@@ -94,13 +91,15 @@ void AExoGrenade::BuildGrenadeVisuals()
 		if (Lum > 0.15f && EmissiveOpaque)
 		{
 			auto* Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+				FLinearColor(Color.R * 7.f, Color.G * 7.f, Color.B * 7.f));
 			C->SetMaterial(0, Mat);
 		}
 		else if (LitMatG)
 		{
 			auto* Mat = UMaterialInstanceDynamic::Create(LitMatG, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -162,17 +161,30 @@ void AExoGrenade::Tick(float DeltaTime)
 	float FuseFrac = FMath::Clamp(FuseElapsed / FuseTime, 0.f, 1.f);
 	float Time = GetWorld()->GetTimeSeconds();
 
+	// Warning beep — accelerates with fuse progress
+	if (FuseElapsed >= NextBeepTime)
+	{
+		float BeepInterval = FMath::Lerp(0.8f, 0.1f, FuseFrac * FuseFrac);
+		NextBeepTime = FuseElapsed + BeepInterval;
+		float BeepPitch = FMath::Lerp(1.5f, 2.5f, FuseFrac);
+		float BeepVol = FMath::Lerp(0.15f, 0.35f, FuseFrac);
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		{
+			Audio->PlayWeaponFireSound(nullptr, GetActorLocation(), BeepVol);
+		}
+	}
+
 	// Fuse light pulses faster as detonation approaches
 	float PulseRate = FMath::Lerp(2.f, 12.f, FuseFrac);
 	float PulseStrength = 0.5f + 0.5f * FMath::Abs(FMath::Sin(Time * PulseRate));
 
 	// Intensity ramps up toward detonation
-	float BaseIntensity = FMath::Lerp(2000.f, 10000.f, FuseFrac);
+	float BaseIntensity = FMath::Lerp(4000.f, 20000.f, FuseFrac);
 
 	if (FuseLight)
 	{
 		FuseLight->SetIntensity(BaseIntensity * PulseStrength);
-		FuseLight->SetAttenuationRadius(FMath::Lerp(300.f, 600.f, FuseFrac));
+		FuseLight->SetAttenuationRadius(FMath::Lerp(450.f, 900.f, FuseFrac));
 	}
 
 	// Body emissive flash near detonation
@@ -180,7 +192,7 @@ void AExoGrenade::Tick(float DeltaTime)
 	{
 		float EmissivePulse = (FuseFrac - 0.7f) / 0.3f;
 		EmissivePulse *= FMath::Abs(FMath::Sin(Time * PulseRate));
-		FLinearColor Emit(EmissivePulse * 2.f, EmissivePulse * 0.5f, 0.f);
+		FLinearColor Emit(EmissivePulse * 5.f, EmissivePulse * 1.2f, 0.f);
 		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Emit);
 	}
 }
@@ -208,6 +220,22 @@ void AExoGrenade::ExplodeFrag()
 		GetWorld(), ExplosionDamage, ExplosionDamage * 0.2f,
 		GetActorLocation(), ExplosionRadius * 0.3f, ExplosionRadius,
 		1.f, nullptr, IgnoreActors, this, GetInstigatorController());
+
+	// Knockback nearby characters and physics objects
+	TArray<FOverlapResult> BlastOverlaps;
+	FCollisionShape BlastShape = FCollisionShape::MakeSphere(ExplosionRadius);
+	GetWorld()->OverlapMultiByChannel(BlastOverlaps, GetActorLocation(),
+		FQuat::Identity, ECC_Pawn, BlastShape);
+	for (const FOverlapResult& O : BlastOverlaps)
+	{
+		ACharacter* Char = Cast<ACharacter>(O.GetActor());
+		if (!Char) continue;
+		FVector Dir = (Char->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		float Dist = FVector::Dist(Char->GetActorLocation(), GetActorLocation());
+		float Falloff = FMath::Clamp(1.f - Dist / ExplosionRadius, 0.f, 1.f);
+		float KnockbackForce = 1200.f * Falloff;
+		Char->LaunchCharacter(Dir * KnockbackForce + FVector(0.f, 0.f, 400.f * Falloff), false, false);
+	}
 
 	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 
@@ -275,9 +303,8 @@ void AExoGrenade::ExplodeSmoke()
 	if (!Cloud) return;
 	Cloud->SetLifeSpan(8.f);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(
-		TEXT("/Engine/BasicShapes/Sphere"));
-	if (!SphereFinder.Succeeded()) return;
+	UStaticMesh* SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere"));
+	if (!SphereMesh) return;
 
 	UMaterialInterface* SmokeMat = FExoMaterialFactory::GetEmissiveOpaque();
 
@@ -286,7 +313,7 @@ void AExoGrenade::ExplodeSmoke()
 	{
 		UStaticMeshComponent* Smoke = NewObject<UStaticMeshComponent>(Cloud);
 		Smoke->SetupAttachment(Cloud->GetRootComponent());
-		Smoke->SetStaticMesh(SphereFinder.Object);
+		Smoke->SetStaticMesh(SphereMesh);
 		Smoke->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Smoke->CastShadow = false;
 
@@ -299,9 +326,10 @@ void AExoGrenade::ExplodeSmoke()
 		if (SmokeMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(SmokeMat, Cloud);
+			if (!Mat) { return; }
 			float Grey = FMath::RandRange(0.15f, 0.3f);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Grey * 0.5f, Grey * 0.5f, Grey * 0.45f));
+				FLinearColor(Grey * 1.2f, Grey * 1.2f, Grey * 1.f));
 			Smoke->SetMaterial(0, Mat);
 		}
 		Smoke->RegisterComponent();

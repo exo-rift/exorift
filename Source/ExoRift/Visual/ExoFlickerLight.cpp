@@ -22,8 +22,8 @@ AExoFlickerLight::AExoFlickerLight()
 	Light = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
 	Light->SetupAttachment(FixtureMesh);
 	Light->SetRelativeLocation(FVector(0.f, 0.f, -30.f));
-	Light->SetIntensity(8000.f);
-	Light->SetAttenuationRadius(2000.f);
+	Light->SetIntensity(18000.f);
+	Light->SetAttenuationRadius(3500.f);
 	Light->CastShadows = false;
 
 	NextFlickerTime = FMath::RandRange(0.5f, 3.f);
@@ -38,10 +38,11 @@ void AExoFlickerLight::InitLight(const FLinearColor& Color, float InBaseIntensit
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(
 			FExoMaterialFactory::GetLitEmissive(), this);
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.15f, 0.15f, 0.18f, 1.f));
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
 		FixtureMesh->SetMaterial(0, Mat);
 	}
 }

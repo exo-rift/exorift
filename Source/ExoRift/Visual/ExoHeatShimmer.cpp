@@ -57,7 +57,7 @@ void AExoHeatShimmer::InitShimmer(float Intensity)
 	UMaterialInterface* EmMat = FExoMaterialFactory::GetEmissiveAdditive();
 
 	// Heat glow light scales with intensity
-	HeatLight->SetIntensity(5000.f * IntensityScale);
+	HeatLight->SetIntensity(12000.f * IntensityScale);
 	HeatLight->SetAttenuationRadius(200.f + 300.f * IntensityScale);
 
 	// Heat ring — visible only at high intensity
@@ -65,8 +65,9 @@ void AExoHeatShimmer::InitShimmer(float Intensity)
 	{
 		HeatRing->SetVisibility(true);
 		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!RingMat) { return; }
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(4.f * IntensityScale, 1.5f * IntensityScale, 0.3f * IntensityScale));
+			FLinearColor(9.f * IntensityScale, 3.5f * IntensityScale, 0.7f * IntensityScale));
 		HeatRing->SetMaterial(0, RingMat);
 	}
 
@@ -77,11 +78,12 @@ void AExoHeatShimmer::InitShimmer(float Intensity)
 		if (EmMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmMat, this);
+			if (!Mat) { return; }
 			// Hotter wisps are brighter white-orange, cooler ones are dim red
 			float HeatGradient = (float)i / (float)NUM_WISPS;
-			float R = FMath::Lerp(5.f, 2.f, HeatGradient) * IntensityScale;
-			float G = FMath::Lerp(3.f, 0.5f, HeatGradient) * IntensityScale;
-			float B = FMath::Lerp(1.f, 0.1f, HeatGradient) * IntensityScale;
+			float R = FMath::Lerp(11.f, 4.5f, HeatGradient) * IntensityScale;
+			float G = FMath::Lerp(7.f, 1.2f, HeatGradient) * IntensityScale;
+			float B = FMath::Lerp(2.2f, 0.25f, HeatGradient) * IntensityScale;
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(R, G, B));
 			Wisps[i]->SetMaterial(0, Mat);
 		}
@@ -132,9 +134,9 @@ void AExoHeatShimmer::Tick(float DeltaTime)
 		{
 			float HeatGradient = (float)i / (float)NUM_WISPS;
 			float HeatFade = Alpha * Alpha * IntensityScale;
-			float R = FMath::Lerp(5.f, 2.f, HeatGradient) * HeatFade;
-			float G = FMath::Lerp(3.f, 0.5f, HeatGradient) * HeatFade;
-			float B = FMath::Lerp(1.f, 0.1f, HeatGradient) * HeatFade;
+			float R = FMath::Lerp(11.f, 4.5f, HeatGradient) * HeatFade;
+			float G = FMath::Lerp(7.f, 1.2f, HeatGradient) * HeatFade;
+			float B = FMath::Lerp(2.2f, 0.25f, HeatGradient) * HeatFade;
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(R, G, B));
 		}
 	}
@@ -151,7 +153,7 @@ void AExoHeatShimmer::Tick(float DeltaTime)
 	// Light fades with cubic falloff
 	if (HeatLight)
 	{
-		HeatLight->SetIntensity(5000.f * IntensityScale * Alpha * Alpha * Alpha);
+		HeatLight->SetIntensity(12000.f * IntensityScale * Alpha * Alpha * Alpha);
 	}
 }
 

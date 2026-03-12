@@ -15,6 +15,10 @@ class UExoInventoryComponent;
 class UExoGrenadeComponent;
 class UExoEmoteComponent;
 class UExoTrapComponent;
+class UStaticMeshComponent;
+class UPointLightComponent;
+class AExoZipline;
+class AExoDBNOBeacon;
 
 UCLASS()
 class EXORIFT_API AExoCharacter : public ACharacter
@@ -98,6 +102,18 @@ public:
 	// Mantling
 	void TryMantle();
 	bool IsMantling() const { return bIsMantling; }
+
+	// Wall-running
+	void WallJump();
+	bool IsWallRunning() const { return bIsWallRunning; }
+
+	// Double jump
+	void PerformDoubleJump();
+
+	// Zipline
+	void TryMountZipline();
+	void EndZipline(bool bJumpOff);
+	bool IsOnZipline() const { return bIsOnZipline; }
 
 	// ADS (Aim Down Sights)
 	void StartADS();
@@ -202,6 +218,24 @@ protected:
 
 	float DBNOHealthRemaining = 0.f;
 
+	// DBNO distress beacon (visible vertical beam for teammates)
+	UPROPERTY()
+	AExoDBNOBeacon* DBNOBeacon = nullptr;
+
+	// DBNO crawl trail (energy bleed marks)
+	FVector LastDBNOTrailPos = FVector::ZeroVector;
+	float DBNOTrailTimer = 0.f;
+
+	// Revive progress visual ring and light
+	UPROPERTY()
+	UStaticMeshComponent* ReviveRing = nullptr;
+
+	UPROPERTY()
+	UPointLightComponent* ReviveLight = nullptr;
+
+	void SpawnReviveRingEffect();
+	void DestroyReviveRingEffect();
+
 	// Tracks last damage dealer for DBNO bleed-out attribution
 	UPROPERTY()
 	AController* LastDamageInstigator = nullptr;
@@ -241,7 +275,19 @@ protected:
 	float DefaultCapsuleHalfHeight = 96.f;
 	float DefaultCameraZ = 64.f;
 
+	// Slide VFX/audio state
+	float SlideTrailTimer = 0.f;
+	float SlideTiltTarget = 0.f;
+	float SlideTiltCurrent = 0.f;
+
 	void TickSlide(float DeltaTime);
+
+	// Double jump
+	bool bCanDoubleJump = true;
+	bool bHasDoubleJumped = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|DoubleJump")
+	float DoubleJumpForce = 550.f;
 
 	// Mantling state
 	bool bIsMantling = false;
@@ -260,6 +306,47 @@ protected:
 
 	void TickMantle(float DeltaTime);
 
+	// Wall-running state
+	bool bIsWallRunning = false;
+	float WallRunTimer = 0.f;
+	FVector WallRunNormal = FVector::ZeroVector;
+	FVector WallRunDirection = FVector::ZeroVector;
+	int32 WallRunSide = 0; // -1 = left wall, +1 = right wall
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|WallRun")
+	float WallRunDuration = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|WallRun")
+	float WallRunSpeed = 800.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|WallRun")
+	float WallRunGravityScale = 0.15f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|WallRun")
+	float WallJumpForce = 600.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|WallRun")
+	float WallRunTraceDistance = 80.f;
+
+	float WallRunCameraTilt = 0.f;
+	float WallRunTrailTimer = 0.f;
+
+	void TryWallRun();
+	void TickWallRun(float DeltaTime);
+	void EndWallRun(bool bJumpOff);
+
+	// Zipline riding state
+	bool bIsOnZipline = false;
+	float ZiplineT = 0.f;
+	int32 ZiplineDirection = 1; // +1 = start→end, -1 = end→start
+	float ZiplineAudioTimer = 0.f;
+
+	UPROPERTY()
+	AExoZipline* CurrentZipline = nullptr;
+
+	void StartZipline(AExoZipline* Zipline, float StartT, int32 Direction);
+	void TickZipline(float DeltaTime);
+
 	// Footstep audio
 	float FootstepTimer = 0.f;
 	float FootstepInterval = 0.5f;
@@ -271,6 +358,9 @@ protected:
 
 	// Zone damage VFX/audio tracking (local only)
 	float ZoneDamageAudioTimer = 0.f;
+
+	// Combat stinger cooldown — throttles how often the stinger plays
+	float CombatStingerCooldown = 0.f;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

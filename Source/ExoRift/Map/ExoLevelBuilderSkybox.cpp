@@ -7,49 +7,12 @@
 
 void AExoLevelBuilder::BuildSkybox()
 {
-	// Large inverted sphere as skybox
+	// SkyAtmosphere handles the sky rendering now.
+	// We only add celestial objects: stars, nebulae, planet, station, debris.
 	if (!SphereMesh) return;
 
-	UStaticMeshComponent* SkySphere = NewObject<UStaticMeshComponent>(this);
-	SkySphere->SetupAttachment(RootComponent);
-	SkySphere->SetStaticMesh(SphereMesh);
-	SkySphere->SetWorldLocation(FVector(0.f, 0.f, 0.f));
-	SkySphere->SetWorldScale3D(FVector(-5000.f, -5000.f, -5000.f)); // Inverted normals
-	SkySphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SkySphere->CastShadow = false;
-	SkySphere->RegisterComponent();
-
-	{
-		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-		UMaterialInstanceDynamic* SkyMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-		// Deep space blue-purple gradient
-		SkyMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.01f, 0.015f, 0.04f));
-		SkySphere->SetMaterial(0, SkyMat);
-	}
-
-	// Nebula glow — colored spheres at far distance to tint the sky
+	// Distant nebula lights — subtle sky coloring that works with atmosphere
 	float NebulaDist = 400000.f;
-
-	// Purple-blue nebula (upper left)
-	UPointLightComponent* Nebula1 = NewObject<UPointLightComponent>(this);
-	Nebula1->SetupAttachment(RootComponent);
-	Nebula1->SetWorldLocation(FVector(-NebulaDist * 0.6f, NebulaDist * 0.3f, NebulaDist * 0.7f));
-	Nebula1->SetIntensity(80000.f);
-	Nebula1->SetAttenuationRadius(NebulaDist);
-	Nebula1->SetLightColor(FLinearColor(0.15f, 0.05f, 0.3f)); // Purple
-	Nebula1->CastShadows = false;
-	Nebula1->RegisterComponent();
-
-	// Teal-green nebula (lower right)
-	UPointLightComponent* Nebula2 = NewObject<UPointLightComponent>(this);
-	Nebula2->SetupAttachment(RootComponent);
-	Nebula2->SetWorldLocation(FVector(NebulaDist * 0.5f, -NebulaDist * 0.4f, NebulaDist * 0.3f));
-	Nebula2->SetIntensity(50000.f);
-	Nebula2->SetAttenuationRadius(NebulaDist * 0.8f);
-	Nebula2->SetLightColor(FLinearColor(0.02f, 0.15f, 0.12f)); // Teal
-	Nebula2->CastShadows = false;
-	Nebula2->RegisterComponent();
 
 	// Star field — dense scattered spheres across the sky dome
 	if (SphereMesh)
@@ -87,16 +50,17 @@ void AExoLevelBuilder::BuildSkybox()
 			// More color variety: white, blue, orange, yellow, red giant
 			FLinearColor StarCol;
 			int32 ColorType = i % 15;
-			if (ColorType < 6) StarCol = FLinearColor(10.f, 10.f, 12.f);       // White
-			else if (ColorType < 9) StarCol = FLinearColor(6.f, 8.f, 18.f);    // Blue
-			else if (ColorType < 11) StarCol = FLinearColor(18.f, 10.f, 3.f);  // Orange
-			else if (ColorType < 13) StarCol = FLinearColor(14.f, 14.f, 6.f);  // Yellow
-			else StarCol = FLinearColor(20.f, 5.f, 2.f);                        // Red giant
+			if (ColorType < 6) StarCol = FLinearColor(8.f, 8.f, 10.f);         // White
+			else if (ColorType < 9) StarCol = FLinearColor(5.f, 7.f, 15.f);    // Blue
+			else if (ColorType < 11) StarCol = FLinearColor(15.f, 8.f, 3.f);   // Orange
+			else if (ColorType < 13) StarCol = FLinearColor(12.f, 12.f, 5.f);  // Yellow
+			else StarCol = FLinearColor(16.f, 4.f, 1.5f);                       // Red giant
 
-			// Supergiants are extra bright
-			if (i % 25 == 0) StarCol = StarCol * 1.5f;
+			// Supergiants are a bit brighter
+			if (i % 25 == 0) StarCol = StarCol * 1.3f;
 
 			UMaterialInstanceDynamic* StarMat = UMaterialInstanceDynamic::Create(StarEmissiveMat, this);
+			if (!StarMat) { continue; }
 			StarMat->SetVectorParameterValue(TEXT("EmissiveColor"), StarCol);
 			Star->SetMaterial(0, StarMat);
 		}
@@ -109,14 +73,14 @@ void AExoLevelBuilder::BuildSkybox()
 		struct FNebCloud { FVector Pos; float Scale; FLinearColor Col; };
 		TArray<FNebCloud> Clouds = {
 			// Purple nebula cluster (upper left)
-			{{-250000.f, 120000.f, 300000.f}, 40000.f, {0.08f, 0.02f, 0.15f}},
-			{{-200000.f, 150000.f, 280000.f}, 30000.f, {0.06f, 0.03f, 0.12f}},
-			{{-220000.f, 100000.f, 320000.f}, 25000.f, {0.10f, 0.01f, 0.10f}},
+			{{-250000.f, 120000.f, 300000.f}, 40000.f, {0.18f, 0.045f, 0.34f}},
+			{{-200000.f, 150000.f, 280000.f}, 30000.f, {0.14f, 0.07f, 0.27f}},
+			{{-220000.f, 100000.f, 320000.f}, 25000.f, {0.22f, 0.022f, 0.22f}},
 			// Teal nebula (lower right)
-			{{200000.f, -160000.f, 180000.f}, 35000.f, {0.02f, 0.08f, 0.10f}},
-			{{180000.f, -130000.f, 200000.f}, 28000.f, {0.01f, 0.10f, 0.08f}},
+			{{200000.f, -160000.f, 180000.f}, 35000.f, {0.045f, 0.18f, 0.22f}},
+			{{180000.f, -130000.f, 200000.f}, 28000.f, {0.022f, 0.22f, 0.18f}},
 			// Warm orange wisps (near planet)
-			{{160000.f, -80000.f, 140000.f}, 20000.f, {0.10f, 0.04f, 0.01f}},
+			{{160000.f, -80000.f, 140000.f}, 20000.f, {0.22f, 0.09f, 0.022f}},
 		};
 		for (const auto& C : Clouds)
 		{
@@ -129,6 +93,7 @@ void AExoLevelBuilder::BuildSkybox()
 			Cloud->CastShadow = false;
 			Cloud->RegisterComponent();
 			UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(NebMat, this);
+			if (!CM) { continue; }
 			CM->SetVectorParameterValue(TEXT("EmissiveColor"), C.Col);
 			Cloud->SetMaterial(0, CM);
 		}
@@ -151,8 +116,9 @@ void AExoLevelBuilder::BuildSkybox()
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* PlanetMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!PlanetMat) { return; }
 		PlanetMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.04f, 0.025f, 0.015f));
+			FLinearColor(0.09f, 0.056f, 0.034f));
 		Planet->SetMaterial(0, PlanetMat);
 	}
 
@@ -172,8 +138,9 @@ void AExoLevelBuilder::BuildSkybox()
 		{
 			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!RingMat) { return; }
 			RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.02f, 0.015f, 0.01f));
+				FLinearColor(0.045f, 0.034f, 0.022f));
 			PlanetRing->SetMaterial(0, RingMat);
 		}
 	}
@@ -182,9 +149,9 @@ void AExoLevelBuilder::BuildSkybox()
 	UPointLightComponent* PlanetGlow = NewObject<UPointLightComponent>(this);
 	PlanetGlow->SetupAttachment(RootComponent);
 	PlanetGlow->SetWorldLocation(PlanetPos);
-	PlanetGlow->SetIntensity(40000.f);
-	PlanetGlow->SetAttenuationRadius(PlanetDist * 0.5f);
-	PlanetGlow->SetLightColor(FLinearColor(0.25f, 0.15f, 0.08f));
+	PlanetGlow->SetIntensity(5000.f);
+	PlanetGlow->SetAttenuationRadius(PlanetDist * 0.15f);
+	PlanetGlow->SetLightColor(FLinearColor(0.55f, 0.34f, 0.18f));
 	PlanetGlow->CastShadows = false;
 	PlanetGlow->RegisterComponent();
 
@@ -203,8 +170,9 @@ void AExoLevelBuilder::BuildSkybox()
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* MoonMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!MoonMat) { return; }
 		MoonMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.15f, 0.16f, 0.2f));
+			FLinearColor(0.34f, 0.36f, 0.45f));
 		Moon->SetMaterial(0, MoonMat);
 	}
 
@@ -231,8 +199,9 @@ void AExoLevelBuilder::BuildSkybox()
 			P->CastShadow = false;
 			P->RegisterComponent();
 			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(StationEmissiveMat, this);
+			if (!M) { return; }
 			M->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Col.R * 0.3f, Col.G * 0.3f, Col.B * 0.4f));
+				FLinearColor(Col.R * 0.7f, Col.G * 0.7f, Col.B * 0.9f));
 			P->SetMaterial(0, M);
 		};
 
@@ -260,9 +229,9 @@ void AExoLevelBuilder::BuildSkybox()
 		UPointLightComponent* StationLight = NewObject<UPointLightComponent>(this);
 		StationLight->SetupAttachment(RootComponent);
 		StationLight->SetWorldLocation(StationPos);
-		StationLight->SetIntensity(30000.f);
-		StationLight->SetAttenuationRadius(StationDist * 0.3f);
-		StationLight->SetLightColor(FLinearColor(0.3f, 0.5f, 0.8f));
+		StationLight->SetIntensity(3000.f);
+		StationLight->SetAttenuationRadius(StationDist * 0.1f);
+		StationLight->SetLightColor(FLinearColor(0.7f, 1.1f, 1.8f));
 		StationLight->CastShadows = false;
 		StationLight->RegisterComponent();
 	}
@@ -298,8 +267,9 @@ void AExoLevelBuilder::BuildSkybox()
 			Ast->RegisterComponent();
 
 			UMaterialInstanceDynamic* AM = UMaterialInstanceDynamic::Create(AsteroidMat, this);
+			if (!AM) { continue; }
 			AM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.03f + (i % 3) * 0.01f, 0.025f, 0.02f));
+				FLinearColor(0.07f + (i % 3) * 0.022f, 0.056f, 0.045f));
 			Ast->SetMaterial(0, AM);
 		}
 	}
@@ -343,8 +313,9 @@ void AExoLevelBuilder::BuildSkybox()
 
 			// Visible hull glow — sunlit edge + subtle warmth from planet
 			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DebrisEmissiveMat, this);
+			if (!DM) { continue; }
 			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(D.Col.R * 0.8f, D.Col.G * 0.6f, D.Col.B * 0.5f));
+				FLinearColor(D.Col.R * 1.8f, D.Col.G * 1.4f, D.Col.B * 1.1f));
 			Frag->SetMaterial(0, DM);
 		}
 
@@ -377,8 +348,9 @@ void AExoLevelBuilder::BuildSkybox()
 			SmallFrag->RegisterComponent();
 
 			UMaterialInstanceDynamic* DM = UMaterialInstanceDynamic::Create(DebrisEmissiveMat, this);
+			if (!DM) { continue; }
 			DM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.04f, 0.035f, 0.03f));
+				FLinearColor(0.09f, 0.08f, 0.07f));
 			SmallFrag->SetMaterial(0, DM);
 		}
 	}

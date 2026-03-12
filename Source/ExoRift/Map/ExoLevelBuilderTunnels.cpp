@@ -85,8 +85,8 @@ void AExoLevelBuilder::SpawnTunnelEntrance(const FVector& Pos, float Yaw)
 	UPointLightComponent* EntranceLight = NewObject<UPointLightComponent>(this);
 	EntranceLight->SetupAttachment(RootComponent);
 	EntranceLight->SetWorldLocation(Pos + FVector(0.f, 0.f, EntranceH - 50.f));
-	EntranceLight->SetIntensity(3000.f);
-	EntranceLight->SetAttenuationRadius(800.f);
+	EntranceLight->SetIntensity(7000.f);
+	EntranceLight->SetAttenuationRadius(1500.f);
 	EntranceLight->SetLightColor(FLinearColor(1.f, 0.4f, 0.1f));
 	EntranceLight->CastShadows = false;
 	EntranceLight->RegisterComponent();
@@ -100,8 +100,9 @@ void AExoLevelBuilder::SpawnTunnelEntrance(const FVector& Pos, float Yaw)
 	{
 		UMaterialInterface* StripeEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* StMat = UMaterialInstanceDynamic::Create(StripeEmissiveMat, this);
+		if (!StMat) { return; }
 		StMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(2.f, 0.8f, 0.1f));
+			FLinearColor(5.f, 2.f, 0.3f));
 		Stripe->SetMaterial(0, StMat);
 	}
 }
@@ -157,8 +158,9 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 		if (LightPanel)
 		{
 			UMaterialInstanceDynamic* LPMat = UMaterialInstanceDynamic::Create(PanelEmissiveMat, this);
+			if (!LPMat) { return; }
 			LPMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(3.f, 3.5f, 5.f));
+				FLinearColor(7.f, 8.f, 12.f));
 			LightPanel->SetMaterial(0, LPMat);
 		}
 
@@ -166,7 +168,7 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 		UPointLightComponent* TunnelLight = NewObject<UPointLightComponent>(this);
 		TunnelLight->SetupAttachment(RootComponent);
 		TunnelLight->SetWorldLocation(LightPos - FVector(0.f, 0.f, 20.f));
-		TunnelLight->SetIntensity(3000.f);
+		TunnelLight->SetIntensity(7000.f);
 		TunnelLight->SetAttenuationRadius(2000.f);
 		TunnelLight->SetLightColor(FLinearColor(0.6f, 0.7f, 1.f));
 		TunnelLight->CastShadows = false;
@@ -184,8 +186,9 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 		if (Guide && GuideMat)
 		{
 			UMaterialInstanceDynamic* GM = UMaterialInstanceDynamic::Create(GuideMat, this);
+			if (!GM) { return; }
 			GM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(1.5f, 0.6f, 0.08f));
+				FLinearColor(4.f, 1.5f, 0.2f));
 			Guide->SetMaterial(0, GM);
 		}
 	}
@@ -198,8 +201,9 @@ void AExoLevelBuilder::SpawnTunnelSegment(const FVector& Start, const FVector& E
 	if (CenterLine && GuideMat)
 	{
 		UMaterialInstanceDynamic* CLM = UMaterialInstanceDynamic::Create(GuideMat, this);
+		if (!CLM) { return; }
 		CLM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.2f, 0.6f, 1.2f));
+			FLinearColor(0.5f, 1.5f, 3.f));
 		CenterLine->SetMaterial(0, CLM);
 	}
 

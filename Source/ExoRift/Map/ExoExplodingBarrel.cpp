@@ -9,6 +9,8 @@
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
+#include "Engine/OverlapResult.h"
+#include "GameFramework/Character.h"
 #include "ExoRift.h"
 
 AExoExplodingBarrel::AExoExplodingBarrel()
@@ -32,6 +34,7 @@ AExoExplodingBarrel::AExoExplodingBarrel()
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.15f, 0.04f, 0.02f));
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.8f);
@@ -42,7 +45,7 @@ AExoExplodingBarrel::AExoExplodingBarrel()
 	WarnLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("WarnLight"));
 	WarnLight->SetupAttachment(BarrelMesh);
 	WarnLight->SetRelativeLocation(FVector(0.f, 0.f, 80.f));
-	WarnLight->SetIntensity(3000.f);
+	WarnLight->SetIntensity(6000.f);
 	WarnLight->SetAttenuationRadius(400.f);
 	WarnLight->SetLightColor(FLinearColor(1.f, 0.3f, 0.05f));
 	WarnLight->CastShadows = false;
@@ -56,12 +59,8 @@ void AExoExplodingBarrel::BeginPlay()
 
 void AExoExplodingBarrel::BuildBarrelVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeF(
-		TEXT("/Engine/BasicShapes/Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylF(
-		TEXT("/Engine/BasicShapes/Cylinder"));
-	UStaticMesh* CubeMesh = CubeF.Succeeded() ? CubeF.Object : nullptr;
-	UStaticMesh* CylMesh = CylF.Succeeded() ? CylF.Object : nullptr;
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube"));
+	UStaticMesh* CylMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder"));
 
 	UMaterialInterface* LitMatV = FExoMaterialFactory::GetLitEmissive();
 	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
@@ -84,13 +83,15 @@ void AExoExplodingBarrel::BuildBarrelVisuals()
 		if (Lum > 0.15f && EmissiveOpaque)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+				FLinearColor(Color.R * 5.f, Color.G * 5.f, Color.B * 5.f));
 			C->SetMaterial(0, Mat);
 		}
 		else if (LitMatV)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMatV, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -155,7 +156,7 @@ void AExoExplodingBarrel::Tick(float DeltaTime)
 	if (WarnLight)
 	{
 		float Pulse = 0.6f + 0.4f * FMath::Abs(FMath::Sin(Time * 1.5f));
-		WarnLight->SetIntensity(3000.f * Pulse);
+		WarnLight->SetIntensity(6000.f * Pulse);
 	}
 
 	// Flash hazard stripes brighter when damaged
@@ -206,6 +207,22 @@ void AExoExplodingBarrel::Explode(AController* InstigatorController)
 		this,
 		InstigatorController
 	);
+
+	// Knockback nearby characters and physics objects
+	TArray<FOverlapResult> BlastOverlaps;
+	FCollisionShape BlastShape = FCollisionShape::MakeSphere(ExplosionRadius);
+	GetWorld()->OverlapMultiByChannel(BlastOverlaps, GetActorLocation(),
+		FQuat::Identity, ECC_Pawn, BlastShape);
+	for (const FOverlapResult& O : BlastOverlaps)
+	{
+		ACharacter* Char = Cast<ACharacter>(O.GetActor());
+		if (!Char) continue;
+		FVector Dir = (Char->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		float Dist = FVector::Dist(Char->GetActorLocation(), GetActorLocation());
+		float Falloff = FMath::Clamp(1.f - Dist / ExplosionRadius, 0.f, 1.f);
+		float KnockbackForce = 1200.f * Falloff;
+		Char->LaunchCharacter(Dir * KnockbackForce + FVector(0.f, 0.f, 400.f * Falloff), false, false);
+	}
 
 	FExoTracerManager::SpawnExplosionEffect(GetWorld(), GetActorLocation(), ExplosionRadius);
 

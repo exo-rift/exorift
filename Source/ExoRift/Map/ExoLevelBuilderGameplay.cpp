@@ -270,7 +270,8 @@ void AExoLevelBuilder::PlaceCoverElements()
 			if (Mark)
 			{
 				UMaterialInstanceDynamic* MM = UMaterialInstanceDynamic::Create(MarkMat, this);
-				MM->SetVectorParameterValue(TEXT("EmissiveColor"), MC * 2.f);
+				if (!MM) { return; }
+				MM->SetVectorParameterValue(TEXT("EmissiveColor"), MC * 1.5f);
 				Mark->SetMaterial(0, MM);
 			}
 		}
@@ -305,8 +306,9 @@ void AExoLevelBuilder::PlaceCoverElements()
 			if (WStripe)
 			{
 				UMaterialInstanceDynamic* WM = UMaterialInstanceDynamic::Create(MarkMat, this);
+				if (!WM) { return; }
 				WM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(1.2f, 0.5f, 0.05f));
+					FLinearColor(2.7f, 1.1f, 0.11f));
 				WStripe->SetMaterial(0, WM);
 			}
 		}

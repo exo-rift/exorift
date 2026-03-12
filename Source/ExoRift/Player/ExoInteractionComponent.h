@@ -6,6 +6,7 @@
 #include "ExoInteractionComponent.generated.h"
 
 class AExoCharacter;
+class UPointLightComponent;
 
 // ---------------------------------------------------------------------------
 // IExoInteractable — interface for objects that can be interacted with
@@ -59,6 +60,21 @@ protected:
 
 private:
 	TWeakObjectPtr<AActor> CurrentInteractable;
+	TWeakObjectPtr<AActor> PreviousInteractable;
+
+	/** Pulsing point light that follows the focused interactable. */
+	UPROPERTY()
+	UPointLightComponent* HighlightLight = nullptr;
+
+	/** Phase accumulator for the highlight pulse animation. */
+	float HighlightPulsePhase = 0.f;
 
 	void UpdateTrace();
+	void UpdateHighlight(float DeltaTime);
+
+	/** Enable custom depth + spawn highlight light on the target actor. */
+	void ApplyHighlight(AActor* Target);
+
+	/** Disable custom depth + destroy highlight light from the target actor. */
+	void ClearHighlight(AActor* Target);
 };

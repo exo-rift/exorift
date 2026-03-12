@@ -52,7 +52,7 @@ AExoDeathBox::AExoDeathBox()
 	BoxLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("BoxLight"));
 	BoxLight->SetupAttachment(BoxBody);
 	BoxLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	BoxLight->SetIntensity(6000.f);
+	BoxLight->SetIntensity(14000.f);
 	BoxLight->SetAttenuationRadius(600.f);
 	BoxLight->CastShadows = false;
 }
@@ -76,20 +76,23 @@ void AExoDeathBox::BuildVisuals()
 
 	// Body — solid glowing element (opaque, unlit)
 	BodyMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+	if (!BodyMat) { return; }
 	BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(DeathColor.R * 1.5f, DeathColor.G * 1.5f, DeathColor.B * 1.5f));
+		FLinearColor(DeathColor.R * 4.f, DeathColor.G * 4.f, DeathColor.B * 4.f));
 	BoxBody->SetMaterial(0, BodyMat);
 
 	// Lid — solid glowing element (opaque, unlit)
 	UMaterialInstanceDynamic* LidMat = UMaterialInstanceDynamic::Create(EmissiveOpaque, this);
+	if (!LidMat) { return; }
 	LidMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(DeathColor.R * 0.8f, DeathColor.G * 0.8f, DeathColor.B * 0.8f));
+		FLinearColor(DeathColor.R * 2.f, DeathColor.G * 2.f, DeathColor.B * 2.f));
 	BoxLid->SetMaterial(0, LidMat);
 
 	// Holo beam — pure energy overlay (additive, unlit)
 	BeamMat = UMaterialInstanceDynamic::Create(EmissiveAdditive, this);
+	if (!BeamMat) { return; }
 	BeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(DeathColor.R * 3.f, DeathColor.G * 3.f, DeathColor.B * 3.f));
+		FLinearColor(DeathColor.R * 8.f, DeathColor.G * 8.f, DeathColor.B * 8.f));
 	HoloBeam->SetMaterial(0, BeamMat);
 
 	BoxLight->SetLightColor(DeathColor);
@@ -106,7 +109,7 @@ void AExoDeathBox::Tick(float DeltaTime)
 		// Fade out after looting
 		float FadeT = FMath::Clamp((Age - DespawnTime) / 5.f, 0.f, 1.f);
 		float Alpha = 1.f - FadeT;
-		BoxLight->SetIntensity(2000.f * Alpha);
+		BoxLight->SetIntensity(5000.f * Alpha);
 		if (BeamMat)
 		{
 			BeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
@@ -117,7 +120,7 @@ void AExoDeathBox::Tick(float DeltaTime)
 
 	// Pulsing glow
 	float Pulse = 0.7f + 0.3f * FMath::Sin(Age * 3.f);
-	BoxLight->SetIntensity(6000.f * Pulse);
+	BoxLight->SetIntensity(14000.f * Pulse);
 
 	if (BodyMat)
 	{
@@ -130,7 +133,7 @@ void AExoDeathBox::Tick(float DeltaTime)
 	{
 		float BeamPulse = 0.6f + 0.4f * FMath::Sin(Age * 2.f);
 		BeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(3.f * BeamPulse, 1.05f * BeamPulse, 0.45f * BeamPulse));
+			FLinearColor(8.f * BeamPulse, 2.8f * BeamPulse, 1.2f * BeamPulse));
 	}
 
 	// Slowly shrink beam over time
@@ -166,7 +169,7 @@ void AExoDeathBox::Interact(AExoCharacter* Interactor)
 
 	// Dim the visuals
 	HoloBeam->SetVisibility(false);
-	BoxLight->SetIntensity(2000.f);
+	BoxLight->SetIntensity(5000.f);
 	DespawnTime = Age; // Start fade from now
 
 	UE_LOG(LogExoRift, Log, TEXT("DeathBox of %s looted"), *DeadPlayerName);

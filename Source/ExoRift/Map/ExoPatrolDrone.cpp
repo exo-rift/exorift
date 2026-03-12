@@ -45,16 +45,16 @@ AExoPatrolDrone::AExoPatrolDrone()
 	DroneLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("DroneLight"));
 	DroneLight->SetupAttachment(BodyMesh);
 	DroneLight->SetRelativeLocation(FVector(30.f, 0.f, 0.f));
-	DroneLight->SetIntensity(4000.f);
-	DroneLight->SetAttenuationRadius(500.f);
+	DroneLight->SetIntensity(9000.f);
+	DroneLight->SetAttenuationRadius(900.f);
 	DroneLight->CastShadows = false;
 
 	// Downward scan light (searching beam feel)
 	ScanLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ScanLight"));
 	ScanLight->SetupAttachment(BodyMesh);
 	ScanLight->SetRelativeLocation(FVector(0.f, 0.f, -20.f));
-	ScanLight->SetIntensity(2000.f);
-	ScanLight->SetAttenuationRadius(400.f);
+	ScanLight->SetIntensity(5000.f);
+	ScanLight->SetAttenuationRadius(700.f);
 	ScanLight->CastShadows = false;
 }
 
@@ -73,11 +73,13 @@ void AExoPatrolDrone::InitDrone(const TArray<FVector>& InWaypoints,
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 2.f);
+		if (!BodyMat) { return; }
+		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 1.5f);
 		BodyMesh->SetMaterial(0, BodyMat);
 
 		UMaterialInstanceDynamic* RotorMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
-		RotorMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 0.5f);
+		if (!RotorMat) { return; }
+		RotorMat->SetVectorParameterValue(TEXT("EmissiveColor"), Color * 1.5f);
 		RotorL->SetMaterial(0, RotorMat);
 		RotorR->SetMaterial(0, RotorMat);
 	}
@@ -135,5 +137,5 @@ void AExoPatrolDrone::Tick(float DeltaTime)
 	// Pulsing scan light
 	float Time = GetWorld()->GetTimeSeconds();
 	float Pulse = 0.6f + 0.4f * FMath::Sin(Time * 3.f + BobPhase);
-	ScanLight->SetIntensity(2000.f * Pulse);
+	ScanLight->SetIntensity(5000.f * Pulse);
 }

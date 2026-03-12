@@ -44,14 +44,14 @@ AExoForceFieldGate::AExoForceFieldGate()
 
 	LeftLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("LeftLight"));
 	LeftLight->SetupAttachment(LeftPillar);
-	LeftLight->SetIntensity(15000.f);
-	LeftLight->SetAttenuationRadius(1200.f);
+	LeftLight->SetIntensity(8000.f);
+	LeftLight->SetAttenuationRadius(2000.f);
 	LeftLight->CastShadows = false;
 
 	RightLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RightLight"));
 	RightLight->SetupAttachment(LeftPillar);
-	RightLight->SetIntensity(15000.f);
-	RightLight->SetAttenuationRadius(1200.f);
+	RightLight->SetIntensity(8000.f);
+	RightLight->SetAttenuationRadius(2000.f);
 	RightLight->CastShadows = false;
 }
 
@@ -66,6 +66,7 @@ void AExoForceFieldGate::InitGate(float Width, float Height, const FLinearColor&
 	auto MakeEmissiveMat = [&](const FLinearColor& Emissive) -> UMaterialInstanceDynamic*
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!M) { return nullptr; }
 		M->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
 		return M;
 	};
@@ -92,7 +93,7 @@ void AExoForceFieldGate::InitGate(float Width, float Height, const FLinearColor&
 	BarrierMesh->SetRelativeLocation(FVector(0.f, Width * 0.5f, 0.f));
 	BarrierMesh->SetRelativeScale3D(FVector(0.01f, Width / 100.f, Height / 100.f));
 	BarrierMat = MakeEmissiveMat(
-		FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+		FLinearColor(Color.R * 18.f, Color.G * 18.f, Color.B * 18.f));
 	BarrierMesh->SetMaterial(0, BarrierMat);
 
 	// Accent lights on pillar tops
@@ -115,13 +116,13 @@ void AExoForceFieldGate::Tick(float DeltaTime)
 		float Flicker = 1.f + Wave + 0.1f * FMath::Sin(Time * 17.f);
 		BarrierMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(
-				GateColor.R * 8.f * Flicker,
-				GateColor.G * 8.f * Flicker,
-				GateColor.B * 8.f * Flicker));
+				GateColor.R * 5.f * Flicker,
+				GateColor.G * 5.f * Flicker,
+				GateColor.B * 5.f * Flicker));
 	}
 
 	// Lights pulse in sync
 	float LP = 1.f + 0.3f * FMath::Sin(Time * 2.5f);
-	LeftLight->SetIntensity(15000.f * LP);
-	RightLight->SetIntensity(15000.f * LP);
+	LeftLight->SetIntensity(8000.f * LP);
+	RightLight->SetIntensity(8000.f * LP);
 }

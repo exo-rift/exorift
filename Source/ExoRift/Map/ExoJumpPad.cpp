@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Visual/ExoScreenShake.h"
 #include "Core/ExoAudioManager.h"
+#include "Visual/ExoLaunchColumn.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Visual/ExoMaterialFactory.h"
 
@@ -58,8 +59,8 @@ AExoJumpPad::AExoJumpPad()
 	PadLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PadLight"));
 	PadLight->SetupAttachment(BasePlatform);
 	PadLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	PadLight->SetIntensity(6000.f);
-	PadLight->SetAttenuationRadius(600.f);
+	PadLight->SetIntensity(12000.f);
+	PadLight->SetAttenuationRadius(1000.f);
 	PadLight->CastShadows = false;
 }
 
@@ -73,6 +74,7 @@ void AExoJumpPad::BeginPlay()
 	if (LitMat && BasePlatform->GetStaticMesh())
 	{
 		UMaterialInstanceDynamic* BaseMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!BaseMat) { return; }
 		BaseMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.05f, 0.055f, 0.07f));
 		BaseMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
@@ -84,13 +86,15 @@ void AExoJumpPad::BeginPlay()
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		RingMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!RingMat) { return; }
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			AccentColor * 6.f);
+			AccentColor * 14.f);
 		GlowRing->SetMaterial(0, RingMat);
 
 		LensMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!LensMat) { return; }
 		LensMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			AccentColor * 10.f);
+			AccentColor * 22.f);
 		CenterLens->SetMaterial(0, LensMat);
 	}
 
@@ -119,14 +123,14 @@ void AExoJumpPad::Tick(float DeltaTime)
 	if (RingMat)
 	{
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			AccentColor * 6.f * Pulse);
+			AccentColor * 4.f * Pulse);
 	}
 	if (LensMat)
 	{
 		LensMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			AccentColor * 10.f * Pulse);
+			AccentColor * 6.f * Pulse);
 	}
-	PadLight->SetIntensity(bReady ? 6000.f * Pulse : 1000.f);
+	PadLight->SetIntensity(bReady ? 4000.f * Pulse : 800.f);
 }
 
 void AExoJumpPad::OnPadOverlap(UPrimitiveComponent* /*OverlappedComp*/,
@@ -152,4 +156,7 @@ void AExoJumpPad::OnPadOverlap(UPrimitiveComponent* /*OverlappedComp*/,
 	{
 		Audio->PlayImpactSound(GetActorLocation(), false);
 	}
+
+	// Launch column VFX — dramatic energy burst shooting upward
+	AExoLaunchColumn::SpawnColumn(GetWorld(), GetActorLocation(), AccentColor, LaunchSpeed * 0.4f);
 }

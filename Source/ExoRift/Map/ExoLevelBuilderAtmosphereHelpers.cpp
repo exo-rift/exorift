@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Visual/ExoEnvironmentAnimator.h"
 #include "Visual/ExoMaterialFactory.h"
 
 void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, float Scale)
@@ -29,8 +30,9 @@ void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, fl
 	{
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 		UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!SM) { return; }
 		SM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.5f, 2.f, 4.f));
+			FLinearColor(0.4f, 1.5f, 3.f));
 		Screen->SetMaterial(0, SM);
 	}
 
@@ -46,8 +48,9 @@ void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, fl
 		{
 			UMaterialInterface* BarEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BarEmissiveMat, this);
+			if (!BM) { return; }
 			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(1.f, 3.f, 5.f));
+				FLinearColor(0.6f, 2.f, 3.f));
 			Bar->SetMaterial(0, BM);
 		}
 	}
@@ -56,11 +59,20 @@ void AExoLevelBuilder::SpawnHolographicDisplay(const FVector& Pos, float Yaw, fl
 	UPointLightComponent* HoloLight = NewObject<UPointLightComponent>(this);
 	HoloLight->SetupAttachment(RootComponent);
 	HoloLight->SetWorldLocation(ScreenPos);
-	HoloLight->SetIntensity(8000.f * Scale);
-	HoloLight->SetAttenuationRadius(800.f * Scale);
+	HoloLight->SetIntensity(4000.f * Scale);
+	HoloLight->SetAttenuationRadius(600.f * Scale);
 	HoloLight->SetLightColor(FLinearColor(0.15f, 0.5f, 0.8f));
 	HoloLight->CastShadows = false;
 	HoloLight->RegisterComponent();
+
+	// Register hologram for bob + rotate animation
+	if (Screen)
+	{
+		if (AExoEnvironmentAnimator* Anim = AExoEnvironmentAnimator::Get(GetWorld()))
+		{
+			Anim->RegisterHologram(Screen, HoloLight);
+		}
+	}
 }
 
 void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
@@ -83,48 +95,38 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 	Spot->SetupAttachment(RootComponent);
 	Spot->SetWorldLocation(Base + FVector(0.f, 0.f, Height));
 	Spot->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
-	Spot->SetIntensity(80000.f);
-	Spot->SetAttenuationRadius(Height * 1.5f);
+	Spot->SetIntensity(15000.f);
+	Spot->SetAttenuationRadius(Height * 1.2f);
 	Spot->SetOuterConeAngle(35.f);
 	Spot->SetInnerConeAngle(20.f);
 	Spot->SetLightColor(Color);
 	Spot->CastShadows = false;
 	Spot->RegisterComponent();
 
-	// Visible beam geometry — emissive tapered cylinder from fixture to ground
+	// Visible beam geometry — thin additive cylinder, relies on volumetric fog
 	UMaterialInterface* BeamMat = FExoMaterialFactory::GetEmissiveAdditive();
 	float BeamHeight = Height - 50.f;
+
+	// Single thin beam core — volumetric fog does the rest
 	UStaticMeshComponent* Beam = SpawnStaticMesh(
 		Base + FVector(0.f, 0.f, BeamHeight * 0.5f + 50.f),
-		FVector(0.6f, 0.6f, BeamHeight / 100.f), FRotator::ZeroRotator,
+		FVector(0.08f, 0.08f, BeamHeight / 100.f), FRotator::ZeroRotator,
 		CylinderMesh, Color);
 	if (Beam && BeamMat)
 	{
 		UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BeamMat, this);
+		if (!BM) { return; }
 		BM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 0.4f, Color.G * 0.4f, Color.B * 0.4f));
+			FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
 		Beam->SetMaterial(0, BM);
-	}
-
-	// Narrower inner beam core — brighter
-	UStaticMeshComponent* InnerBeam = SpawnStaticMesh(
-		Base + FVector(0.f, 0.f, BeamHeight * 0.5f + 50.f),
-		FVector(0.15f, 0.15f, BeamHeight / 100.f + 0.1f), FRotator::ZeroRotator,
-		CylinderMesh, Color);
-	if (InnerBeam && BeamMat)
-	{
-		UMaterialInstanceDynamic* IBM = UMaterialInstanceDynamic::Create(BeamMat, this);
-		IBM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 1.5f, Color.G * 1.5f, Color.B * 1.5f));
-		InnerBeam->SetMaterial(0, IBM);
 	}
 
 	// Ground pool — bright circle on ground
 	UPointLightComponent* PoolLight = NewObject<UPointLightComponent>(this);
 	PoolLight->SetupAttachment(RootComponent);
 	PoolLight->SetWorldLocation(Base + FVector(0.f, 0.f, 50.f));
-	PoolLight->SetIntensity(5000.f);
-	PoolLight->SetAttenuationRadius(800.f);
+	PoolLight->SetIntensity(4000.f);
+	PoolLight->SetAttenuationRadius(1500.f);
 	PoolLight->SetLightColor(Color);
 	PoolLight->CastShadows = false;
 	PoolLight->RegisterComponent();
@@ -132,10 +134,11 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 	// Ground glow disk
 	UStaticMeshComponent* GroundDisk = SpawnStaticMesh(
 		Base + FVector(0.f, 0.f, 3.f),
-		FVector(3.f, 3.f, 0.02f), FRotator::ZeroRotator, CylinderMesh, Color);
+		FVector(2.f, 2.f, 0.02f), FRotator::ZeroRotator, CylinderMesh, Color);
 	if (GroundDisk && BeamMat)
 	{
 		UMaterialInstanceDynamic* GDM = UMaterialInstanceDynamic::Create(BeamMat, this);
+		if (!GDM) { return; }
 		GDM->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * 0.8f, Color.G * 0.8f, Color.B * 0.8f));
 		GroundDisk->SetMaterial(0, GDM);
@@ -150,8 +153,9 @@ void AExoLevelBuilder::SpawnSpotlightBeam(const FVector& Base, float Height,
 	{
 		UMaterialInterface* LEDEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* LM = UMaterialInstanceDynamic::Create(LEDEmissiveMat, this);
+		if (!LM) { return; }
 		LM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+			FLinearColor(Color.R * 15.f, Color.G * 15.f, Color.B * 15.f));
 		LED->SetMaterial(0, LM);
 	}
 }
@@ -177,8 +181,9 @@ void AExoLevelBuilder::SpawnEnergyConduit(const FVector& Start, const FVector& E
 	{
 		UMaterialInterface* CoreEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CoreEmissiveMat, this);
+		if (!CM) { return; }
 		CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 6.f, Color.G * 6.f, Color.B * 6.f));
+			FLinearColor(Color.R * 5.f, Color.G * 5.f, Color.B * 5.f));
 		Core->SetMaterial(0, CM);
 	}
 
@@ -192,8 +197,8 @@ void AExoLevelBuilder::SpawnEnergyConduit(const FVector& Start, const FVector& E
 		UPointLightComponent* JL = NewObject<UPointLightComponent>(this);
 		JL->SetupAttachment(RootComponent);
 		JL->SetWorldLocation(Pt);
-		JL->SetIntensity(2000.f);
-		JL->SetAttenuationRadius(400.f);
+		JL->SetIntensity(5000.f);
+		JL->SetAttenuationRadius(700.f);
 		JL->SetLightColor(Color);
 		JL->CastShadows = false;
 		JL->RegisterComponent();
@@ -203,8 +208,8 @@ void AExoLevelBuilder::SpawnEnergyConduit(const FVector& Start, const FVector& E
 	UPointLightComponent* MidLight = NewObject<UPointLightComponent>(this);
 	MidLight->SetupAttachment(RootComponent);
 	MidLight->SetWorldLocation(Mid);
-	MidLight->SetIntensity(1500.f);
-	MidLight->SetAttenuationRadius(300.f);
+	MidLight->SetIntensity(4000.f);
+	MidLight->SetAttenuationRadius(600.f);
 	MidLight->SetLightColor(Color);
 	MidLight->CastShadows = false;
 	MidLight->RegisterComponent();
@@ -220,8 +225,9 @@ void AExoLevelBuilder::SpawnNeonTube(const FVector& Pos, const FVector& Scale,
 	{
 		UMaterialInterface* TubeEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 		UMaterialInstanceDynamic* TM = UMaterialInstanceDynamic::Create(TubeEmissiveMat, this);
+		if (!TM) { return; }
 		TM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 10.f, Color.G * 10.f, Color.B * 10.f));
+			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
 		Tube->SetMaterial(0, TM);
 	}
 
@@ -230,8 +236,8 @@ void AExoLevelBuilder::SpawnNeonTube(const FVector& Pos, const FVector& Scale,
 	NL->SetupAttachment(RootComponent);
 	NL->SetWorldLocation(Pos);
 	float MaxDim = FMath::Max3(Scale.X, Scale.Y, Scale.Z) * 100.f;
-	NL->SetIntensity(4000.f);
-	NL->SetAttenuationRadius(FMath::Max(MaxDim * 2.f, 300.f));
+	NL->SetIntensity(3000.f);
+	NL->SetAttenuationRadius(FMath::Max(MaxDim * 3.f, 500.f));
 	NL->SetLightColor(Color);
 	NL->CastShadows = false;
 	NL->RegisterComponent();

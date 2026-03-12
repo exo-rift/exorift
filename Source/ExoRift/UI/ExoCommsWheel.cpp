@@ -1,5 +1,6 @@
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoPingSystem.h"
+#include "Core/ExoAudioManager.h"
 #include "GameFramework/HUD.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
@@ -245,6 +246,12 @@ void FExoCommsWheel::SendComm(int32 Index, UWorld* World)
 
 	FVector PawnLoc = PC->GetPawn()->GetActorLocation();
 	FExoPingSystem::AddPing(PawnLoc, GetCommText(Index), CommColors[Index]);
+
+	// Audio feedback: softer confirmation chirp for comms pings
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(World))
+	{
+		Audio->PlayAbilityActivateSound(PawnLoc, 1.6f);
+	}
 }
 
 FString FExoCommsWheel::GetCommText(int32 Index)

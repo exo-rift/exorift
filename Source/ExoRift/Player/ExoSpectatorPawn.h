@@ -26,7 +26,12 @@ protected:
 	FVector DeathLocation = FVector::ZeroVector;
 	bool bInDeathCam = false;
 	float DeathCamTimer = 0.f;
-	float DeathCamDuration = 3.f;
+	float DeathCamDuration = 4.f;
+
+	// Pullback phase: camera rises and pulls back before orbiting
+	float PullbackDuration = 1.2f;
+	FVector PullbackStartLoc = FVector::ZeroVector;
+	FRotator PullbackStartRot = FRotator::ZeroRotator;
 
 	// Free spectate
 	UPROPERTY()
@@ -35,5 +40,18 @@ protected:
 	int32 CurrentSpectateIndex = -1;
 	float TargetRefreshTimer = 0.f;
 
+	// Smooth follow state
+	bool bInFreeSpectate = false;
+	float SpectateFollowDistance = 350.f;
+	float SpectateFollowHeight = 180.f;
+	float SpectateInterpSpeed = 5.f;
+	float SpectateCamOrbitAngle = 0.f;
+	float SpectateIdleTimer = 0.f;
+
 	void RefreshSpectatableTargets();
+
+public:
+	FString GetSpectateTargetName() const;
+	bool IsInFreeSpectate() const { return bInFreeSpectate; }
+	APawn* GetCurrentSpectateTarget() const;
 };

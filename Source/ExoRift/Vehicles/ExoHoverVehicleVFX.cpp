@@ -15,6 +15,7 @@ void AExoHoverVehicle::BeginPlay()
 	if (Base)
 	{
 		BodyMat = UMaterialInstanceDynamic::Create(Base, this);
+		if (!BodyMat) { return; }
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.06f, 0.07f, 0.09f));
 		VehicleMesh->SetMaterial(0, BodyMat);
@@ -23,10 +24,11 @@ void AExoHoverVehicle::BeginPlay()
 		if (Windshield)
 		{
 			WindshieldMat = UMaterialInstanceDynamic::Create(Base, this);
+			if (!WindshieldMat) { return; }
 			WindshieldMat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.02f, 0.04f, 0.06f));
 			WindshieldMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.05f, 0.15f, 0.3f));
+				FLinearColor(0.1f, 0.3f, 0.6f));
 			Windshield->SetMaterial(0, WindshieldMat);
 		}
 
@@ -35,10 +37,11 @@ void AExoHoverVehicle::BeginPlay()
 		{
 			if (!Panel) return;
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(Base, this);
+			if (!Mat) { return; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.05f, 0.06f, 0.08f));
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.02f, 0.08f, 0.15f));
+				FLinearColor(0.04f, 0.16f, 0.3f));
 			Panel->SetMaterial(0, Mat);
 		};
 		SetPanelMat(SidePanelL);
@@ -48,6 +51,7 @@ void AExoHoverVehicle::BeginPlay()
 		if (RearFin)
 		{
 			UMaterialInstanceDynamic* FinMat = UMaterialInstanceDynamic::Create(Base, this);
+			if (!FinMat) { return; }
 			FinMat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.08f, 0.08f, 0.1f));
 			RearFin->SetMaterial(0, FinMat);
@@ -57,6 +61,7 @@ void AExoHoverVehicle::BeginPlay()
 		if (HoverDustL)
 		{
 			DustMat = UMaterialInstanceDynamic::Create(Base, this);
+			if (!DustMat) { return; }
 			DustMat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.2f, 0.2f, 0.18f));
 			HoverDustL->SetMaterial(0, DustMat);
@@ -70,10 +75,11 @@ void AExoHoverVehicle::BeginPlay()
 		if (TBase)
 		{
 			ThrusterMat = UMaterialInstanceDynamic::Create(TBase, this);
+			if (!ThrusterMat) { return; }
 			ThrusterMat->SetVectorParameterValue(TEXT("BaseColor"),
 				FLinearColor(0.1f, 0.4f, 0.8f));
 			ThrusterMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.2f, 1.f, 3.f));
+				FLinearColor(0.4f, 2.f, 6.f));
 			ThrusterL->SetMaterial(0, ThrusterMat);
 			if (ThrusterR) ThrusterR->SetMaterial(0, ThrusterMat);
 		}
@@ -87,8 +93,8 @@ void AExoHoverVehicle::UpdateVFX(float DeltaTime)
 	bool bBoosted = bIsBoosting && CurrentBoostEnergy > 0.f;
 
 	// Engine glow intensity scales with speed
-	float BaseIntensity = 3000.f + 8000.f * SpeedPct;
-	float BoostExtra = bBoosted ? 12000.f : 0.f;
+	float BaseIntensity = 7000.f + 18000.f * SpeedPct;
+	float BoostExtra = bBoosted ? 25000.f : 0.f;
 	float Pulse = 1.f + 0.2f * FMath::Sin(Time * 15.f);
 	float Intensity = (BaseIntensity + BoostExtra) * Pulse;
 
@@ -127,8 +133,8 @@ void AExoHoverVehicle::UpdateVFX(float DeltaTime)
 		float EmScale = 1.f + 4.f * SpeedPct;
 		if (bBoosted) EmScale *= 2.f;
 		FLinearColor EmCol = bBoosted
-			? FLinearColor(3.f * EmScale, 1.5f * EmScale, 0.3f * EmScale)
-			: FLinearColor(0.2f * EmScale, 1.f * EmScale, 3.f * EmScale);
+			? FLinearColor(6.f * EmScale, 3.f * EmScale, 0.6f * EmScale)
+			: FLinearColor(0.4f * EmScale, 2.f * EmScale, 6.f * EmScale);
 		ThrusterMat->SetVectorParameterValue(TEXT("EmissiveColor"), EmCol);
 	}
 
@@ -146,8 +152,8 @@ void AExoHoverVehicle::UpdateVFX(float DeltaTime)
 	if (HeadlightL && HeadlightR)
 	{
 		float HeadIntensity = bIsOccupied
-			? 80000.f + 40000.f * SpeedPct
-			: 20000.f; // Dim parking lights when empty
+			? 180000.f + 90000.f * SpeedPct
+			: 45000.f; // Dim parking lights when empty
 		HeadlightL->SetIntensity(HeadIntensity);
 		HeadlightR->SetIntensity(HeadIntensity);
 	}

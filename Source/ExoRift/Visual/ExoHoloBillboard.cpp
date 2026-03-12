@@ -42,8 +42,8 @@ AExoHoloBillboard::AExoHoloBillboard()
 
 	ScreenGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("Glow"));
 	ScreenGlow->SetupAttachment(ScreenMesh);
-	ScreenGlow->SetIntensity(15000.f);
-	ScreenGlow->SetAttenuationRadius(3000.f);
+	ScreenGlow->SetIntensity(30000.f);
+	ScreenGlow->SetAttenuationRadius(5000.f);
 	ScreenGlow->CastShadows = false;
 
 	BaseColor = FLinearColor(0.2f, 0.6f, 1.f);
@@ -61,8 +61,9 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 	// Main screen — dark with subtle glow
 	ScreenMesh->SetRelativeScale3D(FVector(Width / 100.f, 5.f, Height / 100.f));
 	ScreenMat = UMaterialInstanceDynamic::Create(EmissiveOpaqueMat, this);
+	if (!ScreenMat) { return; }
 	ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-		FLinearColor(Color.R * 0.2f, Color.G * 0.2f, Color.B * 0.2f));
+		FLinearColor(Color.R * 0.5f, Color.G * 0.5f, Color.B * 0.5f));
 	ScreenMesh->SetMaterial(0, ScreenMat);
 
 	// Frame accents
@@ -72,8 +73,9 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 		F->SetRelativeLocation(FVector(0.f, 0.f, ZOff));
 		F->SetRelativeScale3D(FVector(FrameW, 0.12f, 0.08f));
 		UMaterialInstanceDynamic* FM = UMaterialInstanceDynamic::Create(EmissiveOpaqueMat, this);
+		if (!FM) { return; }
 		FM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
 		F->SetMaterial(0, FM);
 	};
 	SetupFrame(FrameTop, Height / 200.f + 2.f);
@@ -97,7 +99,7 @@ void AExoHoloBillboard::InitBillboard(const FLinearColor& Color, float Width, fl
 		BarPositions[i] = FMath::RandRange(-Width * 0.5f, Width * 0.5f);
 
 		BarMats[i] = UMaterialInstanceDynamic::Create(EmissiveAdditiveMat, this);
-		float Em = FMath::RandRange(2.f, 6.f);
+		float Em = FMath::RandRange(5.f, 15.f);
 		BarMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Color.R * Em, Color.G * Em, Color.B * Em));
 		TextBars[i]->SetMaterial(0, BarMats[i]);
@@ -136,9 +138,9 @@ void AExoHoloBillboard::Tick(float DeltaTime)
 	if (ScreenMat)
 	{
 		ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(BaseColor.R * 0.2f * Flicker,
-				BaseColor.G * 0.2f * Flicker,
-				BaseColor.B * 0.2f * Flicker));
+			FLinearColor(BaseColor.R * 0.5f * Flicker,
+				BaseColor.G * 0.5f * Flicker,
+				BaseColor.B * 0.5f * Flicker));
 	}
-	ScreenGlow->SetIntensity(15000.f * Flicker);
+	ScreenGlow->SetIntensity(30000.f * Flicker);
 }

@@ -44,7 +44,10 @@ private:
 
 	TArray<FLinearColor> DamageBaseColors;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 };

@@ -4,6 +4,7 @@
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Visual/ExoMaterialFactory.h"
+#include "ExoRift.h"
 
 void AExoLevelBuilder::BuildInteriors()
 {
@@ -48,6 +49,7 @@ void AExoLevelBuilder::BuildInteriors()
 		{
 			UMaterialInterface* StripEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripEmissiveMat, this);
+			if (!SM) { return; }
 			SM->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(0.2f, 2.f, 0.4f));
 			Strip->SetMaterial(0, SM);
@@ -81,8 +83,9 @@ void AExoLevelBuilder::BuildInteriors()
 		{
 			UMaterialInterface* TrayEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* TM = UMaterialInstanceDynamic::Create(TrayEmissiveMat, this);
+			if (!TM) { return; }
 			TM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(ToolCol.R * 2.f, ToolCol.G * 2.f, ToolCol.B * 2.f));
+				FLinearColor(ToolCol.R * 1.5f, ToolCol.G * 1.5f, ToolCol.B * 1.5f));
 			Tray->SetMaterial(0, TM);
 		}
 	};
@@ -119,8 +122,9 @@ void AExoLevelBuilder::BuildInteriors()
 			if (C)
 			{
 				UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(CrossEmissiveMat, this);
+				if (!CM) { return; }
 				CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(3.f, 0.3f, 0.2f));
+					FLinearColor(2.f, 0.2f, 0.1f));
 				C->SetMaterial(0, CM);
 			}
 		}
@@ -284,9 +288,10 @@ void AExoLevelBuilder::BuildInteriors()
 				{
 					UMaterialInterface* MonEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 					UMaterialInstanceDynamic* MSM = UMaterialInstanceDynamic::Create(MonEmissiveMat, this);
+					if (!MSM) { return; }
 					MSM->SetVectorParameterValue(TEXT("EmissiveColor"),
-						FLinearColor(ScreenCol.R * 3.f, ScreenCol.G * 3.f,
-							ScreenCol.B * 3.f));
+						FLinearColor(ScreenCol.R * 2.f, ScreenCol.G * 2.f,
+							ScreenCol.B * 2.f));
 					MonScreen->SetMaterial(0, MSM);
 				}
 			}
@@ -299,8 +304,8 @@ void AExoLevelBuilder::BuildInteriors()
 		UPointLightComponent* ArrayLight = NewObject<UPointLightComponent>(this);
 		ArrayLight->SetupAttachment(RootComponent);
 		ArrayLight->SetWorldLocation(ArrayCenter + FVector(0.f, -50.f, 100.f));
-		ArrayLight->SetIntensity(2000.f);
-		ArrayLight->SetAttenuationRadius(600.f);
+		ArrayLight->SetIntensity(5000.f);
+		ArrayLight->SetAttenuationRadius(1000.f);
 		ArrayLight->SetLightColor(FLinearColor(0.15f, 0.3f, 0.5f));
 		ArrayLight->CastShadows = false;
 		ArrayLight->RegisterComponent();
@@ -321,8 +326,9 @@ void AExoLevelBuilder::BuildInteriors()
 		{
 			UMaterialInterface* CentEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* CRM = UMaterialInstanceDynamic::Create(CentEmissiveMat, this);
+			if (!CRM) { return; }
 			CRM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.3f, 2.f, 1.f));
+				FLinearColor(0.3f, 1.5f, 0.8f));
 			CentRing->SetMaterial(0, CRM);
 		}
 
@@ -363,4 +369,84 @@ void AExoLevelBuilder::BuildInteriors()
 	SpawnShelf(FVector(4000.f, 1000.f, 10.f), 0.f, 3);
 	SpawnShelf(FVector(4000.f, -1000.f, 10.f), 0.f, 3);
 	SpawnShelf(FVector(-5000.f, 79500.f, 10.f), 90.f, 4);
+
+	// === QUATERNIUS INTERIOR MESHES — floor tiles, wall details, doors ===
+	if (bHasQuaterniusAssets)
+	{
+		// Floor tiles in central hub interior
+		if (QT_FloorBasic)
+		{
+			for (int32 FX = -1; FX <= 1; FX++)
+				for (int32 FY = -1; FY <= 1; FY++)
+					SpawnRawMesh(FVector(FX * 800.f, FY * 800.f, 5.f),
+						FVector(2.f), FRotator::ZeroRotator, QT_FloorBasic);
+		}
+		if (QT_FloorSide)
+		{
+			// Floor edge tiles around hub perimeter
+			SpawnRawMesh(FVector(2400.f, 0.f, 5.f), FVector(2.f), FRotator(0.f, 90.f, 0.f), QT_FloorSide);
+			SpawnRawMesh(FVector(-2400.f, 0.f, 5.f), FVector(2.f), FRotator(0.f, -90.f, 0.f), QT_FloorSide);
+		}
+		if (QT_FloorCorner)
+		{
+			SpawnRawMesh(FVector(2400.f, 2400.f, 5.f), FVector(2.f), FRotator(0.f, 90.f, 0.f), QT_FloorCorner);
+			SpawnRawMesh(FVector(-2400.f, -2400.f, 5.f), FVector(2.f), FRotator(0.f, -90.f, 0.f), QT_FloorCorner);
+		}
+
+		// South research lab — floor tiles
+		if (QT_FloorBasic)
+		{
+			for (int32 FX = 0; FX < 3; FX++)
+				SpawnRawMesh(FVector(3000.f + FX * 800.f, -80500.f, 5.f),
+					FVector(2.f), FRotator::ZeroRotator, QT_FloorBasic);
+		}
+
+		// Wall vents — decorative details in hub and north compound
+		if (QT_DetailVent1)
+		{
+			SpawnRawMesh(FVector(3800.f, 0.f, 150.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_DetailVent1);
+			SpawnRawMesh(FVector(-3800.f, 0.f, 150.f), FVector(1.5f), FRotator(0.f, -90.f, 0.f), QT_DetailVent1);
+			SpawnRawMesh(FVector(-5000.f, 80500.f, 150.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_DetailVent1);
+		}
+
+		// Exposed pipes along walls — industrial look
+		if (QT_DetailPipesLong)
+		{
+			SpawnRawMesh(FVector(0.f, 2800.f, 200.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DetailPipesLong);
+			SpawnRawMesh(FVector(0.f, -2800.f, 200.f), FVector(2.f), FRotator(0.f, 180.f, 0.f), QT_DetailPipesLong);
+			// North warehouse pipes
+			SpawnRawMesh(FVector(-5000.f, 82000.f, 200.f), FVector(2.f), FRotator(0.f, 90.f, 0.f), QT_DetailPipesLong);
+		}
+
+		// Roof tile with pipes — over East power station interior
+		if (QT_RoofPipes)
+		{
+			SpawnRawMesh(FVector(80000.f, 0.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
+			SpawnRawMesh(FVector(80000.f, 2000.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
+		}
+
+		// Interior doors (Quaternius doors between rooms)
+		if (QT_DoorSingle)
+		{
+			SpawnRawMesh(FVector(0.f, 2000.f, 0.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DoorSingle);
+			SpawnRawMesh(FVector(0.f, -2000.f, 0.f), FVector(2.f), FRotator(0.f, 180.f, 0.f), QT_DoorSingle);
+		}
+		if (QT_DoorDoubleL)
+		{
+			// Wide doorways in North warehouse
+			SpawnRawMesh(FVector(-5000.f, 84000.f, 0.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DoorDoubleL);
+		}
+
+		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Quaternius interior tiles, vents, pipes placed"));
+	}
+
+	// === KENNEY DOORS inside buildings ===
+	if (bHasKenneyAssets && KN_Door)
+	{
+		// Internal doors within hub building
+		SpawnRawMesh(FVector(3000.f, 0.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), KN_Door);
+		SpawnRawMesh(FVector(-3000.f, 0.f, 0.f), FVector(1.5f), FRotator(0.f, -90.f, 0.f), KN_Door);
+		// South lab internal doors
+		SpawnRawMesh(FVector(3000.f, -80000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), KN_Door);
+	}
 }

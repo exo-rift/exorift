@@ -39,8 +39,8 @@ AExoShellCasing::AExoShellCasing()
 	CasingLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CasingLight"));
 	CasingLight->SetupAttachment(CasingMesh);
 	CasingLight->SetRelativeLocation(FVector(45.f, 0.f, 0.f));
-	CasingLight->SetIntensity(800.f);
-	CasingLight->SetAttenuationRadius(80.f);
+	CasingLight->SetIntensity(1800.f);
+	CasingLight->SetAttenuationRadius(110.f);
 	CasingLight->CastShadows = false;
 }
 
@@ -67,8 +67,9 @@ void AExoShellCasing::InitCasing(const FVector& EjectDirection, const FLinearCol
 	FLinearColor Tinted = FMath::Lerp(Brass, Color, 0.2f);
 	UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(
 		FExoMaterialFactory::GetLitEmissive(), this);
+	if (!BodyMat) { return; }
 	BodyMat->SetVectorParameterValue(TEXT("BaseColor"), Tinted);
-	BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Tinted * 3.f);
+	BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), Tinted * 7.f);
 	CasingMesh->SetMaterial(0, BodyMat);
 
 	// Hot tip — weapon-colored emissive glow
@@ -76,13 +77,14 @@ void AExoShellCasing::InitCasing(const FVector& EjectDirection, const FLinearCol
 	if (EmMat)
 	{
 		UMaterialInstanceDynamic* TipMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!TipMat) { return; }
 		TipMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
+			FLinearColor(Color.R * 18.f, Color.G * 18.f, Color.B * 18.f));
 		HotTip->SetMaterial(0, TipMat);
 	}
 
 	CasingLight->SetLightColor(Color);
-	CasingLight->SetIntensity(1200.f);
+	CasingLight->SetIntensity(2800.f);
 }
 
 void AExoShellCasing::Tick(float DeltaTime)
@@ -116,12 +118,12 @@ void AExoShellCasing::Tick(float DeltaTime)
 	if (TipMat)
 	{
 		TipMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(TipColor.R * 8.f * HeatFade,
-				TipColor.G * 8.f * HeatFade, TipColor.B * 8.f * HeatFade));
+			FLinearColor(TipColor.R * 18.f * HeatFade,
+				TipColor.G * 18.f * HeatFade, TipColor.B * 18.f * HeatFade));
 	}
 
 	// Light dims as tip cools
-	CasingLight->SetIntensity(1200.f * HeatFade);
+	CasingLight->SetIntensity(2800.f * HeatFade);
 
 	if (Age >= Lifetime) Destroy();
 }

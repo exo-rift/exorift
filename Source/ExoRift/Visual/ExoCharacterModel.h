@@ -29,8 +29,11 @@ private:
 	UStaticMeshComponent* AddPart(const FVector& Offset, const FVector& Scale,
 		const FLinearColor& Color, UStaticMesh* Mesh = nullptr);
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 
 	UPROPERTY()

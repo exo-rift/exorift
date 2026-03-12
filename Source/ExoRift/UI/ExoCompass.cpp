@@ -51,7 +51,44 @@ void FExoCompass::AddMarker(float WorldYaw, const FString& Label, FLinearColor C
 	Markers.Add(M);
 }
 
-void FExoCompass::Draw(UCanvas* Canvas, UFont* Font, float PlayerYaw)
+const TArray<FExoCompass::FPOILandmark>& FExoCompass::GetPOILandmarks()
+{
+	static TArray<FPOILandmark> POIs = {
+		// Central hub
+		{TEXT("COMMAND CENTER"),       FVector(0.f, 0.f, 0.f)},
+		// Major landmarks from level builder
+		{TEXT("CRASHED SHIP"),         FVector(30000.f, 40000.f, 0.f)},
+		{TEXT("REACTOR"),              FVector(0.f, -3000.f, 10.f)},
+		{TEXT("MINING SITE"),          FVector(-40000.f, -60000.f, 0.f)},
+		// Named regions / compounds
+		{TEXT("INDUSTRIAL"),           FVector(0.f, 80000.f, 0.f)},
+		{TEXT("RESEARCH LABS"),        FVector(0.f, -80000.f, 0.f)},
+		{TEXT("POWER STATION"),        FVector(80000.f, 0.f, 0.f)},
+		{TEXT("BARRACKS"),             FVector(-80000.f, 0.f, 0.f)},
+		// Corner outposts
+		{TEXT("OUTPOST ALPHA"),        FVector(120000.f, 120000.f, 0.f)},
+		{TEXT("OUTPOST BRAVO"),        FVector(-120000.f, 120000.f, 0.f)},
+		{TEXT("OUTPOST CHARLIE"),      FVector(120000.f, -120000.f, 0.f)},
+		{TEXT("OUTPOST DELTA"),        FVector(-120000.f, -120000.f, 0.f)},
+		// Scattered landmarks
+		{TEXT("CROSSROADS"),           FVector(40000.f, 40000.f, 0.f)},
+		{TEXT("THE RUINS"),            FVector(-50000.f, 50000.f, 0.f)},
+		{TEXT("SCRAPYARD"),            FVector(60000.f, -40000.f, 0.f)},
+		{TEXT("DARK HOLLOW"),          FVector(-30000.f, -50000.f, 0.f)},
+		{TEXT("WATCHTOWER"),           FVector(20000.f, -70000.f, 0.f)},
+		{TEXT("RELAY STATION"),        FVector(-70000.f, -20000.f, 0.f)},
+		{TEXT("OVERLOOK"),             FVector(50000.f, 70000.f, 0.f)},
+		{TEXT("SIGNAL POINT"),         FVector(-100000.f, -80000.f, 0.f)},
+		{TEXT("CITADEL"),              FVector(90000.f, 50000.f, 0.f)},
+		{TEXT("NORTHERN RIDGE"),       FVector(-20000.f, 120000.f, 0.f)},
+		// Fuel depots
+		{TEXT("FUEL DEPOT W"),         FVector(-50000.f, 30000.f, 0.f)},
+		{TEXT("FUEL DEPOT E"),         FVector(40000.f, -50000.f, 0.f)},
+	};
+	return POIs;
+}
+
+void FExoCompass::Draw(UCanvas* Canvas, UFont* Font, float PlayerYaw, const FVector& PlayerLocation)
 {
 	if (!Canvas || !Font) return;
 
@@ -194,6 +231,61 @@ void FExoCompass::Draw(UCanvas* Canvas, UFont* Font, float PlayerYaw)
 				LW + 6.f, LH + 2.f, FLinearColor(0.f, 0.f, 0.f, 0.4f * Alpha));
 			SetColor(Canvas, C);
 			Canvas->DrawText(Font, M.Label, MX - LW * 0.5f, BarY - LH - 3.f, 0.7f, 0.7f);
+		}
+	}
+
+	// POI landmark labels — muted cyan, drawn below the compass bar
+	{
+		const FLinearColor POIColor(0.45f, 0.75f, 0.9f, 0.7f);
+		const FLinearColor POIShadow(0.f, 0.f, 0.f, 0.35f);
+		const float POITextScale = 0.6f;
+		// Y position: below bearing number (BarY + BarHeight + bearing area)
+		const float POIY = BarY + BarHeight + 16.f;
+
+		for (const FPOILandmark& POI : GetPOILandmarks())
+		{
+			// Distance check — only show nearby POIs
+			float Dist2D = FVector::Dist2D(PlayerLocation, POI.WorldLocation);
+			if (Dist2D > POIMaxDistance || Dist2D < 100.f) continue;
+
+			// Calculate bearing from player to POI in degrees
+			FVector Dir = POI.WorldLocation - PlayerLocation;
+			float BearingYaw = FMath::RadiansToDegrees(FMath::Atan2(Dir.Y, Dir.X));
+
+			float PX = YawToScreenX(BearingYaw);
+			if (PX < BarX || PX > BarX + BarWidth) continue;
+
+			// Fade out labels at close range (< 5000u) and far range (> 45000u)
+			float DistAlpha = 1.f;
+			if (Dist2D < 5000.f)
+				DistAlpha = FMath::Clamp((Dist2D - 100.f) / 4900.f, 0.f, 1.f);
+			else if (Dist2D > 45000.f)
+				DistAlpha = FMath::Clamp((POIMaxDistance - Dist2D) / 5000.f, 0.f, 1.f);
+
+			FString Label = POI.Name;
+			float PW, PH;
+			Canvas->TextSize(Font, Label, PW, PH);
+			PW *= POITextScale;
+			PH *= POITextScale;
+
+			FLinearColor Col = POIColor;
+			Col.A *= DistAlpha;
+
+			// Tick line from bar bottom to label
+			DrawFilledRect(Canvas, PX, BarY + BarHeight, 1.f, POIY - (BarY + BarHeight),
+				FLinearColor(0.45f, 0.75f, 0.9f, 0.15f * DistAlpha));
+
+			// Shadow
+			FLinearColor Shadow = POIShadow;
+			Shadow.A *= DistAlpha;
+			SetColor(Canvas, Shadow);
+			Canvas->DrawText(Font, Label,
+				PX - PW * 0.5f + 1.f, POIY + 1.f, POITextScale, POITextScale);
+
+			// Label text
+			SetColor(Canvas, Col);
+			Canvas->DrawText(Font, Label,
+				PX - PW * 0.5f, POIY, POITextScale, POITextScale);
 		}
 	}
 }

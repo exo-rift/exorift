@@ -97,6 +97,7 @@ protected:
 	float EnergyPerShot = 1.f;
 
 	float CurrentEnergy = 100.f;
+	bool bLowEnergyWarningPlayed = false;
 
 	// Overheat system
 	UPROPERTY(EditDefaultsOnly, Category = "Heat")
@@ -179,6 +180,12 @@ protected:
 	float SwayReturnSpeed = 8.f;
 	float SwayAmount = 0.4f;
 	float MaxSwayOffset = 3.f;
+
+	// ADS breathing sway — subtle figure-8 weapon drift when aiming
+	float GetADSBreathingSwayAmount() const;
+
+	/** Override to reduce ADS sway (e.g. sniper hold-breath). Returns 0-1. */
+	virtual float GetBreathHoldFactor() const { return 1.f; }
 
 	// Equip/draw animation
 	float DrawBlend = 0.f;

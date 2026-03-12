@@ -53,8 +53,8 @@ AExoLootCrate::AExoLootCrate()
 	CrateLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CrateLight"));
 	CrateLight->SetupAttachment(CrateBody);
 	CrateLight->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
-	CrateLight->SetIntensity(4000.f);
-	CrateLight->SetAttenuationRadius(500.f);
+	CrateLight->SetIntensity(9000.f);
+	CrateLight->SetAttenuationRadius(800.f);
 	CrateLight->CastShadows = false;
 
 	BobPhase = FMath::RandRange(0.f, 6.28f);
@@ -82,6 +82,7 @@ void AExoLootCrate::BuildVisuals()
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!BodyMat) { return; }
 		BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
 		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -90,6 +91,7 @@ void AExoLootCrate::BuildVisuals()
 
 		// Lid — slightly lighter
 		LidMat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!LidMat) { return; }
 		LidMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.1f));
 		LidMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		LidMat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -99,12 +101,14 @@ void AExoLootCrate::BuildVisuals()
 
 	// Glowing accent strips
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-	FLinearColor StripEm(CrateColor.R * 5.f, CrateColor.G * 5.f, CrateColor.B * 5.f);
+	FLinearColor StripEm(CrateColor.R * 12.f, CrateColor.G * 12.f, CrateColor.B * 12.f);
 	StripMat1 = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+	if (!StripMat1) { return; }
 	StripMat1->SetVectorParameterValue(TEXT("EmissiveColor"), StripEm);
 	GlowStrip1->SetMaterial(0, StripMat1);
 
 	StripMat2 = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+	if (!StripMat2) { return; }
 	StripMat2->SetVectorParameterValue(TEXT("EmissiveColor"), StripEm);
 	GlowStrip2->SetMaterial(0, StripMat2);
 
@@ -120,11 +124,11 @@ void AExoLootCrate::Tick(float DeltaTime)
 		// Pulse glow strips
 		BobPhase += DeltaTime * 3.f;
 		float Pulse = 0.6f + 0.4f * FMath::Sin(BobPhase);
-		FLinearColor Em(CrateColor.R * 5.f * Pulse, CrateColor.G * 5.f * Pulse,
-			CrateColor.B * 5.f * Pulse);
+		FLinearColor Em(CrateColor.R * 3.f * Pulse, CrateColor.G * 3.f * Pulse,
+			CrateColor.B * 3.f * Pulse);
 		if (StripMat1) StripMat1->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
 		if (StripMat2) StripMat2->SetVectorParameterValue(TEXT("EmissiveColor"), Em);
-		CrateLight->SetIntensity(4000.f * Pulse);
+		CrateLight->SetIntensity(3000.f * Pulse);
 	}
 	else
 	{
@@ -136,11 +140,11 @@ void AExoLootCrate::Tick(float DeltaTime)
 
 		// Fade light and strips
 		float Fade = 1.f - T;
-		CrateLight->SetIntensity(8000.f * Fade);
+		CrateLight->SetIntensity(18000.f * Fade);
 		if (StripMat1)
 		{
-			FLinearColor FadeEm(CrateColor.R * 5.f * Fade, CrateColor.G * 5.f * Fade,
-				CrateColor.B * 5.f * Fade);
+			FLinearColor FadeEm(CrateColor.R * 12.f * Fade, CrateColor.G * 12.f * Fade,
+				CrateColor.B * 12.f * Fade);
 			StripMat1->SetVectorParameterValue(TEXT("EmissiveColor"), FadeEm);
 			StripMat2->SetVectorParameterValue(TEXT("EmissiveColor"), FadeEm);
 		}
@@ -163,7 +167,7 @@ void AExoLootCrate::Interact(AExoCharacter* Interactor)
 	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation() + FVector(0, 0, 50.f), CrateColor);
 
 	// Burst of light
-	CrateLight->SetIntensity(8000.f);
+	CrateLight->SetIntensity(18000.f);
 
 	SpawnContents();
 	UE_LOG(LogExoRift, Log, TEXT("LootCrate opened by %s"), *Interactor->GetName());

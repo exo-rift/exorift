@@ -106,7 +106,8 @@ void AExoLightningBolt::BuildBoltSegments(const FVector& Start, const FVector& E
 	if (BaseMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
-		float Bright = (Depth < 2) ? 25.f : 12.f;
+		if (!Mat) { return; }
+		float Bright = (Depth < 2) ? 55.f : 28.f;
 		FLinearColor EmColor(
 			BoltColor.R * Bright, BoltColor.G * Bright, BoltColor.B * Bright);
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), EmColor);
@@ -136,7 +137,7 @@ void AExoLightningBolt::Tick(float DeltaTime)
 
 	for (int32 i = 0; i < SegmentMats.Num(); i++)
 	{
-		float Bright = Brightness * Flicker * ((i < Segments.Num() / 2) ? 25.f : 12.f);
+		float Bright = Brightness * Flicker * ((i < Segments.Num() / 2) ? 55.f : 28.f);
 		FLinearColor EmColor(
 			BoltColor.R * Bright, BoltColor.G * Bright, BoltColor.B * Bright);
 		SegmentMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"), EmColor);

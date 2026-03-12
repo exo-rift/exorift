@@ -38,4 +38,10 @@ private:
 		const FVector& CenterPos, float PlayerYaw);
 	static void DrawCurrentLocation(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
 		const FVector& PlayerPos);
+	static void DrawRadarSweep(AHUD* HUD, float CenterX, float CenterY,
+		const FMinimapConfig& Config);
+	static void DrawSupplyDrops(AHUD* HUD, const FMinimapConfig& Config,
+		const FVector& CenterPos, float PlayerYaw);
+	static void DrawTeammates(AHUD* HUD, const FMinimapConfig& Config,
+		const FVector& CenterPos, float PlayerYaw, APawn* LocalPawn);
 };

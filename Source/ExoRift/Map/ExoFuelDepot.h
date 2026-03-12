@@ -36,7 +36,10 @@ private:
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*> TankGlowMats;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 };

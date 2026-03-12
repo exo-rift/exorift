@@ -30,5 +30,6 @@ private:
 	};
 
 	TArray<FMote> Motes;
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
 };

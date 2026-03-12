@@ -38,7 +38,10 @@ private:
 	UPROPERTY()
 	TArray<UPointLightComponent*> MineralLights;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 };

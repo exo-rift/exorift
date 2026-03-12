@@ -31,8 +31,8 @@ AExoMuzzleSparks::AExoMuzzleSparks()
 
 	SparkLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("SparkLight"));
 	SparkLight->SetupAttachment(Root);
-	SparkLight->SetIntensity(40000.f);
-	SparkLight->SetAttenuationRadius(800.f);
+	SparkLight->SetIntensity(90000.f);
+	SparkLight->SetAttenuationRadius(1100.f);
 	SparkLight->CastShadows = false;
 }
 
@@ -44,24 +44,24 @@ void AExoMuzzleSparks::InitSparks(const FRotator& FireDir, const FLinearColor& C
 	Forward.FindBestAxisVectors(Right, Up);
 
 	// Weapon-specific spark behavior
-	float SparkSpeed = 400.f;
-	float SparkSpread = 200.f;
-	float SparkSize = 0.05f;
-	float LightPower = 60000.f;
+	float SparkSpeed = 650.f;
+	float SparkSpread = 350.f;
+	float SparkSize = 0.09f;
+	float LightPower = 275000.f;
 
 	switch (WeaponType)
 	{
 	case EWeaponType::Shotgun:
-		SparkSpeed = 600.f; SparkSpread = 350.f; SparkSize = 0.08f;
-		LightPower = 100000.f; Lifetime = 0.18f;
+		SparkSpeed = 900.f; SparkSpread = 500.f; SparkSize = 0.14f;
+		LightPower = 450000.f; Lifetime = 0.20f;
 		break;
 	case EWeaponType::Sniper:
-		SparkSpeed = 500.f; SparkSpread = 150.f; SparkSize = 0.06f;
-		LightPower = 80000.f; Lifetime = 0.20f;
+		SparkSpeed = 800.f; SparkSpread = 250.f; SparkSize = 0.10f;
+		LightPower = 370000.f; Lifetime = 0.22f;
 		break;
 	case EWeaponType::SMG:
-		SparkSpeed = 350.f; SparkSpread = 250.f; SparkSize = 0.04f;
-		LightPower = 40000.f; Lifetime = 0.10f;
+		SparkSpeed = 550.f; SparkSpread = 350.f; SparkSize = 0.07f;
+		LightPower = 185000.f; Lifetime = 0.12f;
 		break;
 	default:
 		break;
@@ -71,9 +71,9 @@ void AExoMuzzleSparks::InitSparks(const FRotator& FireDir, const FLinearColor& C
 	if (!BaseMat) return;
 
 	FLinearColor SparkCol(
-		Color.R * 60.f + 10.f,
-		Color.G * 60.f + 10.f,
-		Color.B * 60.f + 10.f);
+		Color.R * 275.f + 45.f,
+		Color.G * 275.f + 45.f,
+		Color.B * 275.f + 45.f);
 
 	SparkVelocities.SetNum(NUM_MUZZLE_SPARKS);
 	for (int32 i = 0; i < NUM_MUZZLE_SPARKS; i++)
@@ -88,6 +88,7 @@ void AExoMuzzleSparks::InitSparks(const FRotator& FireDir, const FLinearColor& C
 		SparkMeshes[i]->SetWorldScale3D(FVector(S * 3.f, S * 0.5f, S * 0.5f));
 
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		if (!Mat) { continue; }
 		FLinearColor SC = SparkCol * FMath::RandRange(0.6f, 1.2f);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), SC);
 		SparkMeshes[i]->SetMaterial(0, Mat);

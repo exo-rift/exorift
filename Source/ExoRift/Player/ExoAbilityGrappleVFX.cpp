@@ -34,8 +34,9 @@ void UExoAbilityComponent::CreateGrappleBeam()
 	if (EmAdditive)
 	{
 		GrappleBeamMat = UMaterialInstanceDynamic::Create(EmAdditive, Owner);
+		if (!GrappleBeamMat) { return; }
 		GrappleBeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(2.f, 12.f, 6.f));
+			FLinearColor(5.f, 28.f, 14.f));
 		GrappleBeam->SetMaterial(0, GrappleBeamMat);
 	}
 
@@ -49,8 +50,9 @@ void UExoAbilityComponent::CreateGrappleBeam()
 	if (EmAdditive)
 	{
 		GrappleGlowMat = UMaterialInstanceDynamic::Create(EmAdditive, Owner);
+		if (!GrappleGlowMat) { return; }
 		GrappleGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.3f, 1.5f, 0.8f));
+			FLinearColor(0.7f, 3.5f, 1.8f));
 		GrappleGlow->SetMaterial(0, GrappleGlowMat);
 	}
 
@@ -64,8 +66,9 @@ void UExoAbilityComponent::CreateGrappleBeam()
 	if (EmAdditive)
 	{
 		UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmAdditive, Owner);
+		if (!RingMat) { return; }
 		RingMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(1.f, 6.f, 3.f));
+			FLinearColor(2.5f, 14.f, 7.f));
 		GrappleTargetRing->SetMaterial(0, RingMat);
 	}
 
@@ -81,8 +84,9 @@ void UExoAbilityComponent::CreateGrappleBeam()
 		if (EmAdditive)
 		{
 			UMaterialInstanceDynamic* SrcMat = UMaterialInstanceDynamic::Create(EmAdditive, Owner);
+			if (!SrcMat) { return; }
 			SrcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(1.5f, 8.f, 4.f));
+				FLinearColor(3.5f, 18.f, 9.f));
 			GrappleSourceFlash->SetMaterial(0, SrcMat);
 		}
 	}
@@ -90,8 +94,8 @@ void UExoAbilityComponent::CreateGrappleBeam()
 	// Target glow light
 	GrappleLight = NewObject<UPointLightComponent>(Owner);
 	GrappleLight->SetWorldLocation(GrappleTarget);
-	GrappleLight->SetIntensity(40000.f);
-	GrappleLight->SetAttenuationRadius(1200.f);
+	GrappleLight->SetIntensity(90000.f);
+	GrappleLight->SetAttenuationRadius(1800.f);
 	GrappleLight->SetLightColor(BeamCol);
 	GrappleLight->CastShadows = false;
 	GrappleLight->RegisterComponent();
@@ -99,8 +103,8 @@ void UExoAbilityComponent::CreateGrappleBeam()
 	// Source anchor light
 	GrappleSourceLight = NewObject<UPointLightComponent>(Owner);
 	GrappleSourceLight->SetWorldLocation(Owner->GetActorLocation());
-	GrappleSourceLight->SetIntensity(20000.f);
-	GrappleSourceLight->SetAttenuationRadius(600.f);
+	GrappleSourceLight->SetIntensity(45000.f);
+	GrappleSourceLight->SetAttenuationRadius(900.f);
 	GrappleSourceLight->SetLightColor(BeamCol);
 	GrappleSourceLight->CastShadows = false;
 	GrappleSourceLight->RegisterComponent();
@@ -157,25 +161,25 @@ void UExoAbilityComponent::UpdateGrappleBeam()
 	{
 		float EmPulse = 1.f + 0.4f * FMath::Sin(Time * 25.f);
 		GrappleBeamMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(2.f * EmPulse, 12.f * EmPulse, 6.f * EmPulse));
+			FLinearColor(5.f * EmPulse, 28.f * EmPulse, 14.f * EmPulse));
 	}
 	if (GrappleGlowMat)
 	{
 		float GlowEm = 1.f + 0.3f * FMath::Sin(Time * 20.f + 1.f);
 		GrappleGlowMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.3f * GlowEm, 1.5f * GlowEm, 0.8f * GlowEm));
+			FLinearColor(0.7f * GlowEm, 3.5f * GlowEm, 1.8f * GlowEm));
 	}
 
 	// Lights follow positions
 	if (GrappleLight)
 	{
 		GrappleLight->SetWorldLocation(GrappleTarget);
-		GrappleLight->SetIntensity(40000.f * CorePulse);
+		GrappleLight->SetIntensity(90000.f * CorePulse);
 	}
 	if (GrappleSourceLight)
 	{
 		GrappleSourceLight->SetWorldLocation(CharPos);
-		GrappleSourceLight->SetIntensity(20000.f * CorePulse);
+		GrappleSourceLight->SetIntensity(45000.f * CorePulse);
 	}
 }
 

@@ -36,7 +36,8 @@ void FExoMatchSummary::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font)
 		Entry.DamageDealt = ExoPS->DamageDealt;
 		Entry.Placement = ExoPS->Placement;
 		Entry.Accuracy = ExoPS->GetAccuracy();
-		Entry.bIsLocalPlayer = (PS == HUD->GetOwningPlayerController()->PlayerState);
+		APlayerController* LocalPC = HUD->GetOwningPlayerController();
+		Entry.bIsLocalPlayer = LocalPC && (PS == LocalPC->PlayerState);
 
 		if (Entry.bIsLocalPlayer)
 		{
@@ -194,11 +195,11 @@ void FExoMatchSummary::DrawLeaderboard(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 				StartX - 5.f, RY - 2.f, TableW + 10.f, RowH - 2.f);
 		}
 
-		// Rank color
+		// Rank color (by placement, not array index)
 		FLinearColor RankCol;
-		if (i == 0) RankCol = FLinearColor(1.f, 0.85f, 0.2f, 1.f);
-		else if (i == 1) RankCol = FLinearColor(0.8f, 0.82f, 0.86f, 0.95f);
-		else if (i == 2) RankCol = FLinearColor(0.8f, 0.55f, 0.25f, 0.9f);
+		if (Entry.Placement == 1) RankCol = FLinearColor(1.f, 0.85f, 0.2f, 1.f);
+		else if (Entry.Placement == 2) RankCol = FLinearColor(0.8f, 0.82f, 0.86f, 0.95f);
+		else if (Entry.Placement == 3) RankCol = FLinearColor(0.8f, 0.55f, 0.25f, 0.9f);
 		else RankCol = FLinearColor(0.7f, 0.72f, 0.78f, 0.8f);
 
 		FLinearColor RowCol = Entry.bIsLocalPlayer

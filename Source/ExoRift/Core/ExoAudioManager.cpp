@@ -1,7 +1,14 @@
+// Copyright Spot Cloud b.v. (2026). All Rights Reserved.
+
 #include "Core/ExoAudioManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "ExoRift.h"
+
+// ---------------------------------------------------------------------------
+// Core audio manager — initialization, weapon fire, footsteps, basic combat
+// Specialized effect sounds live in ExoAudioManagerEffects.cpp
+// ---------------------------------------------------------------------------
 
 void UExoAudioManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -72,25 +79,6 @@ void UExoAudioManager::PlayOverheatSound()
 				UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.08f, Pitch);
 		}, Delay, false);
 	}
-}
-
-void UExoAudioManager::PlayShieldBreakSound()
-{
-	if (!WeaponFireSound) return;
-
-	// Descending crackle — high to low pitch
-	UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.25f, 2.0f);
-	FTimerHandle Handle1, Handle2;
-	GetWorld()->GetTimerManager().SetTimer(Handle1, [this]()
-	{
-		if (WeaponFireSound)
-			UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.2f, 1.4f);
-	}, 0.04f, false);
-	GetWorld()->GetTimerManager().SetTimer(Handle2, [this]()
-	{
-		if (WeaponFireSound)
-			UGameplayStatics::PlaySound2D(GetWorld(), WeaponFireSound, 0.15f, 0.8f);
-	}, 0.1f, false);
 }
 
 void UExoAudioManager::PlayZoneWarningSound()
@@ -169,7 +157,7 @@ void UExoAudioManager::PlayDefeatStinger()
 }
 
 // ---------------------------------------------------------------------------
-// Spatial sounds
+// Spatial sounds — footsteps, weapons, combat
 // ---------------------------------------------------------------------------
 
 void UExoAudioManager::PlayFootstepSound(const FVector& Location, bool bIsSprinting,
@@ -225,6 +213,98 @@ void UExoAudioManager::PlayWeaponFireSound(USoundBase* Sound, const FVector& Loc
 	}
 }
 
+void UExoAudioManager::PlayWeaponFireByType(EWeaponType Type, const FVector& Location)
+{
+	if (!WeaponFireSound) return;
+
+	float Volume = 1.f;
+	float Pitch = 1.f;
+	int32 ExtraLayers = 0;
+
+	switch (Type)
+	{
+	case EWeaponType::Rifle:
+		Volume = 0.9f; Pitch = 0.85f; ExtraLayers = 1;
+		break;
+	case EWeaponType::SMG:
+		Volume = 0.6f; Pitch = 1.15f;
+		break;
+	case EWeaponType::Pistol:
+		Volume = 0.7f; Pitch = 1.3f;
+		break;
+	case EWeaponType::Shotgun:
+		Volume = 1.4f; Pitch = 0.55f; ExtraLayers = 2;
+		break;
+	case EWeaponType::Sniper:
+		Volume = 1.2f; Pitch = 0.7f; ExtraLayers = 1;
+		break;
+	case EWeaponType::GrenadeLauncher:
+		Volume = 1.1f; Pitch = 0.45f; ExtraLayers = 1;
+		break;
+	default:
+		break;
+	}
+
+	Pitch += FMath::RandRange(-0.04f, 0.04f);
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, Volume, Pitch);
+
+	// Extra layers for punchy weapons — slight delay for depth
+	for (int32 i = 0; i < ExtraLayers; i++)
+	{
+		float LayerDelay = 0.02f + i * 0.03f;
+		float LayerPitch = Pitch * (0.6f + i * 0.15f);
+		float LayerVol = Volume * (0.3f - i * 0.1f);
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(Handle,
+			[this, Location, LayerVol, LayerPitch]()
+			{
+				if (WeaponFireSound)
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound,
+						Location, LayerVol, LayerPitch);
+			}, LayerDelay, false);
+	}
+}
+
+void UExoAudioManager::PlayGrenadeExplosionSound(const FVector& Location)
+{
+	if (!WeaponFireSound) return;
+
+	// Heavy bass boom + debris rattle
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 2.5f, 0.25f);
+
+	FTimerHandle Handle1, Handle2, Handle3;
+	GetWorld()->GetTimerManager().SetTimer(Handle1, [this, Location]()
+	{
+		if (WeaponFireSound)
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 1.5f, 0.45f);
+	}, 0.03f, false);
+	GetWorld()->GetTimerManager().SetTimer(Handle2, [this, Location]()
+	{
+		if (WeaponFireSound)
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 0.8f, 1.2f);
+	}, 0.08f, false);
+	GetWorld()->GetTimerManager().SetTimer(Handle3, [this, Location]()
+	{
+		if (WeaponFireSound)
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 0.3f, 1.8f);
+	}, 0.2f, false);
+}
+
+void UExoAudioManager::PlayAbilityActivateSound(const FVector& Location, float Pitch)
+{
+	if (!WeaponFireSound) return;
+
+	// Sci-fi ability whir — ascending pitch pulse
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 0.4f, Pitch * 1.5f);
+	FTimerHandle Handle;
+	GetWorld()->GetTimerManager().SetTimer(Handle, [this, Location, Pitch]()
+	{
+		if (WeaponFireSound)
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound,
+				Location, 0.25f, Pitch * 2.2f);
+	}, 0.06f, false);
+}
+
 void UExoAudioManager::PlayImpactSound(const FVector& Location, bool bFlesh)
 {
 	if (!WeaponFireSound) return;
@@ -260,6 +340,10 @@ void UExoAudioManager::PlayExplosionSound(const FVector& Location)
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponFireSound, Location, 0.4f, 1.5f);
 	}, 0.12f, false);
 }
+
+// ---------------------------------------------------------------------------
+// Static accessor
+// ---------------------------------------------------------------------------
 
 UExoAudioManager* UExoAudioManager::Get(UWorld* World)
 {

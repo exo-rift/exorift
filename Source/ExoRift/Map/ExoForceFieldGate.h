@@ -50,6 +50,8 @@ private:
 	float GateWidth = 600.f;
 	float GateHeight = 400.f;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
 };

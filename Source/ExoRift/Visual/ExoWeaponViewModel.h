@@ -61,6 +61,18 @@ private:
 	/** Original dark colors of barrel parts (for lerp back from heat). */
 	TArray<FLinearColor> BarrelBaseColors;
 
+	/** Dedicated barrel heat light — scales with weapon temperature. */
+	UPROPERTY()
+	UPointLightComponent* HeatLight = nullptr;
+
+	/** Phase accumulator for heat shimmer pulsing at high temperatures. */
+	float HeatShimmerPhase = 0.f;
+
+	/** Previous heat value for smooth shimmer phase accumulation. */
+	float PrevHeat = 0.f;
+
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
 };

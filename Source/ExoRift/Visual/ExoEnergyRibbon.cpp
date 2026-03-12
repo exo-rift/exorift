@@ -67,18 +67,21 @@ void AExoEnergyRibbon::InitRibbon(const FVector& Start, const FVector& End,
 
 		// Thicker in the middle, thinner at ends
 		float WidthMod = 1.f - FMath::Abs(T - 0.5f) * 1.2f;
-		float R = 0.06f * Thickness * FMath::Max(WidthMod, 0.3f);
+		float R = 0.12f * Thickness * FMath::Max(WidthMod, 0.3f);
 		float L = SegLen / 100.f;
-		Segments[i]->SetWorldScale3D(FVector(R, R, L * 0.55f));
+		FVector InitScale(R, R, L * 0.55f);
+		Segments[i]->SetWorldScale3D(InitScale);
+		InitialScales.Add(InitScale);
 
 		// Emissive: bright core with some white blended in
-		float Brightness = 25.f * (0.7f + 0.3f * WidthMod);
+		float Brightness = 115.f * (0.7f + 0.3f * WidthMod);
 		FLinearColor SegColor(
-			Color.R * Brightness + 5.f,
-			Color.G * Brightness + 5.f,
-			Color.B * Brightness + 5.f);
+			Color.R * Brightness + 12.f,
+			Color.G * Brightness + 12.f,
+			Color.B * Brightness + 12.f);
 
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		if (!Mat) { continue; }
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), SegColor);
 		Segments[i]->SetMaterial(0, Mat);
 		SegmentMats.Add(Mat);
@@ -102,20 +105,20 @@ void AExoEnergyRibbon::Tick(float DeltaTime)
 		FVector Drift = SegmentDrifts[i] * DeltaTime;
 		Segments[i]->AddWorldOffset(Drift);
 
-		// Expand and fade — ribbon widens as it dissipates
-		FVector Scale = Segments[i]->GetComponentScale();
+		// Expand and fade — compute from initial scale to prevent compounding
+		if (!InitialScales.IsValidIndex(i)) continue;
 		float Expand = 1.f + T * 2.5f;
 		float Shrink = FMath::Max(Alpha, 0.01f);
 		Segments[i]->SetWorldScale3D(FVector(
-			Scale.X * Expand * 0.98f, Scale.Y * Expand * 0.98f,
-			Scale.Z * Shrink));
+			InitialScales[i].X * Expand, InitialScales[i].Y * Expand,
+			InitialScales[i].Z * Shrink));
 
 		// Fade emissive
-		float Brightness = 25.f * Alpha * Alpha;
+		float Brightness = 115.f * Alpha * Alpha;
 		FLinearColor FadeColor(
-			RibbonColor.R * Brightness + 3.f * Alpha,
-			RibbonColor.G * Brightness + 3.f * Alpha,
-			RibbonColor.B * Brightness + 3.f * Alpha);
+			RibbonColor.R * Brightness + 7.f * Alpha,
+			RibbonColor.G * Brightness + 7.f * Alpha,
+			RibbonColor.B * Brightness + 7.f * Alpha);
 		SegmentMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"), FadeColor);
 	}
 

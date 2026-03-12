@@ -98,8 +98,9 @@ void AExoLevelBuilder::SpawnCompoundSign(const FVector& Pos, float Yaw,
 	{
 		UMaterialInterface* SignEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* TBMat = UMaterialInstanceDynamic::Create(SignEmissiveMat, this);
+		if (!TBMat) { return; }
 		TBMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 4.f, Color.G * 4.f, Color.B * 4.f));
+			FLinearColor(Color.R * 10.f, Color.G * 10.f, Color.B * 10.f));
 		TextBar->SetMaterial(0, TBMat);
 	}
 
@@ -111,8 +112,9 @@ void AExoLevelBuilder::SpawnCompoundSign(const FVector& Pos, float Yaw,
 	{
 		UMaterialInterface* LineEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* TLMat = UMaterialInstanceDynamic::Create(LineEmissiveMat, this);
+		if (!TLMat) { return; }
 		TLMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+			FLinearColor(Color.R * 8.f, Color.G * 8.f, Color.B * 8.f));
 		TopLine->SetMaterial(0, TLMat);
 	}
 
@@ -126,7 +128,7 @@ void AExoLevelBuilder::SpawnCompoundSign(const FVector& Pos, float Yaw,
 	UPointLightComponent* SignLight = NewObject<UPointLightComponent>(this);
 	SignLight->SetupAttachment(RootComponent);
 	SignLight->SetWorldLocation(Pos + Forward * 3.f);
-	SignLight->SetIntensity(3000.f);
+	SignLight->SetIntensity(7000.f);
 	SignLight->SetAttenuationRadius(800.f);
 	SignLight->SetLightColor(Color);
 	SignLight->CastShadows = false;
@@ -158,8 +160,9 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 	if (HL)
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		if (!M) { return; }
 		M->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+			FLinearColor(LineColor.R * 5.f, LineColor.G * 5.f, LineColor.B * 5.f));
 		HL->SetMaterial(0, M);
 	}
 
@@ -171,8 +174,9 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 	if (HR)
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		if (!M) { return; }
 		M->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+			FLinearColor(LineColor.R * 5.f, LineColor.G * 5.f, LineColor.B * 5.f));
 		HR->SetMaterial(0, M);
 	}
 
@@ -184,8 +188,9 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 	if (HX)
 	{
 		UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(PadEmissiveMat, this);
+		if (!M) { return; }
 		M->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(LineColor.R * 2.f, LineColor.G * 2.f, LineColor.B * 2.f));
+			FLinearColor(LineColor.R * 5.f, LineColor.G * 5.f, LineColor.B * 5.f));
 		HX->SetMaterial(0, M);
 	}
 
@@ -211,7 +216,7 @@ void AExoLevelBuilder::SpawnLandingPad(const FVector& Center, float Radius)
 	UPointLightComponent* PadLight = NewObject<UPointLightComponent>(this);
 	PadLight->SetupAttachment(RootComponent);
 	PadLight->SetWorldLocation(Center + FVector(0.f, 0.f, 50.f));
-	PadLight->SetIntensity(2000.f);
+	PadLight->SetIntensity(5000.f);
 	PadLight->SetAttenuationRadius(Radius * 1.5f);
 	PadLight->SetLightColor(FLinearColor(0.15f, 0.4f, 0.7f));
 	PadLight->CastShadows = false;
@@ -248,8 +253,9 @@ void AExoLevelBuilder::SpawnDirectionMarker(const FVector& Pos, float Yaw,
 		if (Chev)
 		{
 			UMaterialInstanceDynamic* M = UMaterialInstanceDynamic::Create(ChevEmissiveMat, this);
+			if (!M) { return; }
 			M->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
+				FLinearColor(Color.R * 5.f, Color.G * 5.f, Color.B * 5.f));
 			Chev->SetMaterial(0, M);
 		}
 	}

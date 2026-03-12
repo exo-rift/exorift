@@ -123,16 +123,17 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 			{
 				UMaterialInterface* PoolEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 				UMaterialInstanceDynamic* GM = UMaterialInstanceDynamic::Create(PoolEmissiveMat, this);
+				if (!GM) { return; }
 				GM->SetVectorParameterValue(TEXT("EmissiveColor"),
-					FLinearColor(GC.GlowCol.R * 3.f, GC.GlowCol.G * 3.f, GC.GlowCol.B * 3.f));
+					FLinearColor(GC.GlowCol.R * 8.f, GC.GlowCol.G * 8.f, GC.GlowCol.B * 8.f));
 				Pool->SetMaterial(0, GM);
 			}
 			// Eerie glow light
 			UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
 			GL->SetupAttachment(RootComponent);
 			GL->SetWorldLocation(GC.Pos + FVector(0.f, 0.f, 50.f));
-			GL->SetIntensity(4000.f);
-			GL->SetAttenuationRadius(GC.Radius * 1.5f);
+			GL->SetIntensity(8000.f);
+			GL->SetAttenuationRadius(GC.Radius * 2.f);
 			GL->SetLightColor(GC.GlowCol);
 			GL->CastShadows = false;
 			GL->RegisterComponent();
@@ -198,8 +199,8 @@ void AExoLevelBuilder::SpawnCrashedShip(const FVector& Center, float Yaw, float 
 	UPointLightComponent* FireGlow = NewObject<UPointLightComponent>(this);
 	FireGlow->SetupAttachment(RootComponent);
 	FireGlow->SetWorldLocation(Center + FVector(0.f, 0.f, 200.f * S));
-	FireGlow->SetIntensity(8000.f * S);
-	FireGlow->SetAttenuationRadius(2000.f * S);
+	FireGlow->SetIntensity(5000.f * S);
+	FireGlow->SetAttenuationRadius(1500.f * S);
 	FireGlow->SetLightColor(FLinearColor(1.f, 0.4f, 0.08f));
 	FireGlow->CastShadows = false;
 	FireGlow->RegisterComponent();
@@ -213,8 +214,9 @@ void AExoLevelBuilder::SpawnCrashedShip(const FVector& Center, float Yaw, float 
 	{
 		UMaterialInterface* BreachEmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 		UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(BreachEmissiveMat, this);
+		if (!BM) { return; }
 		BM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(4.f, 1.5f, 0.3f));
+			FLinearColor(10.f, 4.f, 0.8f));
 		Breach->SetMaterial(0, BM);
 	}
 }

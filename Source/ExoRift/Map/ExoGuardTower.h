@@ -34,8 +34,11 @@ private:
 	UPROPERTY()
 	UPointLightComponent* SearchLight = nullptr;
 
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* SphereMesh = nullptr;
 
 	float SearchAngle = 0.f;

@@ -73,6 +73,8 @@ protected:
 	float CachedTargetRadius = -1.f;
 
 	// Cached engine meshes
+	UPROPERTY()
 	UStaticMesh* CylinderMesh = nullptr;
+	UPROPERTY()
 	UStaticMesh* CubeMesh = nullptr;
 };

@@ -58,7 +58,7 @@ AExoProximityMine::AExoProximityMine()
 	StatusLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("StatusLight"));
 	StatusLight->SetupAttachment(MineMesh);
 	StatusLight->SetRelativeLocation(FVector(0.f, 0.f, 45.f));
-	StatusLight->SetIntensity(500.f);
+	StatusLight->SetIntensity(1200.f);
 	StatusLight->SetAttenuationRadius(200.f);
 	StatusLight->SetLightColor(FLinearColor(1.f, 0.8f, 0.f));
 	StatusLight->CastShadows = false;
@@ -91,6 +91,7 @@ void AExoProximityMine::BuildMineVisuals()
 
 	// Body — dark metallic (gains emissive glow when triggered)
 	BodyDynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
+	if (!BodyDynMat) { return; }
 	BodyDynMat->SetVectorParameterValue(TEXT("BaseColor"),
 		FLinearColor(0.06f, 0.06f, 0.08f));
 	MineMesh->SetMaterial(0, BodyDynMat);
@@ -99,6 +100,7 @@ void AExoProximityMine::BuildMineVisuals()
 	if (Antenna && BaseMat)
 	{
 		UMaterialInstanceDynamic* AntMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+		if (!AntMat) { return; }
 		AntMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.15f, 0.15f, 0.17f));
 		Antenna->SetMaterial(0, AntMat);
@@ -108,10 +110,11 @@ void AExoProximityMine::BuildMineVisuals()
 	if (LEDMesh)
 	{
 		LEDDynMat = UMaterialInstanceDynamic::Create(LitEmissive, this);
+		if (!LEDDynMat) { return; }
 		LEDDynMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(1.f, 0.7f, 0.f));
 		LEDDynMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(3.f, 2.f, 0.f));
+			FLinearColor(7.f, 5.f, 0.f));
 		LEDMesh->SetMaterial(0, LEDDynMat);
 	}
 }
@@ -227,6 +230,11 @@ void AExoProximityMine::TriggerMine()
 	if (MineState != EProximityMineState::Armed) return;
 	MineState = EProximityMineState::Triggered;
 	StateTimer = 0.f;
+
+	// Activation beep — audible warning before detonation
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+		Audio->PlayTrapActivationBeep(GetActorLocation());
+
 	UE_LOG(LogExoRift, Log, TEXT("ProximityMine %s: triggered"), *GetName());
 }
 

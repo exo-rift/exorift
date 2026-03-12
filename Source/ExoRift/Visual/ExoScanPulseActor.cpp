@@ -65,7 +65,7 @@ AExoScanPulseActor::AExoScanPulseActor()
 	// Primary pulse light
 	PulseLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PulseLight"));
 	PulseLight->SetupAttachment(RingMesh);
-	PulseLight->SetIntensity(80000.f);
+	PulseLight->SetIntensity(180000.f);
 	PulseLight->SetAttenuationRadius(5000.f);
 	PulseLight->SetLightColor(FLinearColor(0.1f, 0.5f, 1.f));
 	PulseLight->CastShadows = false;
@@ -87,27 +87,32 @@ void AExoScanPulseActor::Init(float Radius)
 
 	// Primary ring — bright cyan-blue energy
 	UMaterialInstanceDynamic* RMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	RMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.f, 6.f, 15.f));
+	if (!RMat) { return; }
+	RMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(5.f, 14.f, 35.f));
 	RingMesh->SetMaterial(0, RMat);
 
 	// Secondary ring — dimmer, blue-white
 	UMaterialInstanceDynamic* SecMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	SecMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(1.f, 3.f, 8.f));
+	if (!SecMat) { return; }
+	SecMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(2.5f, 7.f, 18.f));
 	SecondaryRing->SetMaterial(0, SecMat);
 
 	// Tertiary ring — faint ripple
 	UMaterialInstanceDynamic* TerMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	TerMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.5f, 1.5f, 4.f));
+	if (!TerMat) { return; }
+	TerMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(1.2f, 3.5f, 9.f));
 	TertiaryRing->SetMaterial(0, TerMat);
 
 	// Inner flash — searing white-blue
 	UMaterialInstanceDynamic* FlashMID = UMaterialInstanceDynamic::Create(EmMat, this);
-	FlashMID->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(15.f, 20.f, 30.f));
+	if (!FlashMID) { return; }
+	FlashMID->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(35.f, 45.f, 70.f));
 	InnerFlash->SetMaterial(0, FlashMID);
 
 	// Ground wave — subtle blue sweep
 	UMaterialInstanceDynamic* GWMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	GWMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.3f, 1.f, 2.f));
+	if (!GWMat) { return; }
+	GWMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(0.7f, 2.3f, 5.f));
 	GroundWave->SetMaterial(0, GWMat);
 }
 
@@ -157,7 +162,7 @@ void AExoScanPulseActor::Tick(float DeltaTime)
 	GroundWave->SetWorldScale3D(FVector(GWScale, GWScale, 0.001f * GWFade));
 
 	// Primary light: follows expansion
-	PulseLight->SetIntensity(80000.f * FadeAlpha);
+	PulseLight->SetIntensity(180000.f * FadeAlpha);
 	PulseLight->SetAttenuationRadius(2000.f + RingScale * 50.f);
 
 	// Trailing light: positioned at ring edge, fades with ring

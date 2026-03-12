@@ -1,11 +1,10 @@
-// ExoHUDWeapons.cpp — Weapon HUD: crosshair, overheat bar, inventory slots
+// ExoHUDWeapons.cpp — Weapon HUD: crosshair, sniper scope, inventory slots
 #include "UI/ExoHUD.h"
 #include "UI/ExoHitMarker.h"
 #include "Player/ExoCharacter.h"
 #include "Player/ExoInventoryComponent.h"
 #include "Weapons/ExoWeaponBase.h"
 #include "Weapons/ExoWeaponSniper.h"
-#include "Weapons/ExoWeaponRifle.h"
 #include "Engine/Canvas.h"
 
 void AExoHUD::DrawCrosshair()
@@ -43,7 +42,7 @@ void AExoHUD::DrawCrosshair()
 	float BracketTurn = 5.f; // L-bracket perpendicular length
 	bool bHit = FExoHitMarker::HasRecentHit();
 
-	// --- Color: white → cyan-orange → pulsing red with heat ---
+	// --- Color: white -> cyan-orange -> pulsing red with heat ---
 	FLinearColor BaseCol;
 	if (bOverheated)
 	{
@@ -171,53 +170,6 @@ void AExoHUD::DrawCrosshair()
 			DrawLine(X1, Y1, X2, Y2, TickCol, 1.5f);
 		}
 	}
-}
-
-void AExoHUD::DrawOverheatBar()
-{
-	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
-	if (!Char || !Char->GetCurrentWeapon()) return;
-
-	AExoWeaponBase* Weapon = Char->GetCurrentWeapon();
-	float HeatPct = Weapon->GetCurrentHeat();
-	bool bOverheated = Weapon->IsOverheated();
-
-	FLinearColor HeatColor;
-	if (bOverheated)
-	{
-		float Pulse = FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 4.f));
-		HeatColor = FMath::Lerp(ColorHeatOverheat, FLinearColor(1.f, 0.5f, 0.2f, 1.f), Pulse);
-	}
-	else if (HeatPct > 0.7f)
-	{
-		HeatColor = FMath::Lerp(ColorHeatHot, ColorHeatOverheat, (HeatPct - 0.7f) / 0.3f);
-	}
-	else
-	{
-		HeatColor = FMath::Lerp(ColorHeatCool, ColorHeatHot, HeatPct / 0.7f);
-	}
-
-	float BarW = 300.f;
-	float BarH = 16.f;
-	float X = (Canvas->SizeX - BarW) * 0.5f;
-	float Y = Canvas->SizeY - 50.f;
-
-	DrawProgressBar(X, Y, BarW, BarH, HeatPct, HeatColor, ColorBgDark);
-
-	// Weapon name above bar + fire mode indicator
-	FString WeaponLabel = Weapon->GetWeaponName();
-	if (bOverheated)
-	{
-		WeaponLabel += TEXT(" [OVERHEATED]");
-	}
-	else if (AExoWeaponRifle* Rifle = Cast<AExoWeaponRifle>(Weapon))
-	{
-		WeaponLabel += (Rifle->GetFireMode() == ERifleFireMode::Burst)
-			? TEXT(" [BURST]") : TEXT(" [AUTO]");
-	}
-	float TextW, TextH;
-	GetTextSize(WeaponLabel, TextW, TextH, HUDFont, 0.8f);
-	DrawText(WeaponLabel, ColorWhite, X + (BarW - TextW) * 0.5f, Y - TextH - 4.f, HUDFont, 0.8f);
 }
 
 void AExoHUD::DrawWeaponIndicator()

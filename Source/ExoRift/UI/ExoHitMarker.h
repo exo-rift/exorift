@@ -30,7 +30,11 @@ public:
 private:
 	static void DrawHitMarkers(AHUD* HUD, UCanvas* Canvas);
 	static void DrawDamageIndicators(AHUD* HUD, UCanvas* Canvas);
+	static void DrawHeadshotKillIcon(AHUD* HUD, UCanvas* Canvas);
 
 	static TArray<FHitMarkerEntry> HitMarkers;
 	static TArray<FDamageIndicatorEntry> DamageIndicators;
+
+	static float HeadshotKillTimer;
+	static constexpr float HeadshotKillDisplayTime = 1.0f;
 };

@@ -6,10 +6,8 @@
 class UMaterialInterface;
 
 /**
- * Creates and caches runtime materials with proper EmissiveColor support.
- * BasicShapeMaterial has no emissive parameter, so SetVectorParameterValue
- * for "EmissiveColor" silently fails — no bloom, no glow.
- * These materials fix that with actual emissive output.
+ * Creates and caches runtime PBR materials with emissive, textured, and glass support.
+ * All materials are built at runtime with proper parameter graphs.
  */
 class FExoMaterialFactory
 {
@@ -22,4 +20,10 @@ public:
 
 	/** Default-lit + emissive — PBR surface that also glows (BaseColor + EmissiveColor). */
 	static UMaterialInterface* GetLitEmissive();
+
+	/** Default-lit + detail texture — PBR with world-position-tiled noise for surface detail. */
+	static UMaterialInterface* GetLitTextured();
+
+	/** Translucent glass — semi-transparent PBR with specular + emissive for window interiors. */
+	static UMaterialInterface* GetGlassTranslucent();
 };

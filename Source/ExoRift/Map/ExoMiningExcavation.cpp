@@ -49,6 +49,7 @@ UStaticMeshComponent* AExoMiningExcavation::AddPart(
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!Mat) { return nullptr; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -120,8 +121,9 @@ void AExoMiningExcavation::BuildSite()
 		{
 			Crystal->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!CM) { return; }
 			CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(V.Color.R * 12.f, V.Color.G * 12.f, V.Color.B * 12.f));
+				FLinearColor(V.Color.R * 25.f, V.Color.G * 25.f, V.Color.B * 25.f));
 			Crystal->SetMaterial(0, CM);
 			MineralMats.Add(CM);
 			MineralBaseColors.Add(V.Color);
@@ -130,8 +132,8 @@ void AExoMiningExcavation::BuildSite()
 		UPointLightComponent* GL = NewObject<UPointLightComponent>(this);
 		GL->SetupAttachment(RootComponent);
 		GL->SetRelativeLocation(V.Pos);
-		GL->SetIntensity(5000.f);
-		GL->SetAttenuationRadius(800.f);
+		GL->SetIntensity(12000.f);
+		GL->SetAttenuationRadius(1500.f);
 		GL->SetLightColor(V.Color);
 		GL->CastShadows = false;
 		GL->RegisterComponent();
@@ -192,8 +194,8 @@ void AExoMiningExcavation::BuildSite()
 		UPointLightComponent* FL = NewObject<UPointLightComponent>(this);
 		FL->SetupAttachment(RootComponent);
 		FL->SetRelativeLocation(FP + FVector(0.f, 0.f, 200.f));
-		FL->SetIntensity(15000.f);
-		FL->SetAttenuationRadius(3000.f);
+		FL->SetIntensity(10000.f);
+		FL->SetAttenuationRadius(2500.f);
 		FL->SetLightColor(WorkLight);
 		FL->CastShadows = false;
 		FL->RegisterComponent();
@@ -215,10 +217,10 @@ void AExoMiningExcavation::Tick(float DeltaTime)
 
 		FLinearColor Base = MineralBaseColors.IsValidIndex(i) ? MineralBaseColors[i] : FLinearColor::White;
 		MineralMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(Base.R * 12.f * Pulse, Base.G * 12.f * Pulse,
-				Base.B * 12.f * Pulse));
+			FLinearColor(Base.R * 5.f * Pulse, Base.G * 5.f * Pulse,
+				Base.B * 5.f * Pulse));
 
 		if (MineralLights.IsValidIndex(i) && MineralLights[i])
-			MineralLights[i]->SetIntensity(5000.f * Pulse);
+			MineralLights[i]->SetIntensity(3000.f * Pulse);
 	}
 }

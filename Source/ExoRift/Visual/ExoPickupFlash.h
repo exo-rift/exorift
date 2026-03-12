@@ -40,5 +40,5 @@ private:
 	FLinearColor FlashColor = FLinearColor::White;
 	float Age = 0.f;
 	float Lifetime = 0.25f;
-	float BaseIntensity = 20000.f;
+	float BaseIntensity = 45000.f;
 };

@@ -1,5 +1,6 @@
+// Copyright Spot Cloud b.v. (2026). All Rights Reserved.
+
 #include "UI/ExoMinimap.h"
-#include "UI/ExoLocationNames.h"
 #include "GameFramework/HUD.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
@@ -43,8 +44,17 @@ void FExoMinimap::Draw(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config)
 		DrawZoneCircle(HUD, Canvas, Config, PlayerPos, PlayerYaw, Zone);
 	}
 
+	// Radar sweep animation
+	DrawRadarSweep(HUD, CenterX, CenterY, Config);
+
 	// FOV cone
 	DrawFOVCone(HUD, CenterX, CenterY, Config);
+
+	// Supply drop markers
+	DrawSupplyDrops(HUD, Config, PlayerPos, PlayerYaw);
+
+	// Teammate / other player markers (drawn before enemies so red overlays grey)
+	DrawTeammates(HUD, Config, PlayerPos, PlayerYaw, PlayerPawn);
 
 	// Enemy dots
 	for (TActorIterator<AExoCharacter> It(HUD->GetWorld()); It; ++It)
@@ -136,48 +146,6 @@ FVector2D FExoMinimap::WorldToMinimap(const FVector& WorldPos, const FVector& Ce
 		Config.ScreenX + Config.Size * 0.5f + RotY * Scale,
 		Config.ScreenY + Config.Size * 0.5f - RotX * Scale
 	);
-}
-
-void FExoMinimap::DrawZoneCircle(AHUD* HUD, UCanvas* Canvas, const FMinimapConfig& Config,
-	const FVector& CenterPos, float PlayerYaw, AExoZoneSystem* Zone)
-{
-	int32 Segments = 36;
-	float AngleStep = 2.f * PI / Segments;
-
-	// Current zone
-	FVector ZoneWorld(Zone->GetCurrentCenter().X, Zone->GetCurrentCenter().Y, 0.f);
-	FVector2D ZoneMini = WorldToMinimap(ZoneWorld, CenterPos, PlayerYaw, Config);
-	float ZoneScale = Config.Size / (Config.WorldRange * 2.f);
-	float ZoneR = Zone->GetCurrentRadius() * ZoneScale;
-
-	FLinearColor ZoneColor(0.1f, 0.5f, 1.f, 0.6f);
-	for (int32 i = 0; i < Segments; i++)
-	{
-		float A1 = i * AngleStep;
-		float A2 = (i + 1) * AngleStep;
-		HUD->DrawLine(
-			ZoneMini.X + FMath::Cos(A1) * ZoneR, ZoneMini.Y + FMath::Sin(A1) * ZoneR,
-			ZoneMini.X + FMath::Cos(A2) * ZoneR, ZoneMini.Y + FMath::Sin(A2) * ZoneR,
-			ZoneColor, 1.5f);
-	}
-
-	// Target zone (dashed look via alternating brightness)
-	FVector TargetWorld(Zone->GetTargetCenter().X, Zone->GetTargetCenter().Y, 0.f);
-	FVector2D TargetMini = WorldToMinimap(TargetWorld, CenterPos, PlayerYaw, Config);
-	float TargetR = Zone->GetTargetRadius() * ZoneScale;
-
-	for (int32 i = 0; i < Segments; i++)
-	{
-		float A1 = i * AngleStep;
-		float A2 = (i + 1) * AngleStep;
-		FLinearColor TargetColor = (i % 2 == 0)
-			? FLinearColor(1.f, 1.f, 1.f, 0.3f)
-			: FLinearColor(1.f, 1.f, 1.f, 0.1f);
-		HUD->DrawLine(
-			TargetMini.X + FMath::Cos(A1) * TargetR, TargetMini.Y + FMath::Sin(A1) * TargetR,
-			TargetMini.X + FMath::Cos(A2) * TargetR, TargetMini.Y + FMath::Sin(A2) * TargetR,
-			TargetColor, 1.f);
-	}
 }
 
 void FExoMinimap::DrawFOVCone(AHUD* HUD, float CenterX, float CenterY,
@@ -286,58 +254,27 @@ void FExoMinimap::DrawGridLines(AHUD* HUD, float CenterX, float CenterY,
 	}
 }
 
-void FExoMinimap::DrawPOILabels(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
-	const FVector& CenterPos, float PlayerYaw)
+void FExoMinimap::DrawRadarSweep(AHUD* HUD, float CenterX, float CenterY,
+	const FMinimapConfig& Config)
 {
-	if (!Font || !HUD) return;
+	float Time = HUD->GetWorld()->GetTimeSeconds();
+	float SweepAngle = FMath::Fmod(Time * 0.8f, 1.f) * 2.f * PI; // Full revolution every ~7.8s
+	float HalfSize = Config.Size * 0.5f;
 
-	// Major compound POIs — show abbreviated names on minimap
-	struct FPOI { FString Label; FVector WorldPos; };
-	static const FPOI POIs[] = {
-		{TEXT("CMD"), FVector(0.f, 0.f, 0.f)},
-		{TEXT("IND"), FVector(0.f, 80000.f, 0.f)},
-		{TEXT("LAB"), FVector(0.f, -80000.f, 0.f)},
-		{TEXT("PWR"), FVector(80000.f, 0.f, 0.f)},
-		{TEXT("BAR"), FVector(-80000.f, 0.f, 0.f)},
-	};
+	// Sweep line — bright leading edge
+	FLinearColor SweepColor(0.1f, 0.6f, 1.f, 0.35f);
+	float SweepEndX = CenterX + FMath::Cos(SweepAngle) * HalfSize;
+	float SweepEndY = CenterY + FMath::Sin(SweepAngle) * HalfSize;
+	HUD->DrawLine(CenterX, CenterY, SweepEndX, SweepEndY, SweepColor, 1.5f);
 
-	for (const auto& P : POIs)
+	// Trailing fade — 6 lines behind the sweep creating a gradient tail
+	for (int32 i = 1; i <= 6; i++)
 	{
-		float Dist = FVector::Dist2D(CenterPos, P.WorldPos);
-		if (Dist > Config.WorldRange) continue;
-
-		FVector2D Pos = WorldToMinimap(P.WorldPos, CenterPos, PlayerYaw, Config);
-
-		// Check if within minimap bounds
-		if (Pos.X < Config.ScreenX + 10.f || Pos.X > Config.ScreenX + Config.Size - 30.f ||
-			Pos.Y < Config.ScreenY + 10.f || Pos.Y > Config.ScreenY + Config.Size - 10.f)
-			continue;
-
-		FLinearColor LabelCol(0.5f, 0.7f, 0.9f, 0.5f);
-		HUD->DrawText(P.Label, LabelCol, Pos.X - 8.f, Pos.Y - 5.f, Font, 0.5f);
+		float TrailAngle = SweepAngle - (float)i * 0.06f;
+		float TrailAlpha = 0.35f * (1.f - (float)i / 7.f);
+		FLinearColor TrailCol(0.05f, 0.3f, 0.7f, TrailAlpha);
+		float TX = CenterX + FMath::Cos(TrailAngle) * HalfSize;
+		float TY = CenterY + FMath::Sin(TrailAngle) * HalfSize;
+		HUD->DrawLine(CenterX, CenterY, TX, TY, TrailCol, 1.f);
 	}
-}
-
-void FExoMinimap::DrawCurrentLocation(AHUD* HUD, UFont* Font, const FMinimapConfig& Config,
-	const FVector& PlayerPos)
-{
-	if (!Font || !HUD) return;
-
-	FString LocName = FExoLocationNames::GetLocationAt(PlayerPos);
-	if (LocName.IsEmpty()) LocName = TEXT("WILDERNESS");
-
-	float TW, TH;
-	HUD->GetTextSize(LocName, TW, TH, Font, 0.7f);
-
-	float X = Config.ScreenX + (Config.Size - TW) * 0.5f;
-	float Y = Config.ScreenY + Config.Size + 6.f;
-
-	// Background
-	HUD->DrawRect(FLinearColor(0.02f, 0.03f, 0.05f, 0.7f),
-		X - 6.f, Y - 2.f, TW + 12.f, TH + 4.f);
-	// Text
-	FLinearColor TextCol = LocName == TEXT("WILDERNESS")
-		? FLinearColor(0.5f, 0.5f, 0.55f, 0.7f)
-		: FLinearColor(0.6f, 0.8f, 1.f, 0.85f);
-	HUD->DrawText(LocName, TextCol, X, Y, Font, 0.7f);
 }

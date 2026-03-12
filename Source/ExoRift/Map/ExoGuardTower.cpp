@@ -53,6 +53,7 @@ UStaticMeshComponent* AExoGuardTower::AddPart(
 		if (EmMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Color.R * 2.f, Color.G * 2.f, Color.B * 2.f));
 			Part->SetMaterial(0, Mat);
@@ -64,6 +65,7 @@ UStaticMeshComponent* AExoGuardTower::AddPart(
 		if (LitMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -168,7 +170,7 @@ void AExoGuardTower::BuildTower()
 	Spot->SetupAttachment(RootComponent);
 	Spot->SetRelativeLocation(FVector(LegInset, 0.f, DeckHeight + 260.f));
 	Spot->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-	Spot->SetIntensity(40000.f);
+	Spot->SetIntensity(30000.f);
 	Spot->SetAttenuationRadius(3000.f);
 	Spot->SetOuterConeAngle(30.f);
 	Spot->SetInnerConeAngle(18.f);
@@ -180,8 +182,8 @@ void AExoGuardTower::BuildTower()
 	SearchLight = NewObject<UPointLightComponent>(this);
 	SearchLight->SetupAttachment(RootComponent);
 	SearchLight->SetRelativeLocation(FVector(0.f, 0.f, DeckHeight + 50.f));
-	SearchLight->SetIntensity(3000.f);
-	SearchLight->SetAttenuationRadius(600.f);
+	SearchLight->SetIntensity(8000.f);
+	SearchLight->SetAttenuationRadius(1000.f);
 	SearchLight->SetLightColor(FLinearColor(0.7f, 0.75f, 0.9f));
 	SearchLight->CastShadows = false;
 	SearchLight->RegisterComponent();
@@ -201,6 +203,6 @@ void AExoGuardTower::Tick(float DeltaTime)
 	{
 		float Time = GetWorld()->GetTimeSeconds();
 		float Pulse = 0.85f + 0.15f * FMath::Sin(Time * 1.5f);
-		SearchLight->SetIntensity(3000.f * Pulse);
+		SearchLight->SetIntensity(8000.f * Pulse);
 	}
 }

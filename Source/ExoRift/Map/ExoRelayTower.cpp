@@ -49,6 +49,7 @@ UStaticMeshComponent* AExoRelayTower::AddSection(
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!Mat) { return nullptr; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
@@ -133,8 +134,9 @@ void AExoRelayTower::BuildTower()
 		{
 			UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 			UMaterialInstanceDynamic* BM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!BM) { return; }
 			BM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 30.f, Color.G * 30.f, Color.B * 30.f));
+				FLinearColor(Color.R * 60.f, Color.G * 60.f, Color.B * 60.f));
 			Bulb->SetMaterial(0, BM);
 		}
 
@@ -142,7 +144,7 @@ void AExoRelayTower::BuildTower()
 		Light->SetupAttachment(RootComponent);
 		Light->SetRelativeLocation(Pos);
 		Light->SetIntensity(Intensity);
-		Light->SetAttenuationRadius(3000.f);
+		Light->SetAttenuationRadius(5000.f);
 		Light->SetLightColor(Color);
 		Light->CastShadows = false;
 		Light->RegisterComponent();
@@ -153,13 +155,13 @@ void AExoRelayTower::BuildTower()
 	FLinearColor White(0.9f, 0.9f, 1.f);
 
 	// Top beacon (brightest)
-	AddBeacon(FVector(0.f, 0.f, 7100.f), Red, 25000.f);
+	AddBeacon(FVector(0.f, 0.f, 7100.f), Red, 60000.f);
 	// Mid-tower beacons
-	AddBeacon(FVector(150.f, 0.f, 4200.f), Red, 12000.f);
-	AddBeacon(FVector(-150.f, 0.f, 4200.f), Red, 12000.f);
+	AddBeacon(FVector(150.f, 0.f, 4200.f), Red, 30000.f);
+	AddBeacon(FVector(-150.f, 0.f, 4200.f), Red, 30000.f);
 	// Lower platform beacons
-	AddBeacon(FVector(200.f, 0.f, 2200.f), White, 8000.f);
-	AddBeacon(FVector(-200.f, 0.f, 2200.f), White, 8000.f);
+	AddBeacon(FVector(200.f, 0.f, 2200.f), White, 20000.f);
+	AddBeacon(FVector(-200.f, 0.f, 2200.f), White, 20000.f);
 
 	// === ENERGY CONDUIT along shaft — glowing cable ===
 	if (CylinderMesh)
@@ -175,9 +177,10 @@ void AExoRelayTower::BuildTower()
 
 		UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* CM = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		if (!CM) { return; }
 		FLinearColor ConduitCol(0.1f, 0.5f, 0.8f);
 		CM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(ConduitCol.R * 8.f, ConduitCol.G * 8.f, ConduitCol.B * 8.f));
+			FLinearColor(ConduitCol.R * 18.f, ConduitCol.G * 18.f, ConduitCol.B * 18.f));
 		Conduit->SetMaterial(0, CM);
 	}
 }
@@ -216,7 +219,7 @@ void AExoRelayTower::Tick(float DeltaTime)
 		if (!BeaconLights[i]) continue;
 		float Phase = Time + i * 0.4f; // Staggered blink
 		bool bOn = FMath::Fmod(Phase, 2.f) < 1.2f;
-		float Base = (i == 0) ? 25000.f : ((i < 3) ? 12000.f : 8000.f);
+		float Base = (i == 0) ? 60000.f : ((i < 3) ? 30000.f : 20000.f);
 		BeaconLights[i]->SetIntensity(bOn ? Base : Base * 0.05f);
 	}
 }

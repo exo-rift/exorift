@@ -13,7 +13,9 @@
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoCommsWheel.h"
 #include "UI/ExoMatchSummary.h"
+#include "UI/ExoSpectatorOverlay.h"
 #include "UI/ExoTacticalMap.h"
+#include "Player/ExoSpectatorPawn.h"
 #include "Map/ExoZoneSystem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
@@ -62,6 +64,14 @@ void AExoHUD::DrawHUD()
 		return;
 	}
 
+	// Spectator overlay — shown when local player is spectating (not in death cam)
+	AExoSpectatorPawn* SpectatorPawn = Cast<AExoSpectatorPawn>(
+		GetOwningPlayerController() ? GetOwningPlayerController()->GetPawn() : nullptr);
+	if (SpectatorPawn)
+	{
+		FExoSpectatorOverlay::Draw(Canvas, HUDFont, SpectatorPawn);
+	}
+
 	// Check if match is over — show summary instead
 	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
 	if (GS && GS->MatchPhase == EBRMatchPhase::EndGame)
@@ -70,35 +80,46 @@ void AExoHUD::DrawHUD()
 		return;
 	}
 
-	// --- Gameplay HUD ---
-	DrawCrosshair();
-	DrawHealthBar();
-	DrawShieldBar();
-	DrawArmorIndicators();
-	DrawOverheatBar();
-	DrawEnergyBar();
-	DrawWeaponIndicator();
-	DrawDBNOOverlay();
+	// During drop phase, only show match state HUD (no gameplay elements)
+	bool bInDropPhase = GS && GS->MatchPhase == EBRMatchPhase::DropPhase;
+
+	// --- Gameplay HUD (hidden during drop phase) ---
+	if (!bInDropPhase)
+	{
+		DrawCrosshair();
+		DrawHealthBar();
+		DrawShieldBar();
+		DrawArmorIndicators();
+		DrawOverheatBar();
+		DrawEnergyBar();
+		DrawWeaponIndicator();
+		DrawGrenadeIndicator();
+		DrawDBNOOverlay();
+		DrawKillCount();
+		DrawKillStreak();
+		DrawAbilities();
+		DrawGrenadeWarning();
+		DrawInteractionPrompt();
+		DrawZiplinePrompt();
+		DrawVehicleHUD();
+		DrawLocationBanner();
+		DrawSprintLines();
+	}
+
+	// Always-visible HUD (match info, weather)
 	DrawAliveCount();
 	DrawKillFeed();
 	DrawMatchPhase();
 	DrawZoneWarning();
-	DrawKillCount();
-	DrawKillStreak();
 	DrawWeatherIndicator();
 	DrawRainOverlay();
-	DrawAbilities();
-	DrawGrenadeWarning();
-	DrawInteractionPrompt();
-	DrawVehicleHUD();
-	DrawLocationBanner();
-	DrawSprintLines();
 
 	// Compass bar at top of screen
 	{
 		float PlayerYaw = GetOwningPawn() ? GetOwningPawn()->GetControlRotation().Yaw : 0.f;
+		FVector PlayerLoc = GetOwningPawn() ? GetOwningPawn()->GetActorLocation() : FVector::ZeroVector;
 		Compass.Tick(DeltaTime);
-		Compass.Draw(Canvas, HUDFont, PlayerYaw);
+		Compass.Draw(Canvas, HUDFont, PlayerYaw, PlayerLoc);
 	}
 
 	// Toast notifications (right side)

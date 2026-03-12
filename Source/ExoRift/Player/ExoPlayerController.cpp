@@ -5,15 +5,19 @@
 #include "Player/ExoSpectatorPawn.h"
 #include "Player/ExoInteractionComponent.h"
 #include "Player/ExoInventoryComponent.h"
+#include "Map/ExoDropPod.h"
 #include "Core/ExoInputSetup.h"
 #include "Core/ExoGameSettings.h"
 #include "Core/ExoPlayerState.h"
+#include "Core/ExoAudioManager.h"
+#include "Visual/ExoPostProcess.h"
 #include "UI/ExoPingSystem.h"
 #include "UI/ExoSettingsMenu.h"
 #include "UI/ExoCommsWheel.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "ExoRift.h"
 
@@ -120,6 +124,27 @@ void AExoPlayerController::OnCharacterDied(AController* Killer)
 	FVector DeathLoc = DeadPawn->GetActorLocation();
 	FRotator DeathRot = DeadPawn->GetActorRotation();
 
+	// --- Death slow-mo: brief time dilation for cinematic impact ---
+	DeathSlowMoDilation = UGameplayStatics::GetGlobalTimeDilation(GetWorld());
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.3f);
+	GetWorld()->GetTimerManager().SetTimer(DeathSlowMoHandle, [this]()
+	{
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), DeathSlowMoDilation);
+	}, 0.8f, false); // 0.8s game-time (~2.7s real at 0.3x dilation)
+
+	// --- Death post-process: heavy desat + vignette + chromatic aberration ---
+	if (AExoPostProcess* PP = AExoPostProcess::Get(GetWorld()))
+	{
+		PP->TriggerDeathEffect();
+	}
+
+	// --- Death audio stinger ---
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayDeathStinger();
+	}
+
+	// --- Spawn spectator and transition ---
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	AExoSpectatorPawn* Spectator = GetWorld()->SpawnActor<AExoSpectatorPawn>(
@@ -131,7 +156,7 @@ void AExoPlayerController::OnCharacterDied(AController* Killer)
 
 	AActor* KillerPawn = Killer ? Killer->GetPawn() : nullptr;
 	Spectator->StartDeathCam(KillerPawn, DeathLoc);
-	UE_LOG(LogExoRift, Log, TEXT("Transitioned to spectator"));
+	UE_LOG(LogExoRift, Log, TEXT("Death cam: slow-mo + pullback + orbit -> spectator"));
 }
 
 // --- Movement ---
@@ -140,6 +165,14 @@ void AExoPlayerController::HandleMove(const FInputActionValue& Value)
 {
 	if (FExoSettingsMenu::bIsOpen) return;
 	FVector2D Input = Value.Get<FVector2D>();
+
+	// During drop phase, steer the pod
+	if (AExoDropPod* Pod = Cast<AExoDropPod>(GetViewTarget()))
+	{
+		Pod->ApplySteerInput(Input);
+		return;
+	}
+
 	if (APawn* P = GetPawn())
 	{
 		FRotator YawRot(0.f, GetControlRotation().Yaw, 0.f);
@@ -151,6 +184,8 @@ void AExoPlayerController::HandleMove(const FInputActionValue& Value)
 void AExoPlayerController::HandleLook(const FInputActionValue& Value)
 {
 	if (FExoSettingsMenu::bIsOpen) return;
+	// During drop, camera is fixed on pod
+	if (Cast<AExoDropPod>(GetViewTarget())) return;
 	FVector2D Input = Value.Get<FVector2D>();
 	if (FExoCommsWheel::bIsOpen) { FExoCommsWheel::UpdateMouse(Input); return; }
 	AddYawInput(Input.X);
@@ -162,7 +197,17 @@ void AExoPlayerController::HandleJump()
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
 	if (!C) return;
-	C->GetCharacterMovement()->IsFalling() ? C->TryMantle() : C->Jump();
+	if (C->IsOnZipline()) { C->EndZipline(true); return; }
+	if (C->IsWallRunning()) { C->WallJump(); return; }
+	if (C->GetCharacterMovement()->IsFalling())
+	{
+		C->TryMantle();
+		if (!C->IsMantling()) C->PerformDoubleJump();
+	}
+	else
+	{
+		C->Jump();
+	}
 }
 
 void AExoPlayerController::HandleJumpReleased()
@@ -284,7 +329,13 @@ void AExoPlayerController::HandleInteract()
 {
 	if (FExoSettingsMenu::bIsOpen) return;
 	AExoCharacter* C = Cast<AExoCharacter>(GetPawn());
-	if (C) if (auto* IC = C->GetInteractionComponent()) IC->TryInteract();
+	if (!C) return;
+
+	// Zipline takes priority if near an anchor
+	C->TryMountZipline();
+	if (C->IsOnZipline()) return;
+
+	if (auto* IC = C->GetInteractionComponent()) IC->TryInteract();
 }
 
 void AExoPlayerController::HandlePing()
@@ -300,7 +351,14 @@ void AExoPlayerController::HandlePing()
 	Params.AddIgnoredActor(C);
 	FHitResult Hit;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-	FExoPingSystem::AddPing(bHit ? Hit.ImpactPoint : End, TEXT("Enemy Here"),
+	FVector PingLocation = bHit ? Hit.ImpactPoint : End;
+	FExoPingSystem::AddPing(PingLocation, TEXT("Enemy Here"),
 		FLinearColor(1.f, 0.4f, 0.1f, 1.f));
+
+	// Audio feedback: short high-pitched chirp at ping location
+	if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+	{
+		Audio->PlayAbilityActivateSound(PingLocation, 2.0f);
+	}
 }
 

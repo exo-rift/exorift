@@ -47,7 +47,7 @@ AExoEMPEffect::AExoEMPEffect()
 	// EMP light
 	PulseLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PulseLight"));
 	PulseLight->SetupAttachment(CoreSphere);
-	PulseLight->SetIntensity(200000.f);
+	PulseLight->SetIntensity(450000.f);
 	PulseLight->SetAttenuationRadius(5000.f);
 	PulseLight->SetLightColor(FLinearColor(0.2f, 0.5f, 1.f));
 	PulseLight->CastShadows = false;
@@ -75,17 +75,20 @@ void AExoEMPEffect::InitPulse(float Radius)
 
 	// Core — bright cyan-white
 	UMaterialInstanceDynamic* CoreMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(20.f, 30.f, 50.f));
+	if (!CoreMat) { return; }
+	CoreMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(45.f, 70.f, 115.f));
 	CoreSphere->SetMaterial(0, CoreMat);
 
 	// Primary ring — blue
 	UMaterialInstanceDynamic* RingMat = UMaterialInstanceDynamic::Create(EmMat, this);
-	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(5.f, 10.f, 30.f));
+	if (!RingMat) { return; }
+	RingMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(12.f, 22.f, 70.f));
 	PulseRing->SetMaterial(0, RingMat);
 
 	// Secondary ring — lighter cyan
 	UMaterialInstanceDynamic* Ring2Mat = UMaterialInstanceDynamic::Create(EmMat, this);
-	Ring2Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(8.f, 15.f, 25.f));
+	if (!Ring2Mat) { return; }
+	Ring2Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(18.f, 35.f, 55.f));
 	PulseRing2->SetMaterial(0, Ring2Mat);
 
 	// Arc fragments — white-blue, thin and bright
@@ -99,6 +102,7 @@ void AExoEMPEffect::InitPulse(float Radius)
 		ArcFragments[i]->SetWorldScale3D(FVector(0.02f, 0.02f, 0.5f));
 
 		UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(EmMat, this);
+		if (!ArcMat) { continue; }
 		float Bright = FMath::RandRange(10.f, 20.f);
 		ArcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(Bright * 0.5f, Bright * 0.8f, Bright));
@@ -142,7 +146,7 @@ void AExoEMPEffect::Tick(float DeltaTime)
 	}
 
 	// Light: fast quadratic decay
-	PulseLight->SetIntensity(200000.f * (1.f - T) * (1.f - T));
+	PulseLight->SetIntensity(450000.f * (1.f - T) * (1.f - T));
 
 	// Arc fragments: fly outward from center, flickering
 	float Time = GetWorld()->GetTimeSeconds();

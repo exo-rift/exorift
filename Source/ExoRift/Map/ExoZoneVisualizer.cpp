@@ -50,25 +50,30 @@ void AExoZoneVisualizer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Create dynamic materials for each component
+	// Zone wall & ground glow use additive blend so you can see through them
+	UMaterialInterface* AdditiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
-	if (ZoneWallMesh)
+	if (ZoneWallMesh && AdditiveMat)
 	{
-		ZoneMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		ZoneMaterial = UMaterialInstanceDynamic::Create(AdditiveMat, this);
+		if (!ZoneMaterial) { return; }
+		// Subtle translucent glow — low emissive so it doesn't overwhelm the scene
 		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(ZoneColor.R * 2.f, ZoneColor.G * 2.f, ZoneColor.B * 2.f));
+			FLinearColor(ZoneColor.R * 0.15f, ZoneColor.G * 0.15f, ZoneColor.B * 0.15f));
 		ZoneWallMesh->SetMaterial(0, ZoneMaterial);
 	}
 
-	if (TargetRingMesh)
+	if (TargetRingMesh && AdditiveMat)
 	{
-		TargetMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		TargetMaterial = UMaterialInstanceDynamic::Create(AdditiveMat, this);
+		if (!TargetMaterial) { return; }
 		TargetRingMesh->SetMaterial(0, TargetMaterial);
 	}
 
-	if (GroundGlowMesh)
+	if (GroundGlowMesh && AdditiveMat)
 	{
-		GlowMaterial = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+		GlowMaterial = UMaterialInstanceDynamic::Create(AdditiveMat, this);
+		if (!GlowMaterial) { return; }
 		GroundGlowMesh->SetMaterial(0, GlowMaterial);
 	}
 
@@ -84,8 +89,9 @@ void AExoZoneVisualizer::BeginPlay()
 			Arc->RegisterComponent();
 
 			UMaterialInstanceDynamic* ArcMat = UMaterialInstanceDynamic::Create(EmissiveMat, this);
+			if (!ArcMat) { continue; }
 			ArcMat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(1.f, 2.f, 4.f));
+				FLinearColor(0.5f, 1.f, 2.f));
 			Arc->SetMaterial(0, ArcMat);
 
 			LightningArcs.Add(Arc);
@@ -139,13 +145,14 @@ void AExoZoneVisualizer::UpdateZoneWall()
 	SetActorLocation(FVector(Center.X, Center.Y, WallHeight * 0.5f));
 	ZoneWallMesh->SetWorldScale3D(FVector(RadiusScale, RadiusScale, HeightScale));
 
-	// Emissive pulse — intensifies when shrinking
+	// Subtle emissive pulse — slightly brighter when shrinking
 	if (ZoneMaterial)
 	{
 		float Time = GetWorld()->GetTimeSeconds();
 		float BaseRate = ZoneSystem->IsShrinking() ? 2.f : 0.8f;
-		float PulseStrength = ZoneSystem->IsShrinking() ? 0.8f : 0.5f;
-		float Pulse = 1.f + PulseStrength * FMath::Abs(FMath::Sin(Time * BaseRate));
+		float PulseStrength = ZoneSystem->IsShrinking() ? 0.12f : 0.05f;
+		float BaseMul = ZoneSystem->IsShrinking() ? 0.2f : 0.1f;
+		float Pulse = BaseMul + PulseStrength * FMath::Abs(FMath::Sin(Time * BaseRate));
 		ZoneMaterial->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(ZoneColor.R * Pulse, ZoneColor.G * Pulse, ZoneColor.B * Pulse));
 	}
@@ -178,12 +185,12 @@ void AExoZoneVisualizer::UpdateTargetRing()
 
 	TargetRingMesh->SetWorldLocation(FVector(TargetCenter.X, TargetCenter.Y, 100.f));
 
-	// Pulsing white-blue emissive
+	// Subtle pulsing white-blue emissive
 	if (TargetMaterial)
 	{
 		float Time = GetWorld()->GetTimeSeconds();
 		float Pulse = 0.5f + 0.5f * FMath::Sin(Time * 2.5f);
-		FLinearColor EmCol(0.3f * Pulse, 0.6f * Pulse, 1.f * Pulse);
+		FLinearColor EmCol(0.1f * Pulse, 0.2f * Pulse, 0.4f * Pulse);
 		TargetMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), EmCol);
 	}
 }
@@ -207,15 +214,15 @@ void AExoZoneVisualizer::UpdateGroundGlow()
 		float Pulse = 0.6f + 0.4f * FMath::Sin(Time * 1.2f);
 		bool bShrinking = ZoneSystem->IsShrinking();
 
-		// Brighter when shrinking, shifts toward red
+		// Subtle ground glow — brighter when shrinking, shifts toward red
 		FLinearColor GlowCol;
 		if (bShrinking)
 		{
-			GlowCol = FLinearColor(0.8f * Pulse, 0.2f * Pulse, 0.3f * Pulse);
+			GlowCol = FLinearColor(0.3f * Pulse, 0.08f * Pulse, 0.12f * Pulse);
 		}
 		else
 		{
-			GlowCol = FLinearColor(0.2f * Pulse, 0.4f * Pulse, 1.f * Pulse);
+			GlowCol = FLinearColor(0.06f * Pulse, 0.12f * Pulse, 0.3f * Pulse);
 		}
 		GlowMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
 	}
@@ -263,7 +270,7 @@ void AExoZoneVisualizer::UpdateEdgeLightning()
 		// Emissive pulse — brighter during shrink, flickers rapidly
 		if (LightningMats.IsValidIndex(i) && LightningMats[i])
 		{
-			float EmIntensity = bShrinking ? (3.f + 5.f * Flicker) : (1.f + 2.f * Flicker);
+			float EmIntensity = bShrinking ? (1.5f + 2.f * Flicker) : (0.5f + 1.f * Flicker);
 			FLinearColor EmCol(
 				ZoneColor.R * EmIntensity,
 				ZoneColor.G * EmIntensity,
@@ -275,7 +282,7 @@ void AExoZoneVisualizer::UpdateEdgeLightning()
 		if (EdgeLights.IsValidIndex(i) && EdgeLights[i])
 		{
 			EdgeLights[i]->SetWorldLocation(FVector(ArcX, ArcY, HeightJitter));
-			float LightPower = (bShrinking ? 6000.f : 2000.f) * Flicker;
+			float LightPower = (bShrinking ? 3000.f : 1000.f) * Flicker;
 			EdgeLights[i]->SetIntensity(LightPower);
 		}
 	}

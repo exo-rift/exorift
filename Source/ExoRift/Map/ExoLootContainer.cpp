@@ -38,6 +38,7 @@ AExoLootContainer::AExoLootContainer()
 	if (LitMat)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.1f, 0.06f));
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -56,9 +57,7 @@ void AExoLootContainer::BeginPlay()
 
 void AExoLootContainer::BuildVisuals()
 {
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(
-		TEXT("/Engine/BasicShapes/Cube"));
-	UStaticMesh* CubeMesh = CubeFind.Succeeded() ? CubeFind.Object : nullptr;
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube"));
 	if (!CubeMesh) return;
 
 	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
@@ -79,13 +78,15 @@ void AExoLootContainer::BuildVisuals()
 		if (Lum > 0.15f)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EmissiveBaseMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(Color.R * 3.f, Color.G * 3.f, Color.B * 3.f));
+				FLinearColor(Color.R * 7.f, Color.G * 7.f, Color.B * 7.f));
 			C->SetMaterial(0, Mat);
 		}
 		else if (LitMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+			if (!Mat) { return nullptr; }
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
 			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
@@ -162,7 +163,7 @@ void AExoLootContainer::Tick(float DeltaTime)
 		// Glow ramps up as lid opens
 		if (ContainerGlow)
 		{
-			ContainerGlow->SetIntensity(OpenAlpha * 8000.f);
+			ContainerGlow->SetIntensity(OpenAlpha * 18000.f);
 		}
 
 		if (OpenTimer >= OpenDuration) FinishOpening();
@@ -175,7 +176,7 @@ void AExoLootContainer::Tick(float DeltaTime)
 		if (ContainerGlow)
 		{
 			float Pulse = 0.3f + 0.7f * FMath::Abs(FMath::Sin(Time * 1.5f));
-			ContainerGlow->SetIntensity(Pulse * 800.f);
+			ContainerGlow->SetIntensity(Pulse * 2000.f);
 		}
 
 		// Slow rotation of lid accent (visual hint the container is interactive)
@@ -228,7 +229,7 @@ void AExoLootContainer::FinishOpening()
 	// Dim the glow after emptied
 	if (ContainerGlow)
 	{
-		ContainerGlow->SetIntensity(1000.f);
+		ContainerGlow->SetIntensity(2500.f);
 		ContainerGlow->SetLightColor(FColor(50, 80, 100));
 	}
 

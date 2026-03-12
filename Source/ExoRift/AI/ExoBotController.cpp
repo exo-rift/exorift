@@ -305,6 +305,10 @@ void AExoBotController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 		CurrentTarget = Actor;
 		bReactionPending = true;
 		ReactionTimer = ReactionTime;
+
+		// Audible "spotted" callout — alerts nearby players
+		if (AExoBotCharacter* BotChar = Cast<AExoBotCharacter>(GetPawn()))
+			BotChar->PlaySpottedCallout();
 	}
 }
 

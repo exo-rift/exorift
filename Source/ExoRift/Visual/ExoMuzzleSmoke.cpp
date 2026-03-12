@@ -57,7 +57,7 @@ void AExoMuzzleSmoke::InitSmoke(const FVector& DriftDir)
 		if (EmMat)
 		{
 			SmokeMats[i] = UMaterialInstanceDynamic::Create(EmMat, this);
-			float Brightness = 0.07f + FMath::RandRange(0.f, 0.03f);
+			float Brightness = 0.16f + FMath::RandRange(0.f, 0.07f);
 			SmokeMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(Brightness, Brightness, Brightness * 1.1f));
 			SmokePuffs[i]->SetMaterial(0, SmokeMats[i]);
@@ -103,7 +103,7 @@ void AExoMuzzleSmoke::Tick(float DeltaTime)
 		if (SmokeMats[i])
 		{
 			float Alpha = (1.f - PuffT * PuffT) * 0.7f;
-			float B = (0.07f + i * 0.01f) * Alpha;
+			float B = (0.16f + i * 0.022f) * Alpha;
 			SmokeMats[i]->SetVectorParameterValue(TEXT("EmissiveColor"),
 				FLinearColor(B, B, B * 1.1f));
 		}

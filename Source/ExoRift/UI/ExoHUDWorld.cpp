@@ -6,7 +6,6 @@
 #include "Map/ExoSupplyDropManager.h"
 #include "Map/ExoSupplyDrop.h"
 #include "Visual/ExoWeatherSystem.h"
-#include "Weapons/ExoGrenade.h"
 #include "Engine/Canvas.h"
 #include "EngineUtils.h"
 
@@ -129,11 +128,16 @@ void AExoHUD::DrawAbilities()
 	const TArray<FExoAbility>& Abilities = Char->GetAbilityComponent()->GetAbilities();
 	if (Abilities.Num() == 0) return;
 
-	const float SlotW = 60.f, SlotH = 50.f, SlotGap = 8.f;
-	float TotalW = Abilities.Num() * SlotW + (Abilities.Num() - 1) * SlotGap;
+	const float Time = GetWorld()->GetTimeSeconds();
+	const float SlotW = 70.f, SlotH = 58.f, SlotGap = 10.f;
+	const int32 Count = FMath::Min(Abilities.Num(), 5);
+	float TotalW = Count * SlotW + (Count - 1) * SlotGap;
 	float StartX = (Canvas->SizeX - TotalW) * 0.5f;
-	float Y = Canvas->SizeY - 95.f;
+	float BaseY = Canvas->SizeY - 100.f;
 
+	const TCHAR* AbilNames[] = {
+		TEXT("DASH"), TEXT("SCAN"), TEXT("SHIELD"), TEXT("GRAPPLE"), TEXT("DECOY")
+	};
 	const TCHAR* Icons[] = { TEXT("D"), TEXT("S"), TEXT("B"), TEXT("G"), TEXT("H") };
 	const FLinearColor ReadyColors[] = {
 		FLinearColor(0.f, 0.9f, 1.f, 0.9f),   // Cyan - Dash
@@ -142,31 +146,112 @@ void AExoHUD::DrawAbilities()
 		FLinearColor(0.2f, 1.f, 0.5f, 0.9f),   // Green - Grapple
 		FLinearColor(0.6f, 0.3f, 1.f, 0.9f)    // Purple - Decoy
 	};
-	const FLinearColor Grey(0.3f, 0.3f, 0.35f, 0.7f);
+	const FLinearColor DimGrey(0.25f, 0.25f, 0.3f, 0.6f);
 
-	for (int32 i = 0; i < FMath::Min(Abilities.Num(), 5); ++i)
+	for (int32 i = 0; i < Count; ++i)
 	{
 		const FExoAbility& Ab = Abilities[i];
 		float X = StartX + i * (SlotW + SlotGap);
 		bool bReady = Ab.bIsReady();
-		FLinearColor SlotCol = bReady ? ReadyColors[i] : Grey;
-		DrawRect(ColorBgDark, X, Y, SlotW, SlotH);
-		DrawLine(X, Y, X + SlotW, Y, SlotCol); DrawLine(X, Y + SlotH, X + SlotW, Y + SlotH, SlotCol);
-		DrawLine(X, Y, X, Y + SlotH, SlotCol); DrawLine(X + SlotW, Y, X + SlotW, Y + SlotH, SlotCol);
-		DrawText(Icons[i], SlotCol, X + 22.f, Y + 4.f, HUDFont, 1.2f);
+		int32 TypeIdx = FMath::Clamp(static_cast<int32>(Ab.Type), 0, 4);
+		FLinearColor AccentCol = ReadyColors[TypeIdx];
+
+		// --- Background panel ---
+		FLinearColor BgCol = bReady
+			? FLinearColor(0.04f, 0.06f, 0.1f, 0.8f)
+			: FLinearColor(0.03f, 0.03f, 0.05f, 0.85f);
+		DrawRect(BgCol, X, BaseY, SlotW, SlotH);
+
 		if (!bReady)
 		{
-			float Pct = Ab.CooldownRemaining / Ab.Cooldown;
-			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.4f), X + 1.f, Y + 1.f, (SlotW - 2.f) * Pct, SlotH - 2.f);
-			FString CdText = FString::Printf(TEXT("%.0f"), Ab.CooldownRemaining);
-			DrawText(CdText, ColorWhite, X + 18.f, Y + 30.f, HUDFont, 0.7f);
+			// --- Cooldown overlay: fill sweeps left-to-right as CD elapses ---
+			float CdPct = FMath::Clamp(Ab.CooldownRemaining / Ab.Cooldown, 0.f, 1.f);
+			// Dark overlay covers the remaining-cooldown portion (right side)
+			float FillW = (SlotW - 2.f) * CdPct;
+			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.45f),
+				X + 1.f + (SlotW - 2.f - FillW), BaseY + 1.f,
+				FillW, SlotH - 2.f);
+
+			// Thin progress bar at the bottom showing elapsed fraction
+			float ElapsedPct = 1.f - CdPct;
+			float BarH = 3.f;
+			FLinearColor BarCol = AccentCol;
+			BarCol.A = 0.7f;
+			DrawRect(FLinearColor(0.08f, 0.08f, 0.1f, 0.6f),
+				X + 1.f, BaseY + SlotH - BarH - 1.f, SlotW - 2.f, BarH);
+			if (ElapsedPct > 0.01f)
+			{
+				DrawRect(BarCol,
+					X + 1.f, BaseY + SlotH - BarH - 1.f,
+					(SlotW - 2.f) * ElapsedPct, BarH);
+			}
+
+			// Dimmed icon letter
+			FLinearColor DimIcon = AccentCol;
+			DimIcon.A = 0.3f;
+			DrawText(Icons[TypeIdx], DimIcon, X + 24.f, BaseY + 4.f, HUDFont, 1.2f);
+
+			// Cooldown remaining: large centered text
+			FString CdText = FString::Printf(TEXT("%.1f"), Ab.CooldownRemaining);
+			float CdW, CdH;
+			GetTextSize(CdText, CdW, CdH, HUDFont, 0.95f);
+			DrawText(CdText, FLinearColor(0.f, 0.f, 0.f, 0.5f),
+				X + (SlotW - CdW) * 0.5f + 1.f,
+				BaseY + (SlotH - CdH) * 0.5f + 1.f, HUDFont, 0.95f);
+			DrawText(CdText, ColorWhite,
+				X + (SlotW - CdW) * 0.5f,
+				BaseY + (SlotH - CdH) * 0.5f, HUDFont, 0.95f);
+
+			// Border: dimmed accent color
+			FLinearColor BorderCol = DimGrey;
+			DrawLine(X, BaseY, X + SlotW, BaseY, BorderCol);
+			DrawLine(X, BaseY + SlotH, X + SlotW, BaseY + SlotH, BorderCol);
+			DrawLine(X, BaseY, X, BaseY + SlotH, BorderCol);
+			DrawLine(X + SlotW, BaseY, X + SlotW, BaseY + SlotH, BorderCol);
 		}
 		else
 		{
-			float Glow = 0.3f + 0.15f * FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 2.f));
-			FLinearColor GlowCol = SlotCol; GlowCol.A = Glow;
-			DrawRect(GlowCol, X + 1.f, Y + 1.f, SlotW - 2.f, SlotH - 2.f);
+			// --- Ready: bright pulsing glow ---
+			float Pulse = 0.15f + 0.12f * FMath::Abs(FMath::Sin(Time * 2.5f + i * 0.8f));
+			FLinearColor GlowCol(AccentCol.R, AccentCol.G, AccentCol.B, Pulse);
+			DrawRect(GlowCol, X + 1.f, BaseY + 1.f, SlotW - 2.f, SlotH - 2.f);
+
+			// Bright icon letter
+			DrawText(Icons[TypeIdx], AccentCol, X + 24.f, BaseY + 4.f, HUDFont, 1.2f);
+
+			// "READY" text below icon
+			FString ReadyTxt = TEXT("READY");
+			float RW, RH;
+			GetTextSize(ReadyTxt, RW, RH, HUDFont, 0.55f);
+			FLinearColor ReadyCol(AccentCol.R, AccentCol.G, AccentCol.B, 0.7f);
+			DrawText(ReadyTxt, ReadyCol,
+				X + (SlotW - RW) * 0.5f,
+				BaseY + SlotH - RH - 6.f, HUDFont, 0.55f);
+
+			// Bright border
+			DrawLine(X, BaseY, X + SlotW, BaseY, AccentCol);
+			DrawLine(X, BaseY + SlotH, X + SlotW, BaseY + SlotH, AccentCol);
+			DrawLine(X, BaseY, X, BaseY + SlotH, AccentCol);
+			DrawLine(X + SlotW, BaseY, X + SlotW, BaseY + SlotH, AccentCol);
+
+			// Corner bracket accents
+			float BL = 8.f;
+			FLinearColor CornerCol(AccentCol.R, AccentCol.G, AccentCol.B, 0.5f);
+			DrawLine(X, BaseY, X + BL, BaseY, CornerCol);
+			DrawLine(X, BaseY, X, BaseY + BL, CornerCol);
+			DrawLine(X + SlotW, BaseY + SlotH, X + SlotW - BL, BaseY + SlotH, CornerCol);
+			DrawLine(X + SlotW, BaseY + SlotH, X + SlotW, BaseY + SlotH - BL, CornerCol);
 		}
+
+		// --- Ability name label below the slot ---
+		const TCHAR* Name = AbilNames[TypeIdx];
+		float NW, NH;
+		GetTextSize(Name, NW, NH, HUDFont, 0.5f);
+		FLinearColor NameCol = bReady
+			? FLinearColor(AccentCol.R, AccentCol.G, AccentCol.B, 0.8f)
+			: FLinearColor(0.45f, 0.45f, 0.5f, 0.6f);
+		DrawText(Name, NameCol,
+			X + (SlotW - NW) * 0.5f, BaseY + SlotH + 3.f, HUDFont, 0.5f);
 	}
 }
 
@@ -187,6 +272,9 @@ void AExoHUD::DrawSupplyDropMarkers()
 	const FLinearColor DropColor(1.f, 0.85f, 0.15f, 0.9f); // Yellow
 	constexpr float EdgeMargin = 40.f;
 
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC) return;
+
 	for (AExoSupplyDrop* Drop : Manager->GetActiveDrops())
 	{
 		if (!Drop) continue;
@@ -197,7 +285,7 @@ void AExoHUD::DrawSupplyDropMarkers()
 		float DistMeters = FVector::Dist(ViewLoc, DropLoc) / 100.f;
 
 		FVector2D ScreenPos;
-		bool bOnScreen = GetOwningPlayerController()->ProjectWorldLocationToScreen(DropLoc, ScreenPos, true);
+		bool bOnScreen = PC->ProjectWorldLocationToScreen(DropLoc, ScreenPos, true);
 		bool bInBounds = bOnScreen
 			&& ScreenPos.X >= EdgeMargin && ScreenPos.X <= ScreenW - EdgeMargin
 			&& ScreenPos.Y >= EdgeMargin && ScreenPos.Y <= ScreenH - EdgeMargin;
@@ -249,128 +337,4 @@ void AExoHUD::DrawSupplyDropMarkers()
 	}
 }
 
-void AExoHUD::DrawSupplyDropAnnouncement()
-{
-	AExoGameState* GS = GetWorld()->GetGameState<AExoGameState>();
-	if (!GS || GS->AnnouncementTimer <= 0.f) return;
-
-	GS->AnnouncementTimer -= GetWorld()->GetDeltaSeconds();
-	float T = GS->AnnouncementTimer;
-
-	// Fade: full alpha for first 2s, then fade out
-	float Alpha = FMath::Clamp(T / 1.5f, 0.f, 1.f);
-	// Scale-in effect: starts slightly larger
-	float ScaleIn = FMath::Clamp(1.f - (T - 3.f) * 2.f, 0.f, 1.f);
-	ScaleIn = FMath::Max(ScaleIn, 0.f);
-
-	FString AnnText = GS->SupplyDropAnnouncement;
-	float TW, TH;
-	GetTextSize(AnnText, TW, TH, HUDFont, 1.3f);
-	float PanelW = TW + 50.f;
-	float PanelH = TH + 18.f;
-	float X = (Canvas->SizeX - PanelW) * 0.5f;
-	float Y = Canvas->SizeY * 0.18f;
-
-	// Panel background
-	DrawRect(FLinearColor(0.02f, 0.02f, 0.04f, 0.7f * Alpha), X, Y, PanelW, PanelH);
-
-	// Top and bottom accent bars (yellow-gold)
-	FLinearColor AccCol(1.f, 0.8f, 0.1f, 0.6f * Alpha);
-	DrawRect(AccCol, X, Y, PanelW, 2.f);
-	DrawRect(FLinearColor(AccCol.R, AccCol.G, AccCol.B, 0.3f * Alpha),
-		X, Y + PanelH - 1.f, PanelW, 1.f);
-
-	// Diamond icon before text
-	float DX = X + 15.f;
-	float DY = Y + PanelH * 0.5f;
-	float DS = 5.f;
-	FLinearColor DiamCol(1.f, 0.85f, 0.15f, Alpha);
-	DrawLine(DX, DY - DS, DX + DS, DY, DiamCol, 1.5f);
-	DrawLine(DX + DS, DY, DX, DY + DS, DiamCol, 1.5f);
-	DrawLine(DX, DY + DS, DX - DS, DY, DiamCol, 1.5f);
-	DrawLine(DX - DS, DY, DX, DY - DS, DiamCol, 1.5f);
-
-	// Main text
-	DrawText(AnnText, FLinearColor(1.f, 0.88f, 0.2f, Alpha),
-		X + (PanelW - TW) * 0.5f, Y + (PanelH - TH) * 0.5f, HUDFont, 1.3f);
-
-	if (T <= 0.f) GS->SupplyDropAnnouncement.Empty();
-}
-
-void AExoHUD::DrawLocationBanner()
-{
-	AExoCharacter* Char = Cast<AExoCharacter>(GetOwningPawn());
-	if (!Char) return;
-
-	float DT = GetWorld()->GetDeltaSeconds();
-	FExoLocationNames::Tick(DT, Char->GetActorLocation());
-	FExoLocationNames::Draw(this, Canvas, HUDFont);
-}
-
-void AExoHUD::DrawGrenadeWarning()
-{
-	APawn* Pawn = GetOwningPawn();
-	if (!Pawn) return;
-
-	FVector PlayerPos = Pawn->GetActorLocation();
-	const float WarnRadius = 2000.f;
-	float ClosestDist = WarnRadius;
-	FVector ClosestGrenadePos = FVector::ZeroVector;
-	bool bFound = false;
-
-	for (TActorIterator<AExoGrenade> It(GetWorld()); It; ++It)
-	{
-		AExoGrenade* G = *It;
-		if (!G->IsIgnited()) continue;
-
-		float Dist = FVector::Distance(PlayerPos, G->GetActorLocation());
-		if (Dist < ClosestDist)
-		{
-			ClosestDist = Dist;
-			ClosestGrenadePos = G->GetActorLocation();
-			bFound = true;
-		}
-	}
-
-	if (!bFound) return;
-
-	float CX = Canvas->SizeX * 0.5f;
-	float CY = Canvas->SizeY * 0.5f;
-
-	// Direction to grenade
-	FVector ToGrenade = ClosestGrenadePos - PlayerPos;
-	FVector2D Dir2D(ToGrenade.X, ToGrenade.Y);
-	Dir2D.Normalize();
-
-	// Rotate into screen space based on camera yaw
-	float CamYaw = FMath::DegreesToRadians(
-		Pawn->GetControlRotation().Yaw);
-	float RX = Dir2D.X * FMath::Cos(-CamYaw) - Dir2D.Y * FMath::Sin(-CamYaw);
-	float RY = Dir2D.X * FMath::Sin(-CamYaw) + Dir2D.Y * FMath::Cos(-CamYaw);
-
-	// Intensity — closer = more urgent
-	float Urgency = 1.f - (ClosestDist / WarnRadius);
-	float Pulse = 0.5f + 0.5f * FMath::Sin(GetWorld()->GetTimeSeconds() * 12.f * Urgency);
-	float Alpha = Urgency * (0.6f + 0.4f * Pulse);
-
-	FLinearColor WarnCol(1.f, 0.3f, 0.1f, Alpha);
-
-	// Draw directional indicator arc
-	float IndicatorDist = FMath::Min(Canvas->SizeX, Canvas->SizeY) * 0.35f;
-	float IX = CX + RY * IndicatorDist; // Swap: RY is forward on screen
-	float IY = CY - RX * IndicatorDist;
-
-	// Warning indicator dot pointing toward grenade
-	float DotSize = 12.f + 8.f * Urgency;
-	DrawRect(WarnCol, IX - DotSize * 0.5f, IY - DotSize * 0.5f, DotSize, DotSize);
-
-	// "GRENADE" text
-	if (Urgency > 0.3f && HUDFont)
-	{
-		FString Text = TEXT("! GRENADE !");
-		float TW, TH;
-		GetTextSize(Text, TW, TH, HUDFont, 1.f);
-		DrawText(Text, WarnCol, CX - TW * 0.5f,
-			CY + Canvas->SizeY * 0.25f, HUDFont, 1.f);
-	}
-}
+// DrawSupplyDropAnnouncement, DrawLocationBanner, DrawZiplinePrompt in ExoHUDWorldPrompts.cpp

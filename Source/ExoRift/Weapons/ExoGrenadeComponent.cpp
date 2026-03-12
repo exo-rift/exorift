@@ -24,6 +24,7 @@ void UExoGrenadeComponent::ThrowGrenade(FVector Origin, FRotator Direction)
 
 	if (!Grenade) return;
 
+	Grenade->GrenadeType = GrenadeType;
 	Grenade->Ignite(Direction.Vector());
 
 	// Attach a trail effect to the grenade

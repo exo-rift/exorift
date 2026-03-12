@@ -37,7 +37,7 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 	SetActorRotation(SurfaceRot);
 
 	// Random size variation
-	float S = FMath::RandRange(0.10f, 0.20f);
+	float S = FMath::RandRange(0.15f, 0.30f);
 	ScorchMesh->SetRelativeScale3D(FVector(S, S, 0.005f));
 
 	// Dark scorch mark (opaque PBR)
@@ -45,6 +45,7 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 	if (ScorchLitMat)
 	{
 		UMaterialInstanceDynamic* ScorchMat = UMaterialInstanceDynamic::Create(ScorchLitMat, this);
+		if (!ScorchMat) { return; }
 		ScorchMat->SetVectorParameterValue(TEXT("BaseColor"),
 			FLinearColor(0.02f, 0.02f, 0.02f));
 		ScorchMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
@@ -58,7 +59,8 @@ void AExoImpactDecal::InitDecal(const FVector& HitNormal, const FLinearColor& Co
 	if (GlowBaseMat)
 	{
 		UMaterialInstanceDynamic* GlowMat = UMaterialInstanceDynamic::Create(GlowBaseMat, this);
-		FLinearColor GlowCol(Color.R * 20.f, Color.G * 20.f, Color.B * 20.f, 1.f);
+		if (!GlowMat) { return; }
+		FLinearColor GlowCol(Color.R * 105.f, Color.G * 105.f, Color.B * 105.f, 1.f);
 		GlowMat->SetVectorParameterValue(TEXT("EmissiveColor"), GlowCol);
 		GlowRing->SetMaterial(0, GlowMat);
 	}

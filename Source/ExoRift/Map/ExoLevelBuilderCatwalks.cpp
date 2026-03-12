@@ -1,5 +1,6 @@
 // ExoLevelBuilderCatwalks.cpp — Elevated walkways, catwalks, and vertical gameplay elements
 #include "Map/ExoLevelBuilder.h"
+#include "Map/ExoZipline.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -77,15 +78,36 @@ void AExoLevelBuilder::BuildCatwalks()
 			C + FVector(0.f, 0.f, 2000.f), 150.f);
 	}
 
-	// === ZIPLINE ANCHORS — tall poles at key points for future zipline mechanic ===
-	SpawnZiplineAnchor(FVector(0.f, 0.f, 6000.f));       // Hub comm tower top
-	SpawnZiplineAnchor(FVector(0.f, 80000.f + 5000.f, 5000.f)); // North tower
-	SpawnZiplineAnchor(FVector(80000.f + 5000.f, 3000.f, 6000.f)); // East tower N
-	SpawnZiplineAnchor(FVector(80000.f + 5000.f, -5000.f, 6000.f)); // East tower S
-	SpawnZiplineAnchor(FVector(-80000.f - 3000.f, -12000.f, 4000.f)); // West tower S
-	SpawnZiplineAnchor(FVector(-80000.f - 3000.f, 12000.f, 4000.f)); // West tower N
+	// === ZIPLINE ANCHORS — tall poles at key connection points ===
+	FVector ZipHub(0.f, 0.f, 6000.f);
+	FVector ZipNorth(0.f, 85000.f, 5000.f);
+	FVector ZipEastN(85000.f, 3000.f, 6000.f);
+	FVector ZipEastS(85000.f, -5000.f, 6000.f);
+	FVector ZipWestS(-83000.f, -12000.f, 4000.f);
+	FVector ZipWestN(-83000.f, 12000.f, 4000.f);
 
-	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Catwalks and vertical elements placed"));
+	SpawnZiplineAnchor(ZipHub);
+	SpawnZiplineAnchor(ZipNorth);
+	SpawnZiplineAnchor(ZipEastN);
+	SpawnZiplineAnchor(ZipEastS);
+	SpawnZiplineAnchor(ZipWestS);
+	SpawnZiplineAnchor(ZipWestN);
+
+	// === ZIPLINES — energy cables between anchor points ===
+	UWorld* World = GetWorld();
+	// Hub to all surrounding towers
+	AExoZipline::SpawnZipline(World, ZipHub, ZipNorth);
+	AExoZipline::SpawnZipline(World, ZipHub, ZipEastN);
+	AExoZipline::SpawnZipline(World, ZipHub, ZipWestN);
+	// East tower to tower (short connector)
+	AExoZipline::SpawnZipline(World, ZipEastN, ZipEastS);
+	// West tower to tower
+	AExoZipline::SpawnZipline(World, ZipWestN, ZipWestS);
+	// Cross-map routes
+	AExoZipline::SpawnZipline(World, ZipNorth, ZipEastN);
+	AExoZipline::SpawnZipline(World, ZipWestS, ZipHub);
+
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Catwalks, ziplines, and vertical elements placed"));
 }
 
 void AExoLevelBuilder::SpawnCatwalk(const FVector& Start, const FVector& End, float Width)
@@ -145,8 +167,9 @@ void AExoLevelBuilder::SpawnCatwalk(const FVector& Start, const FVector& End, fl
 		if (Strip && StripMat)
 		{
 			UMaterialInstanceDynamic* SM = UMaterialInstanceDynamic::Create(StripMat, this);
+			if (!SM) { return; }
 			SM->SetVectorParameterValue(TEXT("EmissiveColor"),
-				FLinearColor(0.3f, 1.2f, 2.5f));
+				FLinearColor(0.8f, 3.f, 6.f));
 			Strip->SetMaterial(0, SM);
 		}
 	}
@@ -161,8 +184,8 @@ void AExoLevelBuilder::SpawnCatwalk(const FVector& Start, const FVector& End, fl
 		UPointLightComponent* WalkLight = NewObject<UPointLightComponent>(this);
 		WalkLight->SetupAttachment(RootComponent);
 		WalkLight->SetWorldLocation(LightPos);
-		WalkLight->SetIntensity(1200.f);
-		WalkLight->SetAttenuationRadius(600.f);
+		WalkLight->SetIntensity(3000.f);
+		WalkLight->SetAttenuationRadius(1000.f);
 		WalkLight->SetLightColor(FLinearColor(0.2f, 0.5f, 1.f));
 		WalkLight->CastShadows = false;
 		WalkLight->RegisterComponent();
@@ -205,8 +228,9 @@ void AExoLevelBuilder::SpawnObservationDeck(const FVector& Center, float Radius,
 	{
 		UMaterialInterface* RingEmissive = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* DRM = UMaterialInstanceDynamic::Create(RingEmissive, this);
+		if (!DRM) { return; }
 		DRM->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(0.2f, 0.8f, 1.6f));
+			FLinearColor(0.5f, 2.f, 4.f));
 		DeckRing->SetMaterial(0, DRM);
 	}
 
@@ -218,7 +242,7 @@ void AExoLevelBuilder::SpawnObservationDeck(const FVector& Center, float Radius,
 	UPointLightComponent* DeckLight = NewObject<UPointLightComponent>(this);
 	DeckLight->SetupAttachment(RootComponent);
 	DeckLight->SetWorldLocation(Center + FVector(0.f, 0.f, 200.f));
-	DeckLight->SetIntensity(3000.f);
+	DeckLight->SetIntensity(6000.f);
 	DeckLight->SetAttenuationRadius(Radius * 1.5f);
 	DeckLight->SetLightColor(FLinearColor(0.3f, 0.6f, 1.f));
 	DeckLight->CastShadows = false;
@@ -247,8 +271,9 @@ void AExoLevelBuilder::SpawnZiplineAnchor(const FVector& Top)
 	{
 		UMaterialInterface* AnchorEmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(AnchorEmissiveMat, this);
+		if (!Mat) { return; }
 		Mat->SetVectorParameterValue(TEXT("EmissiveColor"),
-			FLinearColor(1.f, 4.f, 1.5f));
+			FLinearColor(2.5f, 10.f, 3.5f));
 		Anchor->SetMaterial(0, Mat);
 	}
 
@@ -256,8 +281,8 @@ void AExoLevelBuilder::SpawnZiplineAnchor(const FVector& Top)
 	UPointLightComponent* AnchorLight = NewObject<UPointLightComponent>(this);
 	AnchorLight->SetupAttachment(RootComponent);
 	AnchorLight->SetWorldLocation(Top + FVector(0.f, 0.f, PoleHeight + 30.f));
-	AnchorLight->SetIntensity(2000.f);
-	AnchorLight->SetAttenuationRadius(400.f);
+	AnchorLight->SetIntensity(5000.f);
+	AnchorLight->SetAttenuationRadius(700.f);
 	AnchorLight->SetLightColor(FLinearColor(0.2f, 1.f, 0.4f));
 	AnchorLight->CastShadows = false;
 	AnchorLight->RegisterComponent();
