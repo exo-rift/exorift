@@ -73,4 +73,7 @@ private:
 
 	UPROPERTY()
 	AExoCharacter* PendingInteractor = nullptr;
+
+	/** True if a real imported mesh was loaded (skip material override on body). */
+	bool bHasRealMesh = false;
 };

@@ -41,10 +41,32 @@ AExoAutoSlidingDoor::AExoAutoSlidingDoor()
 	DoorLight->SetAttenuationRadius(800.f);
 	DoorLight->CastShadows = false;
 
-	// Load engine primitives
+	// Try loading real door assets in quality order, fall back to cube
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SF_DoorFinder(
+		TEXT("/Game/Meshes/SciFiDoor/Sci-fi-door"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> QT_DoorFinder(
+		TEXT("/Game/Meshes/Quaternius_SciFi/Door_Single"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> KN_DoorFinder(
+		TEXT("/Game/Meshes/Kenney_SpaceKit/door"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> KN_GateFinder(
+		TEXT("/Game/Meshes/Kenney_SpaceKit/gate-door"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (CubeFinder.Succeeded())
+
+	UStaticMesh* DoorMesh = nullptr;
+	if (SF_DoorFinder.Succeeded())       { DoorMesh = SF_DoorFinder.Object; }
+	else if (QT_DoorFinder.Succeeded())  { DoorMesh = QT_DoorFinder.Object; }
+	else if (KN_DoorFinder.Succeeded())  { DoorMesh = KN_DoorFinder.Object; }
+	else if (KN_GateFinder.Succeeded())  { DoorMesh = KN_GateFinder.Object; }
+
+	if (DoorMesh)
+	{
+		bUsingRealMesh = true;
+		DoorFrame->SetStaticMesh(DoorMesh);
+		DoorPanelL->SetStaticMesh(DoorMesh);
+		DoorPanelR->SetStaticMesh(DoorMesh);
+	}
+	else if (CubeFinder.Succeeded())
 	{
 		DoorFrame->SetStaticMesh(CubeFinder.Object);
 		DoorPanelL->SetStaticMesh(CubeFinder.Object);
@@ -65,8 +87,9 @@ void AExoAutoSlidingDoor::BeginPlay()
 	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AExoAutoSlidingDoor::OnTriggerEnter);
 	TriggerVolume->OnComponentEndOverlap.AddDynamic(this, &AExoAutoSlidingDoor::OnTriggerExit);
 
-	// Create dynamic material for accent coloring
-	if (DoorFrame->GetStaticMesh())
+	// Only apply dynamic material overrides for cube fallback —
+	// real imported meshes keep their own PBR materials.
+	if (!bUsingRealMesh && DoorFrame->GetStaticMesh())
 	{
 		UMaterialInterface* BaseMat = DoorFrame->GetMaterial(0);
 		if (BaseMat)
@@ -106,21 +129,48 @@ void AExoAutoSlidingDoor::InitDoor(float Width, float Height, float InSlideDista
 	DoorHeight = Height;
 	SlideAmount = InSlideDistance;
 
-	float HalfW = DoorWidth * 0.5f;
-	float PanelW = HalfW * 0.48f; // slight gap in center
+	if (bUsingRealMesh)
+	{
+		// Real door meshes: frame is the static surround, panels slide apart.
+		// Most imported door meshes are ~200cm wide x ~300cm tall at scale 1.
+		// Scale uniformly to match requested dimensions.
+		float MeshRefHeight = 300.f;
+		float MeshRefWidth = 200.f;
+		float ScaleH = DoorHeight / MeshRefHeight;
+		float ScaleW = DoorWidth / MeshRefWidth;
+		float UniformScale = FMath::Min(ScaleH, ScaleW);
 
-	// Frame — thin border around the opening
-	float FrameThick = 15.f;
-	// Top beam
-	DoorFrame->SetRelativeLocation(FVector(0.f, 0.f, DoorHeight));
-	DoorFrame->SetRelativeScale3D(FVector(FrameThick / 100.f, DoorWidth / 100.f, FrameThick / 100.f));
+		// Frame sits centered at ground level (mesh origin assumed at bottom)
+		DoorFrame->SetRelativeLocation(FVector::ZeroVector);
+		DoorFrame->SetRelativeScale3D(FVector(UniformScale));
+		DoorFrame->SetVisibility(false); // hide frame; real mesh on panels suffices
 
-	// Panels — each covers half the doorway
-	DoorPanelL->SetRelativeLocation(FVector(0.f, -PanelW * 0.5f, DoorHeight * 0.5f));
-	DoorPanelL->SetRelativeScale3D(FVector(FrameThick / 100.f, PanelW / 100.f, DoorHeight / 100.f));
+		// Left panel — shifted left half of doorway
+		DoorPanelL->SetRelativeLocation(FVector(0.f, -DoorWidth * 0.25f, 0.f));
+		DoorPanelL->SetRelativeScale3D(FVector(UniformScale * 0.5f, UniformScale * 0.5f, UniformScale));
 
-	DoorPanelR->SetRelativeLocation(FVector(0.f, PanelW * 0.5f, DoorHeight * 0.5f));
-	DoorPanelR->SetRelativeScale3D(FVector(FrameThick / 100.f, PanelW / 100.f, DoorHeight / 100.f));
+		// Right panel — shifted right half of doorway
+		DoorPanelR->SetRelativeLocation(FVector(0.f, DoorWidth * 0.25f, 0.f));
+		DoorPanelR->SetRelativeScale3D(FVector(UniformScale * 0.5f, UniformScale * 0.5f, UniformScale));
+	}
+	else
+	{
+		// Cube fallback — build frame + panels from primitives
+		float HalfW = DoorWidth * 0.5f;
+		float PanelW = HalfW * 0.48f; // slight gap in center
+		float FrameThick = 15.f;
+
+		// Top beam
+		DoorFrame->SetRelativeLocation(FVector(0.f, 0.f, DoorHeight));
+		DoorFrame->SetRelativeScale3D(FVector(FrameThick / 100.f, DoorWidth / 100.f, FrameThick / 100.f));
+
+		// Panels — each covers half the doorway
+		DoorPanelL->SetRelativeLocation(FVector(0.f, -PanelW * 0.5f, DoorHeight * 0.5f));
+		DoorPanelL->SetRelativeScale3D(FVector(FrameThick / 100.f, PanelW / 100.f, DoorHeight / 100.f));
+
+		DoorPanelR->SetRelativeLocation(FVector(0.f, PanelW * 0.5f, DoorHeight * 0.5f));
+		DoorPanelR->SetRelativeScale3D(FVector(FrameThick / 100.f, PanelW / 100.f, DoorHeight / 100.f));
+	}
 
 	// Trigger volume sized to doorway
 	TriggerVolume->SetSphereRadius(FMath::Max(DoorWidth, DoorHeight) * 0.8f);

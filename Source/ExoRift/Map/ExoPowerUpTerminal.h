@@ -50,6 +50,10 @@ private:
 	UPROPERTY()
 	UStaticMeshComponent* PillarMesh;
 
+	/** Real imported computer mesh (replaces primitives when available) */
+	UPROPERTY()
+	UStaticMeshComponent* ComputerMesh;
+
 	UPROPERTY()
 	class UPointLightComponent* TerminalLight;
 
@@ -59,6 +63,7 @@ private:
 	EPowerUpType PowerUp = EPowerUpType::SpeedBoost;
 	FLinearColor TypeColor;
 	bool bUsed = false;
+	bool bHasRealMesh = false;
 	float RespawnTimer = 0.f;
 	float RespawnTime = 60.f;
 };

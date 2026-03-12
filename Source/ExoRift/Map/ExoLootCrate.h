@@ -63,4 +63,7 @@ private:
 	float BobPhase = 0.f;
 
 	FLinearColor CrateColor;
+
+	/** True when CrateBody uses an imported mesh (skip dynamic material override) */
+	bool bUsingRealMesh = false;
 };

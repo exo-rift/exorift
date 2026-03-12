@@ -16,6 +16,11 @@ AExoPowerUpTerminal::AExoPowerUpTerminal()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Try real imported computer mesh first
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> ComputerFinder(
+		TEXT("/Game/Meshes/Quaternius_SciFi/Props_Computer"));
+	UStaticMesh* ComputerAsset = ComputerFinder.Succeeded() ? ComputerFinder.Object : nullptr;
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
 		TEXT("/Engine/BasicShapes/Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(
@@ -32,7 +37,9 @@ AExoPowerUpTerminal::AExoPowerUpTerminal()
 		return C;
 	};
 
-	// Base cylinder
+	bHasRealMesh = (ComputerAsset != nullptr);
+
+	// Base cylinder — always present as root + collision
 	BaseMesh = MakePart(TEXT("Base"), Cyl);
 	RootComponent = BaseMesh;
 	BaseMesh->SetRelativeScale3D(FVector(0.4f, 0.4f, 0.03f));
@@ -40,25 +47,59 @@ AExoPowerUpTerminal::AExoPowerUpTerminal()
 	BaseMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 	BaseMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-	// Vertical pillar
-	PillarMesh = MakePart(TEXT("Pillar"), Cube);
-	PillarMesh->SetupAttachment(BaseMesh);
-	PillarMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	PillarMesh->SetRelativeScale3D(FVector(0.15f, 0.15f, 3.f));
+	if (bHasRealMesh)
+	{
+		// Real asset — single mesh replaces pillar + screen primitives
+		ComputerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Computer"));
+		ComputerMesh->SetStaticMesh(ComputerAsset);
+		ComputerMesh->SetupAttachment(BaseMesh);
+		ComputerMesh->SetRelativeLocation(FVector(0.f, 0.f, 5.f));
+		ComputerMesh->SetRelativeScale3D(FVector(80.f, 80.f, 80.f));
+		ComputerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ComputerMesh->CastShadow = true;
 
-	// Angled screen
-	ScreenMesh = MakePart(TEXT("Screen"), Cube);
-	ScreenMesh->SetupAttachment(PillarMesh);
-	ScreenMesh->SetRelativeLocation(FVector(12.f, 0.f, 18.f));
-	ScreenMesh->SetRelativeScale3D(FVector(0.02f, 2.5f, 1.5f));
-	ScreenMesh->SetRelativeRotation(FRotator(15.f, 0.f, 0.f));
+		// Hide base disc — the real mesh has its own base
+		BaseMesh->SetVisibility(false);
 
-	TerminalLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
-	TerminalLight->SetupAttachment(ScreenMesh);
-	TerminalLight->SetRelativeLocation(FVector(10.f, 0.f, 0.f));
-	TerminalLight->SetIntensity(12000.f);
-	TerminalLight->SetAttenuationRadius(800.f);
-	TerminalLight->CastShadows = false;
+		// Create hidden fallback parts (UE CDO requires stable subobject set)
+		PillarMesh = MakePart(TEXT("Pillar"), nullptr);
+		PillarMesh->SetupAttachment(BaseMesh);
+		PillarMesh->SetVisibility(false);
+		ScreenMesh = MakePart(TEXT("Screen"), nullptr);
+		ScreenMesh->SetupAttachment(BaseMesh);
+		ScreenMesh->SetVisibility(false);
+
+		// Light positioned above the real computer mesh
+		TerminalLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
+		TerminalLight->SetupAttachment(ComputerMesh);
+		TerminalLight->SetRelativeLocation(FVector(0.f, 0.f, 1.2f));
+		TerminalLight->SetIntensity(12000.f);
+		TerminalLight->SetAttenuationRadius(800.f);
+		TerminalLight->CastShadows = false;
+	}
+	else
+	{
+		// Fallback: primitive shapes
+		ComputerMesh = nullptr;
+
+		PillarMesh = MakePart(TEXT("Pillar"), Cube);
+		PillarMesh->SetupAttachment(BaseMesh);
+		PillarMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+		PillarMesh->SetRelativeScale3D(FVector(0.15f, 0.15f, 3.f));
+
+		ScreenMesh = MakePart(TEXT("Screen"), Cube);
+		ScreenMesh->SetupAttachment(PillarMesh);
+		ScreenMesh->SetRelativeLocation(FVector(12.f, 0.f, 18.f));
+		ScreenMesh->SetRelativeScale3D(FVector(0.02f, 2.5f, 1.5f));
+		ScreenMesh->SetRelativeRotation(FRotator(15.f, 0.f, 0.f));
+
+		TerminalLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
+		TerminalLight->SetupAttachment(ScreenMesh);
+		TerminalLight->SetRelativeLocation(FVector(10.f, 0.f, 0.f));
+		TerminalLight->SetIntensity(12000.f);
+		TerminalLight->SetAttenuationRadius(800.f);
+		TerminalLight->CastShadows = false;
+	}
 
 	TypeColor = FLinearColor(0.2f, 0.8f, 1.f);
 }
@@ -78,6 +119,14 @@ void AExoPowerUpTerminal::InitTerminal(EPowerUpType Type)
 
 void AExoPowerUpTerminal::BuildVisuals()
 {
+	// Real mesh: preserve imported materials, only set light color
+	if (bHasRealMesh)
+	{
+		TerminalLight->SetLightColor(TypeColor);
+		return;
+	}
+
+	// Fallback: apply dynamic PBR materials to primitive shapes
 	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 	if (!LitMat) return;
 
@@ -115,16 +164,19 @@ void AExoPowerUpTerminal::Tick(float DeltaTime)
 		if (RespawnTimer <= 0.f)
 		{
 			bUsed = false;
-			ScreenMesh->SetVisibility(true);
+			if (bHasRealMesh && ComputerMesh)
+				ComputerMesh->SetVisibility(true);
+			else
+				ScreenMesh->SetVisibility(true);
 			TerminalLight->SetIntensity(12000.f);
 		}
 		return;
 	}
 
-	// Pulse screen glow
+	// Pulse glow
 	float Time = GetWorld()->GetTimeSeconds();
 	float Pulse = 0.7f + 0.3f * FMath::Sin(Time * 3.f);
-	if (ScreenMat)
+	if (!bHasRealMesh && ScreenMat)
 	{
 		ScreenMat->SetVectorParameterValue(TEXT("EmissiveColor"),
 			FLinearColor(TypeColor.R * 3.f * Pulse, TypeColor.G * 3.f * Pulse,
@@ -142,7 +194,10 @@ void AExoPowerUpTerminal::Interact(AExoCharacter* Interactor)
 	ApplyPowerUp(Interactor);
 
 	AExoPickupFlash::SpawnAt(GetWorld(), GetActorLocation() + FVector(0, 0, 80.f), TypeColor);
-	ScreenMesh->SetVisibility(false);
+	if (bHasRealMesh && ComputerMesh)
+		ComputerMesh->SetVisibility(false);
+	else
+		ScreenMesh->SetVisibility(false);
 	TerminalLight->SetIntensity(1000.f);
 }
 

@@ -60,4 +60,7 @@ private:
 	float OpenSpeed = 5.f;
 	FVector ClosedOffsetL;
 	FVector ClosedOffsetR;
+
+	/** True when a real imported door mesh is used (skip material overrides). */
+	bool bUsingRealMesh = false;
 };

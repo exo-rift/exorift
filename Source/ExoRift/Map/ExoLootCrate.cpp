@@ -15,8 +15,18 @@ AExoLootCrate::AExoLootCrate()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Try real imported crate meshes first, fall back to primitive cube
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CrateFinder(
+		TEXT("/Game/Meshes/Quaternius_SciFi/Props_Crate"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CargoFinder(
+		TEXT("/Game/KayKit/SpaceBase/cargo_A"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
 		TEXT("/Engine/BasicShapes/Cube"));
+
+	UStaticMesh* RealMesh = nullptr;
+	if (CrateFinder.Succeeded()) RealMesh = CrateFinder.Object;
+	else if (CargoFinder.Succeeded()) RealMesh = CargoFinder.Object;
+
 	UStaticMesh* Cube = CubeFinder.Succeeded() ? CubeFinder.Object : nullptr;
 
 	auto MakePart = [&](const TCHAR* Name) -> UStaticMeshComponent*
@@ -28,9 +38,21 @@ AExoLootCrate::AExoLootCrate()
 		return C;
 	};
 
-	CrateBody = MakePart(TEXT("Body"));
+	CrateBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Body"));
+	CrateBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CrateBody->CastShadow = true;
+	if (RealMesh)
+	{
+		CrateBody->SetStaticMesh(RealMesh);
+		CrateBody->SetRelativeScale3D(FVector(1.2f));
+		bUsingRealMesh = true;
+	}
+	else
+	{
+		if (Cube) CrateBody->SetStaticMesh(Cube);
+		CrateBody->SetRelativeScale3D(FVector(0.6f, 0.4f, 0.35f));
+	}
 	RootComponent = CrateBody;
-	CrateBody->SetRelativeScale3D(FVector(0.6f, 0.4f, 0.35f));
 	CrateBody->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CrateBody->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CrateBody->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -77,19 +99,22 @@ void AExoLootCrate::BuildVisuals()
 	default: CrateColor = FLinearColor(0.9f, 0.2f, 0.8f); break;  // Magenta
 	}
 
-	// PBR metallic crate body
+	// PBR metallic materials — skip body when using imported mesh (keep its own materials)
 	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
 	if (LitMat)
 	{
-		UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
-		if (!BodyMat) { return; }
-		BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
-		BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
-		BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
-		BodyMat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
-		CrateBody->SetMaterial(0, BodyMat);
+		if (!bUsingRealMesh)
+		{
+			UMaterialInstanceDynamic* BodyMat = UMaterialInstanceDynamic::Create(LitMat, this);
+			if (!BodyMat) { return; }
+			BodyMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.06f, 0.06f, 0.08f));
+			BodyMat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			BodyMat->SetScalarParameterValue(TEXT("Metallic"), 0.88f);
+			BodyMat->SetScalarParameterValue(TEXT("Roughness"), 0.25f);
+			CrateBody->SetMaterial(0, BodyMat);
+		}
 
-		// Lid — slightly lighter
+		// Lid — slightly lighter (always cube-based)
 		LidMat = UMaterialInstanceDynamic::Create(LitMat, this);
 		if (!LidMat) { return; }
 		LidMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.1f));

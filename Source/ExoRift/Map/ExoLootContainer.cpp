@@ -24,26 +24,46 @@ AExoLootContainer::AExoLootContainer()
 	ContainerMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	RootComponent = ContainerMesh;
 
-	// Load basic shape for crate body
+	// Try real imported crate meshes first, then fall back to cube
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CrateFinder(
+		TEXT("/Game/Meshes/Quaternius_SciFi/Props_Crate"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CargoFinder(
+		TEXT("/Game/KayKit/SpaceBase/cargo_A"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFind(
 		TEXT("/Engine/BasicShapes/Cube"));
-	if (CubeFind.Succeeded())
+
+	if (CrateFinder.Succeeded())
+	{
+		ContainerMesh->SetStaticMesh(CrateFinder.Object);
+		ContainerMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+		bHasRealMesh = true;
+	}
+	else if (CargoFinder.Succeeded())
+	{
+		ContainerMesh->SetStaticMesh(CargoFinder.Object);
+		ContainerMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+		bHasRealMesh = true;
+	}
+	else if (CubeFind.Succeeded())
 	{
 		ContainerMesh->SetStaticMesh(CubeFind.Object);
 		ContainerMesh->SetRelativeScale3D(FVector(1.0f, 0.6f, 0.5f));
 	}
 
-	// PBR metallic crate body via LitEmissive
-	UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
-	if (LitMat)
+	// PBR metallic crate body — only for cube fallback (real meshes keep their materials)
+	if (!bHasRealMesh)
 	{
-		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
-		if (!Mat) { return; }
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.1f, 0.06f));
-		Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
-		Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
-		Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
-		ContainerMesh->SetMaterial(0, Mat);
+		UMaterialInterface* LitMat = FExoMaterialFactory::GetLitEmissive();
+		if (LitMat)
+		{
+			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(LitMat, this);
+			if (!Mat) { return; }
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.1f, 0.06f));
+			Mat->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+			Mat->SetScalarParameterValue(TEXT("Metallic"), 0.85f);
+			Mat->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
+			ContainerMesh->SetMaterial(0, Mat);
+		}
 	}
 }
 
