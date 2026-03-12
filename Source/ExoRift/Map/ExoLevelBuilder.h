@@ -225,7 +225,14 @@ private:
 	UPROPERTY()
 	TArray<UStaticMeshComponent*> LevelMeshes;
 
-	// Map dimensions (centimeters)
-	static constexpr float MapHalfSize = 200000.f; // 2km from center
+	// Map dimensions (centimeters) — compact arena map
+	static constexpr float MapHalfSize = 40000.f; // 400m from center
 	static constexpr float GroundZ = 0.f;
+
+	// Compound positions — used by all builder modules
+	static constexpr float NorthY = 16000.f;
+	static constexpr float SouthY = -16000.f;
+	static constexpr float EastX = 16000.f;
+	static constexpr float WestX = -16000.f;
+	static constexpr float CornerDist = 28000.f;
 };

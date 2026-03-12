@@ -19,19 +19,19 @@ void AExoLevelBuilder::PlaceJumpPads()
 		// Hub — east pad near landing zone
 		{{6000.f, 0.f, 10.f}, 2200.f, FLinearColor(0.1f, 0.8f, 1.f)},
 		// North compound — warehouse roof access
-		{{-5000.f, 83000.f, 10.f}, 2500.f, FLinearColor(1.f, 0.6f, 0.15f)},
+		{{-5000.f, NorthY + 3000.f, 10.f}, 2500.f, FLinearColor(1.f, 0.6f, 0.15f)},
 		// South compound — lab tower launch
-		{{3000.f, -83000.f, 10.f}, 2200.f, FLinearColor(0.2f, 1.f, 0.4f)},
+		{{3000.f, SouthY - 3000.f, 10.f}, 2200.f, FLinearColor(0.2f, 1.f, 0.4f)},
 		// East power station — tower launch
-		{{83000.f, -3000.f, 10.f}, 2800.f, FLinearColor(0.15f, 0.4f, 1.f)},
+		{{EastX + 3000.f, -3000.f, 10.f}, 2800.f, FLinearColor(0.15f, 0.4f, 1.f)},
 		// West barracks — between buildings
-		{{-80000.f, 0.f, 10.f}, 2000.f, FLinearColor(1.f, 0.2f, 0.15f)},
+		{{WestX, 0.f, 10.f}, 2000.f, FLinearColor(1.f, 0.2f, 0.15f)},
 		// Crossroads area — midfield vertical play
-		{{30000.f, 30000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
-		{{-35000.f, -35000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
+		{{6000.f, 6000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
+		{{-7000.f, -7000.f, 10.f}, 2400.f, FLinearColor(0.5f, 0.8f, 1.f)},
 		// Near bridge positions
-		{{50000.f, 50000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
-		{{-50000.f, -50000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
+		{{10000.f, 10000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
+		{{-10000.f, -10000.f, 10.f}, 2200.f, FLinearColor(0.8f, 0.4f, 1.f)},
 	};
 
 	for (const FPadInfo& P : Pads)
@@ -50,9 +50,9 @@ void AExoLevelBuilder::PlaceJumpPads()
 	struct FGenInfo { FVector Pos; float Radius; FLinearColor Color; };
 	TArray<FGenInfo> Generators = {
 		{{0.f, 0.f, 10.f}, 1200.f, FLinearColor(0.1f, 0.6f, 1.f)},       // Hub center
-		{{40000.f, 40000.f, 10.f}, 800.f, FLinearColor(0.2f, 1.f, 0.4f)},  // NE crossroads
-		{{-40000.f, -40000.f, 10.f}, 800.f, FLinearColor(1.f, 0.4f, 0.2f)}, // SW crossroads
-		{{60000.f, -40000.f, 10.f}, 600.f, FLinearColor(0.8f, 0.2f, 1.f)},  // SE ruins
+		{{8000.f, 8000.f, 10.f}, 800.f, FLinearColor(0.2f, 1.f, 0.4f)},  // NE crossroads
+		{{-8000.f, -8000.f, 10.f}, 800.f, FLinearColor(1.f, 0.4f, 0.2f)}, // SW crossroads
+		{{12000.f, -8000.f, 10.f}, 600.f, FLinearColor(0.8f, 0.2f, 1.f)},  // SE ruins
 	};
 
 	for (const FGenInfo& G : Generators)
@@ -64,10 +64,10 @@ void AExoLevelBuilder::PlaceJumpPads()
 
 	// Rock formations for wilderness cover
 	FVector RockClusters[] = {
-		{25000.f, 60000.f, 0.f}, {-60000.f, 25000.f, 0.f},
-		{70000.f, -60000.f, 0.f}, {-25000.f, -70000.f, 0.f},
-		{90000.f, 40000.f, 0.f}, {-90000.f, -40000.f, 0.f},
-		{15000.f, -40000.f, 0.f}, {-45000.f, 15000.f, 0.f},
+		{5000.f, 12000.f, 0.f}, {-12000.f, 5000.f, 0.f},
+		{14000.f, -12000.f, 0.f}, {-5000.f, -14000.f, 0.f},
+		{18000.f, 8000.f, 0.f}, {-18000.f, -8000.f, 0.f},
+		{3000.f, -8000.f, 0.f}, {-9000.f, 3000.f, 0.f},
 	};
 	for (const FVector& RC : RockClusters)
 	{
@@ -129,7 +129,7 @@ void AExoLevelBuilder::PlaceDrones()
 		FDroneRoute R;
 		R.Color = FLinearColor(1.f, 0.4f, 0.1f);
 		R.Speed = 600.f;
-		float Rad = 25000.f;
+		float Rad = 5000.f;
 		for (int32 i = 0; i < 6; i++)
 		{
 			float A = (2.f * PI * i) / 6.f + PI / 6.f;
@@ -143,11 +143,11 @@ void AExoLevelBuilder::PlaceDrones()
 		FDroneRoute R;
 		R.Color = FLinearColor(0.2f, 1.f, 0.4f);
 		R.Speed = 900.f;
-		R.Waypoints.Add(FVector(0.f, -120000.f, 0.f));
-		R.Waypoints.Add(FVector(20000.f, -60000.f, 0.f));
-		R.Waypoints.Add(FVector(-10000.f, 0.f, 0.f));
-		R.Waypoints.Add(FVector(15000.f, 60000.f, 0.f));
-		R.Waypoints.Add(FVector(0.f, 120000.f, 0.f));
+		R.Waypoints.Add(FVector(0.f, -24000.f, 0.f));
+		R.Waypoints.Add(FVector(4000.f, -12000.f, 0.f));
+		R.Waypoints.Add(FVector(-2000.f, 0.f, 0.f));
+		R.Waypoints.Add(FVector(3000.f, 12000.f, 0.f));
+		R.Waypoints.Add(FVector(0.f, 24000.f, 0.f));
 		Routes.Add(R);
 	}
 
@@ -172,15 +172,15 @@ void AExoLevelBuilder::PlaceSteamVents()
 	struct FVentDef { FVector Pos; FLinearColor Color; float Interval; };
 	TArray<FVentDef> Vents = {
 		// Industrial compound — hot amber vents
-		{{2000.f, 80000.f, 0.f}, FLinearColor(1.f, 0.5f, 0.1f), 4.f},
-		{{-3000.f, 82000.f, 0.f}, FLinearColor(1.f, 0.6f, 0.15f), 6.f},
-		{{5000.f, 78000.f, 0.f}, FLinearColor(1.f, 0.4f, 0.05f), 5.f},
+		{{2000.f, NorthY, 0.f}, FLinearColor(1.f, 0.5f, 0.1f), 4.f},
+		{{-3000.f, NorthY + 2000.f, 0.f}, FLinearColor(1.f, 0.6f, 0.15f), 6.f},
+		{{5000.f, NorthY - 2000.f, 0.f}, FLinearColor(1.f, 0.4f, 0.05f), 5.f},
 		// Power Station — electric blue
-		{{82000.f, 2000.f, 0.f}, FLinearColor(0.2f, 0.5f, 1.f), 3.f},
-		{{78000.f, -3000.f, 0.f}, FLinearColor(0.15f, 0.4f, 1.f), 7.f},
+		{{EastX + 2000.f, 2000.f, 0.f}, FLinearColor(0.2f, 0.5f, 1.f), 3.f},
+		{{EastX - 2000.f, -3000.f, 0.f}, FLinearColor(0.15f, 0.4f, 1.f), 7.f},
 		// Research Labs — green gas
-		{{-2000.f, -80000.f, 0.f}, FLinearColor(0.2f, 0.9f, 0.3f), 5.f},
-		{{3000.f, -82000.f, 0.f}, FLinearColor(0.3f, 1.f, 0.4f), 8.f},
+		{{-2000.f, SouthY, 0.f}, FLinearColor(0.2f, 0.9f, 0.3f), 5.f},
+		{{3000.f, SouthY - 2000.f, 0.f}, FLinearColor(0.3f, 1.f, 0.4f), 8.f},
 	};
 
 	for (const FVentDef& V : Vents)

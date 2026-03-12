@@ -132,16 +132,16 @@ void AExoAmbientMotes::SpawnClusters(UWorld* World)
 		// Central hub — cyan energy
 		{FVector(0.f, 0.f, 400.f), FLinearColor(0.15f, 0.55f, 1.f), 3000.f, 30},
 		// North industrial — amber sparks
-		{FVector(0.f, 80000.f, 300.f), FLinearColor(1.f, 0.65f, 0.15f), 2500.f, 25},
+		{FVector(0.f, 16000.f, 300.f), FLinearColor(1.f, 0.65f, 0.15f), 2500.f, 25},
 		// South research — teal
-		{FVector(-40000.f, -80000.f, 350.f), FLinearColor(0.1f, 0.8f, 0.6f), 2800.f, 28},
+		{FVector(-8000.f, -16000.f, 350.f), FLinearColor(0.1f, 0.8f, 0.6f), 2800.f, 28},
 		// East power — red warning particles
-		{FVector(80000.f, 0.f, 300.f), FLinearColor(1.f, 0.2f, 0.1f), 2200.f, 22},
+		{FVector(16000.f, 0.f, 300.f), FLinearColor(1.f, 0.2f, 0.1f), 2200.f, 22},
 		// West barracks — green
-		{FVector(-80000.f, 0.f, 280.f), FLinearColor(0.15f, 0.9f, 0.3f), 2000.f, 20},
+		{FVector(-16000.f, 0.f, 280.f), FLinearColor(0.15f, 0.9f, 0.3f), 2000.f, 20},
 		// Open field clusters — soft purple
-		{FVector(40000.f, 40000.f, 500.f), FLinearColor(0.5f, 0.2f, 0.9f), 4000.f, 35},
-		{FVector(-60000.f, 60000.f, 400.f), FLinearColor(0.4f, 0.25f, 0.85f), 3500.f, 30},
+		{FVector(8000.f, 8000.f, 500.f), FLinearColor(0.5f, 0.2f, 0.9f), 4000.f, 35},
+		{FVector(-12000.f, 12000.f, 400.f), FLinearColor(0.4f, 0.25f, 0.85f), 3500.f, 30},
 		// Near the obelisk — bright white-cyan
 		{FVector(0.f, 0.f, 1200.f), FLinearColor(0.6f, 0.8f, 1.f), 1500.f, 40},
 	};

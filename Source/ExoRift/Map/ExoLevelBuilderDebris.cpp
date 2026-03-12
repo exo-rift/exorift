@@ -8,35 +8,35 @@
 void AExoLevelBuilder::BuildEnvironmentalDebris()
 {
 	// === CRASHED DROPSHIPS — large wrecked vessels scattered across the map ===
-	SpawnCrashedShip(FVector(35000.f, 55000.f, 0.f), 25.f, 1.f);
-	SpawnCrashedShip(FVector(-65000.f, 35000.f, 0.f), -40.f, 1.3f);
-	SpawnCrashedShip(FVector(90000.f, -70000.f, 0.f), 110.f, 0.8f);
-	SpawnCrashedShip(FVector(-45000.f, -90000.f, 0.f), 175.f, 1.1f);
-	SpawnCrashedShip(FVector(15000.f, -40000.f, 0.f), -65.f, 0.7f);
+	SpawnCrashedShip(FVector(7000.f, 11000.f, 0.f), 25.f, 1.f);
+	SpawnCrashedShip(FVector(-13000.f, 7000.f, 0.f), -40.f, 1.3f);
+	SpawnCrashedShip(FVector(18000.f, -14000.f, 0.f), 110.f, 0.8f);
+	SpawnCrashedShip(FVector(-9000.f, -18000.f, 0.f), 175.f, 1.1f);
+	SpawnCrashedShip(FVector(3000.f, -8000.f, 0.f), -65.f, 0.7f);
 
 	// === DEBRIS FIELDS — scattered wreckage from orbital bombardment ===
-	SpawnDebrisField(FVector(25000.f, 60000.f, 0.f), 5000.f, 35);
-	SpawnDebrisField(FVector(-70000.f, 30000.f, 0.f), 4000.f, 28);
-	SpawnDebrisField(FVector(80000.f, -65000.f, 0.f), 6000.f, 40);
-	SpawnDebrisField(FVector(-40000.f, -85000.f, 0.f), 3500.f, 24);
-	SpawnDebrisField(FVector(50000.f, -10000.f, 0.f), 3000.f, 20);
+	SpawnDebrisField(FVector(5000.f, 12000.f, 0.f), 5000.f, 35);
+	SpawnDebrisField(FVector(-14000.f, 6000.f, 0.f), 4000.f, 28);
+	SpawnDebrisField(FVector(16000.f, -13000.f, 0.f), 6000.f, 40);
+	SpawnDebrisField(FVector(-8000.f, -17000.f, 0.f), 3500.f, 24);
+	SpawnDebrisField(FVector(10000.f, -2000.f, 0.f), 3000.f, 20);
 	// Additional debris fields in open areas
-	SpawnDebrisField(FVector(-15000.f, 40000.f, 0.f), 3500.f, 18);
-	SpawnDebrisField(FVector(65000.f, 45000.f, 0.f), 4500.f, 30);
-	SpawnDebrisField(FVector(-55000.f, -50000.f, 0.f), 3000.f, 22);
+	SpawnDebrisField(FVector(-3000.f, 8000.f, 0.f), 3500.f, 18);
+	SpawnDebrisField(FVector(13000.f, 9000.f, 0.f), 4500.f, 30);
+	SpawnDebrisField(FVector(-11000.f, -10000.f, 0.f), 3000.f, 22);
 
 	// === SCORCH MARKS — impact burns from previous battles ===
-	SpawnScorchMark(FVector(35000.f, 55000.f, 1.f), 3000.f);
-	SpawnScorchMark(FVector(-65000.f, 35000.f, 1.f), 4000.f);
-	SpawnScorchMark(FVector(90000.f, -70000.f, 1.f), 2500.f);
-	SpawnScorchMark(FVector(-45000.f, -90000.f, 1.f), 3500.f);
-	SpawnScorchMark(FVector(10000.f, 30000.f, 1.f), 1800.f, 45.f);
-	SpawnScorchMark(FVector(-30000.f, -15000.f, 1.f), 2000.f, -20.f);
-	SpawnScorchMark(FVector(60000.f, 20000.f, 1.f), 1500.f);
+	SpawnScorchMark(FVector(7000.f, 11000.f, 1.f), 3000.f);
+	SpawnScorchMark(FVector(-13000.f, 7000.f, 1.f), 4000.f);
+	SpawnScorchMark(FVector(18000.f, -14000.f, 1.f), 2500.f);
+	SpawnScorchMark(FVector(-9000.f, -18000.f, 1.f), 3500.f);
+	SpawnScorchMark(FVector(2000.f, 6000.f, 1.f), 1800.f, 45.f);
+	SpawnScorchMark(FVector(-6000.f, -3000.f, 1.f), 2000.f, -20.f);
+	SpawnScorchMark(FVector(12000.f, 4000.f, 1.f), 1500.f);
 
 	// === DOWNED COMM TOWER — toppled structure near south compound ===
 	{
-		FVector TowerBase(-15000.f, -65000.f, 0.f);
+		FVector TowerBase(-3000.f, -13000.f, 0.f);
 		FRotator TowerRot(75.f, 30.f, 0.f); // Fallen at steep angle
 		// Main shaft (horizontal, on ground)
 		SpawnStaticMesh(TowerBase + FVector(0.f, 0.f, 200.f),
@@ -63,7 +63,7 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 
 	// === DESTROYED VEHICLE CONVOY — line of wrecked transports ===
 	{
-		FVector ConvoyStart(55000.f, 40000.f, 0.f);
+		FVector ConvoyStart(11000.f, 8000.f, 0.f);
 		FVector ConvoyDir = FVector(1.f, 0.3f, 0.f).GetSafeNormal();
 		float ConvoyYaw = ConvoyDir.Rotation().Yaw;
 		FLinearColor BurntMetal(0.04f, 0.04f, 0.045f);
@@ -94,22 +94,22 @@ void AExoLevelBuilder::BuildEnvironmentalDebris()
 		struct FGlowCrater { FVector Pos; float Radius; FLinearColor GlowCol; };
 		TArray<FGlowCrater> GlowCraters = {
 			// Fire orange — orbital bombardment sites
-			{{45000.f, -55000.f, 0.f}, 2000.f, FLinearColor(0.4f, 0.1f, 0.02f)},
-			{{-20000.f, 45000.f, 0.f}, 1600.f, FLinearColor(0.6f, 0.15f, 0.03f)},
-			{{75000.f, 30000.f, 0.f}, 2200.f, FLinearColor(0.5f, 0.12f, 0.02f)},
+			{{9000.f, -11000.f, 0.f}, 2000.f, FLinearColor(0.4f, 0.1f, 0.02f)},
+			{{-4000.f, 9000.f, 0.f}, 1600.f, FLinearColor(0.6f, 0.15f, 0.03f)},
+			{{15000.f, 6000.f, 0.f}, 2200.f, FLinearColor(0.5f, 0.12f, 0.02f)},
 			// Energy blue — weapons platform impacts
-			{{-80000.f, 50000.f, 0.f}, 2500.f, FLinearColor(0.05f, 0.2f, 0.4f)},
-			{{60000.f, -85000.f, 0.f}, 1900.f, FLinearColor(0.08f, 0.25f, 0.5f)},
-			{{-30000.f, -60000.f, 0.f}, 1400.f, FLinearColor(0.04f, 0.15f, 0.35f)},
+			{{-16000.f, 10000.f, 0.f}, 2500.f, FLinearColor(0.05f, 0.2f, 0.4f)},
+			{{12000.f, -17000.f, 0.f}, 1900.f, FLinearColor(0.08f, 0.25f, 0.5f)},
+			{{-6000.f, -12000.f, 0.f}, 1400.f, FLinearColor(0.04f, 0.15f, 0.35f)},
 			// Plasma purple — exotic ordnance
-			{{30000.f, 100000.f, 0.f}, 1800.f, FLinearColor(0.2f, 0.05f, 0.3f)},
-			{{-95000.f, -30000.f, 0.f}, 2100.f, FLinearColor(0.25f, 0.06f, 0.35f)},
+			{{6000.f, 20000.f, 0.f}, 1800.f, FLinearColor(0.2f, 0.05f, 0.3f)},
+			{{-19000.f, -6000.f, 0.f}, 2100.f, FLinearColor(0.25f, 0.06f, 0.35f)},
 			// Radiation green — reactor breach sites
-			{{-60000.f, -45000.f, 0.f}, 2800.f, FLinearColor(0.08f, 0.3f, 0.05f)},
-			{{50000.f, 70000.f, 0.f}, 1500.f, FLinearColor(0.1f, 0.35f, 0.06f)},
+			{{-12000.f, -9000.f, 0.f}, 2800.f, FLinearColor(0.08f, 0.3f, 0.05f)},
+			{{10000.f, 14000.f, 0.f}, 1500.f, FLinearColor(0.1f, 0.35f, 0.06f)},
 			// Hot white — recent kinetic impacts
-			{{-10000.f, -95000.f, 0.f}, 1200.f, FLinearColor(0.4f, 0.35f, 0.3f)},
-			{{95000.f, 10000.f, 0.f}, 1700.f, FLinearColor(0.35f, 0.3f, 0.25f)},
+			{{-2000.f, -19000.f, 0.f}, 1200.f, FLinearColor(0.4f, 0.35f, 0.3f)},
+			{{19000.f, 2000.f, 0.f}, 1700.f, FLinearColor(0.35f, 0.3f, 0.25f)},
 		};
 		for (const auto& GC : GlowCraters)
 		{

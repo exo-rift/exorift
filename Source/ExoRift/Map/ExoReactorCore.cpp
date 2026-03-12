@@ -67,14 +67,14 @@ AExoReactorCore::AExoReactorCore()
 	// Lights
 	CoreLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CoreLight"));
 	CoreLight->SetupAttachment(BasePlate);
-	CoreLight->SetIntensity(60000.f);
+	CoreLight->SetIntensity(8000.f);
 	CoreLight->SetAttenuationRadius(4000.f);
 	CoreLight->SetLightColor(FLinearColor(0.2f, 0.5f, 1.f));
 	CoreLight->CastShadows = false;
 
 	AmbientLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AmbientLight"));
 	AmbientLight->SetupAttachment(BasePlate);
-	AmbientLight->SetIntensity(20000.f);
+	AmbientLight->SetIntensity(3000.f);
 	AmbientLight->SetAttenuationRadius(6000.f);
 	AmbientLight->SetLightColor(FLinearColor(0.15f, 0.3f, 0.7f));
 	AmbientLight->CastShadows = false;

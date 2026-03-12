@@ -80,6 +80,6 @@ private:
 
 	float Age = 0.f;
 	float HumTimer = 0.f;
-	float BaseLightIntensity = 30000.f;
+	float BaseLightIntensity = 2500.f;
 	bool bPlayerInsideZone = false;
 };

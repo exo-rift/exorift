@@ -23,13 +23,13 @@ void AExoLevelBuilder::BuildCompoundLighting()
 		// Command Center — white/cyan (authority, clean)
 		{FVector(0.f, 0.f, 0.f), FLinearColor(0.4f, 0.8f, 1.f), 12000.f},
 		// Industrial — amber/orange (machinery, heat)
-		{FVector(0.f, 80000.f, 0.f), FLinearColor(1.f, 0.6f, 0.15f), 15000.f},
+		{FVector(0.f, NorthY, 0.f), FLinearColor(1.f, 0.6f, 0.15f), 15000.f},
 		// Research Labs — green (science, bio)
-		{FVector(0.f, -80000.f, 0.f), FLinearColor(0.2f, 1.f, 0.4f), 13000.f},
+		{FVector(0.f, SouthY, 0.f), FLinearColor(0.2f, 1.f, 0.4f), 13000.f},
 		// Power Station — electric blue (energy, arcs)
-		{FVector(80000.f, 0.f, 0.f), FLinearColor(0.15f, 0.4f, 1.f), 14000.f},
+		{FVector(EastX, 0.f, 0.f), FLinearColor(0.15f, 0.4f, 1.f), 14000.f},
 		// Barracks — red (military, alert)
-		{FVector(-80000.f, 0.f, 0.f), FLinearColor(1.f, 0.2f, 0.15f), 14000.f},
+		{FVector(WestX, 0.f, 0.f), FLinearColor(1.f, 0.2f, 0.15f), 14000.f},
 	};
 
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveOpaque();
@@ -113,22 +113,22 @@ void AExoLevelBuilder::BuildCompoundLighting()
 	struct FFieldLight { FVector Pos; FLinearColor Color; float Intensity; float Radius; };
 	TArray<FFieldLight> FieldLights = {
 		// NE quadrant — cool teal transition
-		{{40000.f, 40000.f, 200.f}, FLinearColor(0.15f, 0.5f, 0.6f), 2000.f, 20000.f},
-		{{25000.f, 60000.f, 150.f}, FLinearColor(0.2f, 0.6f, 0.5f), 1500.f, 18000.f},
+		{{8000.f, 8000.f, 200.f}, FLinearColor(0.15f, 0.5f, 0.6f), 2000.f, 20000.f},
+		{{5000.f, 12000.f, 150.f}, FLinearColor(0.2f, 0.6f, 0.5f), 1500.f, 18000.f},
 		// NW quadrant — amber-red transition
-		{{-40000.f, 40000.f, 200.f}, FLinearColor(0.7f, 0.3f, 0.1f), 1800.f, 18000.f},
-		{{-60000.f, 25000.f, 150.f}, FLinearColor(0.8f, 0.25f, 0.1f), 1500.f, 16000.f},
+		{{-8000.f, 8000.f, 200.f}, FLinearColor(0.7f, 0.3f, 0.1f), 1800.f, 18000.f},
+		{{-12000.f, 5000.f, 150.f}, FLinearColor(0.8f, 0.25f, 0.1f), 1500.f, 16000.f},
 		// SE quadrant — electric blue transition
-		{{40000.f, -40000.f, 200.f}, FLinearColor(0.1f, 0.3f, 0.8f), 1800.f, 18000.f},
-		{{60000.f, -60000.f, 180.f}, FLinearColor(0.15f, 0.35f, 0.7f), 1200.f, 15000.f},
+		{{8000.f, -8000.f, 200.f}, FLinearColor(0.1f, 0.3f, 0.8f), 1800.f, 18000.f},
+		{{12000.f, -12000.f, 180.f}, FLinearColor(0.15f, 0.35f, 0.7f), 1200.f, 15000.f},
 		// SW quadrant — green-purple transition
-		{{-40000.f, -40000.f, 200.f}, FLinearColor(0.3f, 0.6f, 0.4f), 1800.f, 18000.f},
-		{{-60000.f, -60000.f, 180.f}, FLinearColor(0.4f, 0.15f, 0.6f), 1200.f, 15000.f},
+		{{-8000.f, -8000.f, 200.f}, FLinearColor(0.3f, 0.6f, 0.4f), 1800.f, 18000.f},
+		{{-12000.f, -12000.f, 180.f}, FLinearColor(0.4f, 0.15f, 0.6f), 1200.f, 15000.f},
 		// Far corners — subtle color washes
-		{{100000.f, 100000.f, 300.f}, FLinearColor(0.2f, 0.4f, 0.5f), 1000.f, 25000.f},
-		{{-100000.f, 100000.f, 300.f}, FLinearColor(0.6f, 0.2f, 0.15f), 1000.f, 25000.f},
-		{{100000.f, -100000.f, 300.f}, FLinearColor(0.1f, 0.25f, 0.6f), 1000.f, 25000.f},
-		{{-100000.f, -100000.f, 300.f}, FLinearColor(0.35f, 0.5f, 0.15f), 1000.f, 25000.f},
+		{{20000.f, 20000.f, 300.f}, FLinearColor(0.2f, 0.4f, 0.5f), 1000.f, 25000.f},
+		{{-20000.f, 20000.f, 300.f}, FLinearColor(0.6f, 0.2f, 0.15f), 1000.f, 25000.f},
+		{{20000.f, -20000.f, 300.f}, FLinearColor(0.1f, 0.25f, 0.6f), 1000.f, 25000.f},
+		{{-20000.f, -20000.f, 300.f}, FLinearColor(0.35f, 0.5f, 0.15f), 1000.f, 25000.f},
 	};
 	for (const FFieldLight& FL : FieldLights)
 	{

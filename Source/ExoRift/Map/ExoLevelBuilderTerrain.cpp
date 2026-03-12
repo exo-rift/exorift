@@ -16,11 +16,11 @@ void AExoLevelBuilder::BuildTerrain()
 	// Terrain variation — raised patches with warm/cool variety
 	struct FTerrainPatch { FVector Pos; float SizeX; float SizeY; float Height; FLinearColor Color; };
 	TArray<FTerrainPatch> Patches = {
-		{{-80000.f, -60000.f, 0.f}, 40000.f, 30000.f, 200.f, FLinearColor(0.13f, 0.11f, 0.09f)},
-		{{60000.f, 80000.f, 0.f}, 35000.f, 25000.f, 150.f, FLinearColor(0.1f, 0.11f, 0.12f)},
-		{{-40000.f, 100000.f, 0.f}, 50000.f, 20000.f, 300.f, FLinearColor(0.14f, 0.12f, 0.09f)},
-		{{100000.f, -50000.f, 0.f}, 30000.f, 40000.f, 250.f, FLinearColor(0.1f, 0.1f, 0.115f)},
-		{{-120000.f, 30000.f, 0.f}, 25000.f, 35000.f, 180.f, FLinearColor(0.12f, 0.11f, 0.1f)},
+		{{-16000.f, -12000.f, 0.f}, 10000.f, 7500.f, 150.f, FLinearColor(0.13f, 0.11f, 0.09f)},
+		{{12000.f, 16000.f, 0.f}, 8000.f, 6000.f, 100.f, FLinearColor(0.1f, 0.11f, 0.12f)},
+		{{-8000.f, 20000.f, 0.f}, 12000.f, 5000.f, 200.f, FLinearColor(0.14f, 0.12f, 0.09f)},
+		{{20000.f, -10000.f, 0.f}, 7500.f, 10000.f, 180.f, FLinearColor(0.1f, 0.1f, 0.115f)},
+		{{-24000.f, 6000.f, 0.f}, 6000.f, 8000.f, 120.f, FLinearColor(0.12f, 0.11f, 0.1f)},
 	};
 
 	for (const auto& P : Patches)
@@ -34,25 +34,24 @@ void AExoLevelBuilder::BuildTerrain()
 	// Rocky ridgelines — varied brown/grey rock tones
 	struct FRidge { FVector Start; FVector End; float Height; float Width; };
 	TArray<FRidge> Ridges = {
-		{{30000.f, 20000.f, 0.f}, {50000.f, 35000.f, 0.f}, 400.f, 2000.f},
-		{{-40000.f, -10000.f, 0.f}, {-60000.f, -30000.f, 0.f}, 350.f, 1800.f},
-		{{70000.f, -80000.f, 0.f}, {90000.f, -60000.f, 0.f}, 500.f, 2500.f},
-		{{-90000.f, 70000.f, 0.f}, {-70000.f, 80000.f, 0.f}, 300.f, 1500.f},
-		{{100000.f, 30000.f, 0.f}, {110000.f, 50000.f, 0.f}, 450.f, 2200.f},
+		{{6000.f, 4000.f, 0.f}, {10000.f, 7000.f, 0.f}, 300.f, 1200.f},
+		{{-8000.f, -2000.f, 0.f}, {-12000.f, -6000.f, 0.f}, 250.f, 1000.f},
+		{{14000.f, -16000.f, 0.f}, {18000.f, -12000.f, 0.f}, 400.f, 1500.f},
+		{{-18000.f, 14000.f, 0.f}, {-14000.f, 16000.f, 0.f}, 220.f, 900.f},
+		{{20000.f, 6000.f, 0.f}, {22000.f, 10000.f, 0.f}, 350.f, 1300.f},
 	};
 	for (const auto& R : Ridges)
 	{
 		FVector Dir = R.End - R.Start;
 		float Len = Dir.Size();
 		FRotator Rot = Dir.Rotation();
-		int32 Segments = FMath::Max(2, FMath::RoundToInt32(Len / 5000.f));
+		int32 Segments = FMath::Max(2, FMath::RoundToInt32(Len / 2000.f));
 		for (int32 i = 0; i < Segments; i++)
 		{
 			float T = (float)i / (float)Segments;
 			FVector Pos = FMath::Lerp(R.Start, R.End, T + 0.5f / Segments);
 			float SegH = R.Height * (0.6f + 0.4f * FMath::Sin(T * PI));
 			float SegW = R.Width * (0.8f + 0.2f * FMath::Sin(T * 3.f));
-			// Vary rock color per segment
 			float CV = 0.1f + (i % 3) * 0.02f;
 			SpawnStaticMesh(
 				FVector(Pos.X, Pos.Y, SegH * 0.5f),
@@ -65,22 +64,21 @@ void AExoLevelBuilder::BuildTerrain()
 	// Hills — rounded terrain bumps with warmer earth tones
 	struct FHill { FVector Pos; float Radius; float Height; };
 	TArray<FHill> Hills = {
-		{{-20000.f, 40000.f, -100.f}, 6000.f, 600.f},
-		{{50000.f, -20000.f, -100.f}, 5000.f, 500.f},
-		{{-60000.f, 70000.f, -100.f}, 7000.f, 400.f},
-		{{80000.f, 60000.f, -100.f}, 5500.f, 550.f},
-		{{-100000.f, -100000.f, -100.f}, 8000.f, 350.f},
-		{{110000.f, -30000.f, -100.f}, 4500.f, 450.f},
+		{{-4000.f, 8000.f, -100.f}, 1500.f, 400.f},
+		{{10000.f, -4000.f, -100.f}, 1200.f, 350.f},
+		{{-12000.f, 14000.f, -100.f}, 1800.f, 300.f},
+		{{16000.f, 12000.f, -100.f}, 1400.f, 380.f},
+		{{-20000.f, -20000.f, -100.f}, 2000.f, 250.f},
+		{{22000.f, -6000.f, -100.f}, 1100.f, 320.f},
 	};
 	for (int32 i = 0; i < Hills.Num(); i++)
 	{
 		const auto& H = Hills[i];
 		float SR = H.Radius / 50.f;
 		float SH = H.Height / 50.f;
-		// Alternate between warm grey and cool grey
 		FLinearColor HillCol = (i % 2 == 0)
-			? FLinearColor(0.14f, 0.12f, 0.1f)   // Warm sandy brown
-			: FLinearColor(0.1f, 0.11f, 0.13f);  // Cool blue-grey
+			? FLinearColor(0.14f, 0.12f, 0.1f)
+			: FLinearColor(0.1f, 0.11f, 0.13f);
 		SpawnStaticMesh(H.Pos,
 			FVector(SR, SR, SH), FRotator::ZeroRotator, SphereMesh, HillCol);
 	}
@@ -89,23 +87,23 @@ void AExoLevelBuilder::BuildTerrain()
 	struct FBoulder { FVector Pos; float Scale; FRotator Rot; FLinearColor Col; };
 	TArray<FBoulder> Boulders = {
 		// Near hub
-		{{8000.f, -12000.f, 0.f}, 1.8f, {5.f, 30.f, 0.f}, {0.13f, 0.11f, 0.1f}},
-		{{-14000.f, 7000.f, 0.f}, 2.2f, {-3.f, 120.f, 8.f}, {0.1f, 0.1f, 0.12f}},
+		{{1600.f, -2400.f, 0.f}, 1.8f, {5.f, 30.f, 0.f}, {0.13f, 0.11f, 0.1f}},
+		{{-2800.f, 1400.f, 0.f}, 2.2f, {-3.f, 120.f, 8.f}, {0.1f, 0.1f, 0.12f}},
 		// Mid-field
-		{{30000.f, 50000.f, 0.f}, 3.f, {10.f, 200.f, -5.f}, {0.14f, 0.12f, 0.11f}},
-		{{-45000.f, -35000.f, 0.f}, 2.5f, {-8.f, 70.f, 3.f}, {0.11f, 0.11f, 0.13f}},
-		{{55000.f, 30000.f, 0.f}, 1.5f, {12.f, 310.f, 0.f}, {0.12f, 0.1f, 0.09f}},
-		{{-25000.f, 55000.f, 0.f}, 2.8f, {0.f, 160.f, 7.f}, {0.1f, 0.11f, 0.12f}},
+		{{6000.f, 10000.f, 0.f}, 3.f, {10.f, 200.f, -5.f}, {0.14f, 0.12f, 0.11f}},
+		{{-9000.f, -7000.f, 0.f}, 2.5f, {-8.f, 70.f, 3.f}, {0.11f, 0.11f, 0.13f}},
+		{{11000.f, 6000.f, 0.f}, 1.5f, {12.f, 310.f, 0.f}, {0.12f, 0.1f, 0.09f}},
+		{{-5000.f, 11000.f, 0.f}, 2.8f, {0.f, 160.f, 7.f}, {0.1f, 0.11f, 0.12f}},
 		// Far field
-		{{90000.f, -80000.f, 0.f}, 4.f, {15.f, 45.f, -10.f}, {0.13f, 0.12f, 0.1f}},
-		{{-80000.f, 90000.f, 0.f}, 3.5f, {-5.f, 250.f, 0.f}, {0.1f, 0.09f, 0.11f}},
-		{{-110000.f, -50000.f, 0.f}, 5.f, {8.f, 90.f, -3.f}, {0.11f, 0.12f, 0.1f}},
-		{{70000.f, -110000.f, 0.f}, 3.f, {-12.f, 180.f, 5.f}, {0.12f, 0.11f, 0.12f}},
+		{{18000.f, -16000.f, 0.f}, 4.f, {15.f, 45.f, -10.f}, {0.13f, 0.12f, 0.1f}},
+		{{-16000.f, 18000.f, 0.f}, 3.5f, {-5.f, 250.f, 0.f}, {0.1f, 0.09f, 0.11f}},
+		{{-22000.f, -10000.f, 0.f}, 5.f, {8.f, 90.f, -3.f}, {0.11f, 0.12f, 0.1f}},
+		{{14000.f, -22000.f, 0.f}, 3.f, {-12.f, 180.f, 5.f}, {0.12f, 0.11f, 0.12f}},
 		// Along roads
-		{{20000.f, 5000.f, 0.f}, 1.2f, {3.f, 55.f, 0.f}, {0.13f, 0.12f, 0.11f}},
-		{{-5000.f, 30000.f, 0.f}, 1.5f, {-6.f, 140.f, 4.f}, {0.11f, 0.1f, 0.12f}},
-		{{40000.f, -5000.f, 0.f}, 1.8f, {0.f, 220.f, -2.f}, {0.1f, 0.11f, 0.1f}},
-		{{-30000.f, -10000.f, 0.f}, 2.f, {7.f, 340.f, 0.f}, {0.12f, 0.12f, 0.11f}},
+		{{4000.f, 1000.f, 0.f}, 1.2f, {3.f, 55.f, 0.f}, {0.13f, 0.12f, 0.11f}},
+		{{-1000.f, 6000.f, 0.f}, 1.5f, {-6.f, 140.f, 4.f}, {0.11f, 0.1f, 0.12f}},
+		{{8000.f, -1000.f, 0.f}, 1.8f, {0.f, 220.f, -2.f}, {0.1f, 0.11f, 0.1f}},
+		{{-6000.f, -2000.f, 0.f}, 2.f, {7.f, 340.f, 0.f}, {0.12f, 0.12f, 0.11f}},
 	};
 	for (const auto& B : Boulders)
 	{
@@ -113,7 +111,6 @@ void AExoLevelBuilder::BuildTerrain()
 			B.Pos + FVector(0.f, 0.f, B.Scale * 15.f),
 			FVector(B.Scale, B.Scale * 0.7f, B.Scale * 0.5f),
 			B.Rot, SphereMesh, B.Col);
-		// Cluster: 1-2 smaller rocks nearby
 		SpawnStaticMesh(
 			B.Pos + FVector(B.Scale * 60.f, B.Scale * 40.f, B.Scale * 5.f),
 			FVector(B.Scale * 0.3f, B.Scale * 0.25f, B.Scale * 0.2f),
@@ -126,18 +123,16 @@ void AExoLevelBuilder::BuildTerrain()
 	FLinearColor ConcreteEdge(0.1f, 0.1f, 0.11f);
 	struct FPad { FVector Pos; float SX; float SY; };
 	TArray<FPad> CompoundPads = {
-		{{0.f, 0.f, 5.f}, 200.f, 150.f},         // Hub
-		{{0.f, 80000.f, 5.f}, 250.f, 120.f},      // North
-		{{0.f, -80000.f, 5.f}, 200.f, 150.f},     // South
-		{{80000.f, 0.f, 5.f}, 150.f, 200.f},      // East
-		{{-80000.f, 0.f, 5.f}, 120.f, 180.f},     // West
+		{{0.f, 0.f, 5.f}, 80.f, 60.f},                // Hub
+		{{0.f, NorthY, 5.f}, 100.f, 50.f},             // North
+		{{0.f, SouthY, 5.f}, 80.f, 60.f},              // South
+		{{EastX, 0.f, 5.f}, 60.f, 80.f},               // East
+		{{WestX, 0.f, 5.f}, 50.f, 70.f},               // West
 	};
 	for (const auto& Pad : CompoundPads)
 	{
-		// Main pad
 		SpawnStaticMesh(Pad.Pos,
 			FVector(Pad.SX, Pad.SY, 0.1f), FRotator::ZeroRotator, CubeMesh, ConcretePad);
-		// Darker edge border — Z=2 below pad to avoid z-fighting
 		SpawnStaticMesh(Pad.Pos + FVector(0.f, 0.f, -3.f),
 			FVector(Pad.SX + 2.f, Pad.SY + 2.f, 0.05f), FRotator::ZeroRotator, CubeMesh,
 			ConcreteEdge);
@@ -147,11 +142,11 @@ void AExoLevelBuilder::BuildTerrain()
 	FLinearColor ChannelColor(0.06f, 0.06f, 0.07f);
 	struct FChannel { FVector Start; FVector End; float Width; };
 	TArray<FChannel> Channels = {
-		{{20000.f, 5000.f, 2.f}, {35000.f, 25000.f, 2.f}, 3.f},
-		{{-15000.f, -10000.f, 2.f}, {-30000.f, -35000.f, 2.f}, 4.f},
-		{{50000.f, -10000.f, 2.f}, {65000.f, -25000.f, 2.f}, 3.f},
-		{{-40000.f, 50000.f, 2.f}, {-55000.f, 65000.f, 2.f}, 3.5f},
-		{{10000.f, -30000.f, 2.f}, {25000.f, -50000.f, 2.f}, 2.5f},
+		{{4000.f, 1000.f, 2.f}, {7000.f, 5000.f, 2.f}, 3.f},
+		{{-3000.f, -2000.f, 2.f}, {-6000.f, -7000.f, 2.f}, 4.f},
+		{{10000.f, -2000.f, 2.f}, {13000.f, -5000.f, 2.f}, 3.f},
+		{{-8000.f, 10000.f, 2.f}, {-11000.f, 13000.f, 2.f}, 3.5f},
+		{{2000.f, -6000.f, 2.f}, {5000.f, -10000.f, 2.f}, 2.5f},
 	};
 	for (const auto& Ch : Channels)
 	{
@@ -165,21 +160,21 @@ void AExoLevelBuilder::BuildTerrain()
 
 	// Worn path strips between compounds — subtle ground markings
 	FLinearColor PathColor(0.14f, 0.12f, 0.1f);
-	SpawnStaticMesh(FVector(0.f, 40000.f, 14.f),
-		FVector(8.f, 400.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
-	SpawnStaticMesh(FVector(0.f, -40000.f, 14.f),
-		FVector(8.f, 400.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
-	SpawnStaticMesh(FVector(40000.f, 0.f, 14.f),
-		FVector(400.f, 8.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
-	SpawnStaticMesh(FVector(-40000.f, 0.f, 14.f),
-		FVector(400.f, 8.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
+	SpawnStaticMesh(FVector(0.f, 8000.f, 14.f),
+		FVector(8.f, 80.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
+	SpawnStaticMesh(FVector(0.f, -8000.f, 14.f),
+		FVector(8.f, 80.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
+	SpawnStaticMesh(FVector(8000.f, 0.f, 14.f),
+		FVector(80.f, 8.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
+	SpawnStaticMesh(FVector(-8000.f, 0.f, 14.f),
+		FVector(80.f, 8.f, 0.05f), FRotator::ZeroRotator, CubeMesh, PathColor);
 
 	// Expansion joints on concrete pads — creates a cast-panel grid pattern
 	FLinearColor JointColor(0.07f, 0.07f, 0.08f);
-	float JointSpacing = 2000.f;
+	float JointSpacing = 1000.f;
 	for (const auto& Pad : CompoundPads)
 	{
-		float ExtX = Pad.SX * 50.f; // Half-extent in world units
+		float ExtX = Pad.SX * 50.f;
 		float ExtY = Pad.SY * 50.f;
 		for (float JY = -ExtY + JointSpacing; JY < ExtY; JY += JointSpacing)
 		{
@@ -199,19 +194,18 @@ void AExoLevelBuilder::BuildTerrain()
 	FLinearColor StainDark(0.08f, 0.07f, 0.065f);
 	struct FStain { FVector Pos; float SX; float SY; float Yaw; };
 	TArray<FStain> Stains = {
-		{{2000.f, 3000.f, 15.f}, 8.f, 5.f, 15.f},
-		{{-4000.f, -2000.f, 15.f}, 6.f, 4.f, -30.f},
-		{{15000.f, 1000.f, 15.f}, 10.f, 3.f, 5.f},
-		{{-1000.f, 20000.f, 15.f}, 4.f, 8.f, -20.f},
-		{{5000.f, 78000.f, 15.f}, 7.f, 6.f, 40.f},
-		{{-82000.f, 2000.f, 15.f}, 5.f, 5.f, -15.f},
-		{{78000.f, -5000.f, 15.f}, 8.f, 4.f, 60.f},
-		{{-3000.f, -78000.f, 15.f}, 6.f, 7.f, -45.f},
-		// Near roads and scattered structures
-		{{30000.f, 12000.f, 15.f}, 5.f, 3.f, 70.f},
-		{{-20000.f, -35000.f, 15.f}, 4.f, 6.f, -50.f},
-		{{45000.f, -20000.f, 15.f}, 7.f, 3.f, 25.f},
-		{{-55000.f, 40000.f, 15.f}, 4.f, 5.f, -10.f},
+		{{400.f, 600.f, 15.f}, 8.f, 5.f, 15.f},
+		{{-800.f, -400.f, 15.f}, 6.f, 4.f, -30.f},
+		{{3000.f, 200.f, 15.f}, 10.f, 3.f, 5.f},
+		{{-200.f, 4000.f, 15.f}, 4.f, 8.f, -20.f},
+		{{1000.f, 15600.f, 15.f}, 7.f, 6.f, 40.f},
+		{{-16400.f, 400.f, 15.f}, 5.f, 5.f, -15.f},
+		{{15600.f, -1000.f, 15.f}, 8.f, 4.f, 60.f},
+		{{-600.f, -15600.f, 15.f}, 6.f, 7.f, -45.f},
+		{{6000.f, 2400.f, 15.f}, 5.f, 3.f, 70.f},
+		{{-4000.f, -7000.f, 15.f}, 4.f, 6.f, -50.f},
+		{{9000.f, -4000.f, 15.f}, 7.f, 3.f, 25.f},
+		{{-11000.f, 8000.f, 15.f}, 4.f, 5.f, -10.f},
 	};
 	for (const auto& S : Stains)
 	{
@@ -224,43 +218,37 @@ void AExoLevelBuilder::BuildTerrain()
 	float EdgeDist = MapHalfSize * 1.1f;
 	float CliffH = 3000.f;
 	float CliffThick = 2000.f;
-	// North edge
 	SpawnStaticMesh(FVector(0.f, EdgeDist, CliffH * 0.5f),
 		FVector(EdgeDist * 2.f / 100.f, CliffThick / 100.f, CliffH / 100.f),
 		FRotator::ZeroRotator, CubeMesh, CliffDark);
-	// South edge
 	SpawnStaticMesh(FVector(0.f, -EdgeDist, CliffH * 0.5f),
 		FVector(EdgeDist * 2.f / 100.f, CliffThick / 100.f, CliffH / 100.f),
 		FRotator::ZeroRotator, CubeMesh, CliffDark);
-	// East edge
 	SpawnStaticMesh(FVector(EdgeDist, 0.f, CliffH * 0.5f),
 		FVector(CliffThick / 100.f, EdgeDist * 2.f / 100.f, CliffH / 100.f),
 		FRotator::ZeroRotator, CubeMesh, CliffDark);
-	// West edge
 	SpawnStaticMesh(FVector(-EdgeDist, 0.f, CliffH * 0.5f),
 		FVector(CliffThick / 100.f, EdgeDist * 2.f / 100.f, CliffH / 100.f),
 		FRotator::ZeroRotator, CubeMesh, CliffDark);
 
 	// Geological strata bands — layered rock faces on cliff walls
 	FLinearColor Strata[] = {
-		{0.08f, 0.07f, 0.09f},    // Cool bluish
-		{0.1f, 0.085f, 0.07f},    // Rusty warm
-		{0.06f, 0.06f, 0.07f},    // Dark layer
-		{0.11f, 0.1f, 0.09f},     // Lighter warm
+		{0.08f, 0.07f, 0.09f},
+		{0.1f, 0.085f, 0.07f},
+		{0.06f, 0.06f, 0.07f},
+		{0.11f, 0.1f, 0.09f},
 	};
 	float StrataH = CliffH / 5.f;
 	for (int32 s = 0; s < 4; s++)
 	{
 		float BandZ = StrataH * (s + 1);
 		float BandH = StrataH * 0.25f;
-		// North/South cliff faces (extend along X)
 		SpawnStaticMesh(FVector(0.f, EdgeDist + 2.f, BandZ),
 			FVector(EdgeDist * 2.f / 100.f, 0.04f, BandH / 100.f),
 			FRotator::ZeroRotator, CubeMesh, Strata[s]);
 		SpawnStaticMesh(FVector(0.f, -EdgeDist - 2.f, BandZ),
 			FVector(EdgeDist * 2.f / 100.f, 0.04f, BandH / 100.f),
 			FRotator::ZeroRotator, CubeMesh, Strata[s]);
-		// East/West cliff faces (extend along Y)
 		SpawnStaticMesh(FVector(EdgeDist + 2.f, 0.f, BandZ),
 			FVector(0.04f, EdgeDist * 2.f / 100.f, BandH / 100.f),
 			FRotator::ZeroRotator, CubeMesh, Strata[s]);
@@ -272,21 +260,20 @@ void AExoLevelBuilder::BuildTerrain()
 	// Mid-field rock outcrops — larger formations between compounds
 	struct FOutcrop { FVector Pos; float Scale; float Yaw; };
 	TArray<FOutcrop> Outcrops = {
-		{{35000.f, 35000.f, 0.f}, 6.f, 25.f},
-		{{-45000.f, -25000.f, 0.f}, 5.f, 140.f},
-		{{55000.f, -55000.f, 0.f}, 7.f, 75.f},
-		{{-65000.f, 55000.f, 0.f}, 5.5f, -30.f},
-		{{25000.f, -45000.f, 0.f}, 4.5f, 200.f},
-		{{-30000.f, 65000.f, 0.f}, 6.5f, 310.f},
-		{{75000.f, 30000.f, 0.f}, 5.f, 55.f},
-		{{-55000.f, -65000.f, 0.f}, 4.f, 160.f},
+		{{7000.f, 7000.f, 0.f}, 6.f, 25.f},
+		{{-9000.f, -5000.f, 0.f}, 5.f, 140.f},
+		{{11000.f, -11000.f, 0.f}, 7.f, 75.f},
+		{{-13000.f, 11000.f, 0.f}, 5.5f, -30.f},
+		{{5000.f, -9000.f, 0.f}, 4.5f, 200.f},
+		{{-6000.f, 13000.f, 0.f}, 6.5f, 310.f},
+		{{15000.f, 6000.f, 0.f}, 5.f, 55.f},
+		{{-11000.f, -13000.f, 0.f}, 4.f, 160.f},
 	};
 	for (int32 oi = 0; oi < Outcrops.Num(); oi++)
 	{
 		const auto& OC = Outcrops[oi];
 		FRotator OCRot(0.f, OC.Yaw, 0.f);
 
-		// Use KayKit terrain meshes when available
 		if (bHasKayKitAssets)
 		{
 			UStaticMesh* TerrainMesh = (oi % 2 == 0) ? KK_TerrainTall : KK_TerrainLow;
@@ -304,16 +291,13 @@ void AExoLevelBuilder::BuildTerrain()
 		}
 
 		FLinearColor RockCol(0.1f, 0.09f, 0.085f);
-		// Main slab
 		SpawnStaticMesh(OC.Pos + FVector(0.f, 0.f, OC.Scale * 25.f),
 			FVector(OC.Scale * 1.5f, OC.Scale, OC.Scale * 0.4f),
 			FRotator(5.f, OC.Yaw, 3.f), CubeMesh, RockCol);
-		// Leaning spire
 		SpawnStaticMesh(OC.Pos + OCRot.RotateVector(FVector(OC.Scale * 50.f, 0.f, OC.Scale * 40.f)),
 			FVector(OC.Scale * 0.3f, OC.Scale * 0.25f, OC.Scale * 0.8f),
 			FRotator(-8.f, OC.Yaw + 15.f, 5.f), CubeMesh,
 			FLinearColor(0.09f, 0.08f, 0.095f));
-		// Scattered fragments
 		SpawnStaticMesh(OC.Pos + OCRot.RotateVector(FVector(-OC.Scale * 40.f, OC.Scale * 30.f, OC.Scale * 8.f)),
 			FVector(OC.Scale * 0.5f, OC.Scale * 0.35f, OC.Scale * 0.2f),
 			FRotator(12.f, OC.Yaw + 60.f, -4.f), CubeMesh,

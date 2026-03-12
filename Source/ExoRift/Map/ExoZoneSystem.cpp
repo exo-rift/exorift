@@ -10,34 +10,34 @@ AExoZoneSystem::AExoZoneSystem()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
-	// Default zone stages (4km² map = 2000m radius)
+	// Default zone stages (compact 800m map = 400m radius)
 	FZoneStage Stage1;
 	Stage1.Center = FVector2D(0.f, 0.f);
-	Stage1.Radius = 180000.f;
+	Stage1.Radius = 38000.f;
 	Stage1.ShrinkDuration = 60.f;
 	Stage1.HoldDuration = 120.f;
 	Stage1.DamagePerSecond = 2.f;
 	Stages.Add(Stage1);
 
 	FZoneStage Stage2;
-	Stage2.Center = FVector2D(FMath::RandRange(-50000.f, 50000.f), FMath::RandRange(-50000.f, 50000.f));
-	Stage2.Radius = 120000.f;
+	Stage2.Center = FVector2D(FMath::RandRange(-10000.f, 10000.f), FMath::RandRange(-10000.f, 10000.f));
+	Stage2.Radius = 25000.f;
 	Stage2.ShrinkDuration = 45.f;
 	Stage2.HoldDuration = 90.f;
 	Stage2.DamagePerSecond = 5.f;
 	Stages.Add(Stage2);
 
 	FZoneStage Stage3;
-	Stage3.Center = FVector2D(FMath::RandRange(-30000.f, 30000.f), FMath::RandRange(-30000.f, 30000.f));
-	Stage3.Radius = 60000.f;
+	Stage3.Center = FVector2D(FMath::RandRange(-6000.f, 6000.f), FMath::RandRange(-6000.f, 6000.f));
+	Stage3.Radius = 12000.f;
 	Stage3.ShrinkDuration = 30.f;
 	Stage3.HoldDuration = 60.f;
 	Stage3.DamagePerSecond = 10.f;
 	Stages.Add(Stage3);
 
 	FZoneStage Stage4;
-	Stage4.Center = FVector2D(FMath::RandRange(-10000.f, 10000.f), FMath::RandRange(-10000.f, 10000.f));
-	Stage4.Radius = 20000.f;
+	Stage4.Center = FVector2D(FMath::RandRange(-3000.f, 3000.f), FMath::RandRange(-3000.f, 3000.f));
+	Stage4.Radius = 5000.f;
 	Stage4.ShrinkDuration = 20.f;
 	Stage4.HoldDuration = 30.f;
 	Stage4.DamagePerSecond = 20.f;

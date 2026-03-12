@@ -101,12 +101,12 @@ void AExoSupplyDrop::Tick(float DeltaTime)
 			if (bWhitePhase)
 			{
 				BeaconFlashLight->SetLightColor(FLinearColor(1.f, 1.f, 1.f));
-				BeaconFlashLight->SetIntensity(150000.f);
+				BeaconFlashLight->SetIntensity(5000.f);
 			}
 			else
 			{
 				BeaconFlashLight->SetLightColor(FLinearColor(1.f, 0.1f, 0.1f));
-				BeaconFlashLight->SetIntensity(120000.f);
+				BeaconFlashLight->SetIntensity(4000.f);
 			}
 		}
 	}

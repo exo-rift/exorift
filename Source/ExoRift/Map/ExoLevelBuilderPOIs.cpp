@@ -18,12 +18,12 @@ void AExoLevelBuilder::PlacePOIs()
 		FActorSpawnParameters Crate;
 		Crate.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		FVector CratePositions[] = {
-			{1500.f, -2000.f, 50.f}, {-1800.f, 3000.f, 50.f},
-			{3500.f, 79500.f, 50.f}, {-4500.f, 81500.f, 50.f},
-			{2000.f, -80500.f, 50.f}, {-3500.f, -82000.f, 50.f},
-			{81500.f, 1500.f, 50.f}, {79000.f, -2500.f, 50.f},
-			{-80500.f, 2500.f, 50.f}, {-82000.f, -1500.f, 50.f},
-			{45000.f, 45000.f, 50.f}, {-55000.f, -55000.f, 50.f},
+			{300.f, -400.f, 50.f}, {-360.f, 600.f, 50.f},
+			{700.f, 15900.f, 50.f}, {-900.f, 16300.f, 50.f},
+			{400.f, -16100.f, 50.f}, {-700.f, -16400.f, 50.f},
+			{16300.f, 300.f, 50.f}, {15800.f, -500.f, 50.f},
+			{-16100.f, 500.f, 50.f}, {-16400.f, -300.f, 50.f},
+			{9000.f, 9000.f, 50.f}, {-11000.f, -11000.f, 50.f},
 		};
 		for (const FVector& P : CratePositions)
 		{
@@ -41,12 +41,12 @@ void AExoLevelBuilder::PlacePOIs()
 		Dum.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		struct FDummyDef { FVector Pos; FLinearColor Color; };
 		FDummyDef Dummies[] = {
-			{{5000.f, 5000.f, 10.f}, FLinearColor(1.f, 0.3f, 0.1f)},
-			{{-5000.f, 5500.f, 10.f}, FLinearColor(0.1f, 0.8f, 1.f)},
-			{{5500.f, -5000.f, 10.f}, FLinearColor(0.2f, 1.f, 0.3f)},
-			{{-5500.f, -5500.f, 10.f}, FLinearColor(1.f, 0.7f, 0.1f)},
-			{{7000.f, 0.f, 10.f}, FLinearColor(0.8f, 0.2f, 1.f)},
-			{{-7000.f, 0.f, 10.f}, FLinearColor(1.f, 0.1f, 0.4f)},
+			{{1000.f, 1000.f, 10.f}, FLinearColor(1.f, 0.3f, 0.1f)},
+			{{-1000.f, 1100.f, 10.f}, FLinearColor(0.1f, 0.8f, 1.f)},
+			{{1100.f, -1000.f, 10.f}, FLinearColor(0.2f, 1.f, 0.3f)},
+			{{-1100.f, -1100.f, 10.f}, FLinearColor(1.f, 0.7f, 0.1f)},
+			{{1400.f, 0.f, 10.f}, FLinearColor(0.8f, 0.2f, 1.f)},
+			{{-1400.f, 0.f, 10.f}, FLinearColor(1.f, 0.1f, 0.4f)},
 		};
 		for (const FDummyDef& D : Dummies)
 		{
@@ -63,7 +63,7 @@ void AExoLevelBuilder::PlacePOIs()
 		ShipP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AExoCrashedCapitalShip* Ship = GetWorld()->SpawnActor<AExoCrashedCapitalShip>(
 			AExoCrashedCapitalShip::StaticClass(),
-			FVector(30000.f, 40000.f, 0.f),
+			FVector(6000.f, 8000.f, 0.f),
 			FRotator(0.f, -25.f, 0.f), ShipP);
 		if (Ship) Ship->BuildShip();
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed crashed capital ship landmark"));
@@ -74,7 +74,7 @@ void AExoLevelBuilder::PlacePOIs()
 		FActorSpawnParameters ReactorP;
 		ReactorP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AExoReactorCore* Reactor = GetWorld()->SpawnActor<AExoReactorCore>(
-			AExoReactorCore::StaticClass(), FVector(0.f, -3000.f, 10.f),
+			AExoReactorCore::StaticClass(), FVector(0.f, -600.f, 10.f),
 			FRotator::ZeroRotator, ReactorP);
 		if (Reactor) Reactor->InitReactor();
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed energy reactor at hub center"));
@@ -86,11 +86,11 @@ void AExoLevelBuilder::PlacePOIs()
 		TowerP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		struct FTowerDef { FVector Pos; float Yaw; };
 		FTowerDef Towers[] = {
-			{{60000.f, -60000.f, 0.f}, 15.f},
-			{{-70000.f, 70000.f, 0.f}, -30.f},
-			{{100000.f, 80000.f, 0.f}, 45.f},
-			{{-90000.f, -70000.f, 0.f}, 120.f},
-			{{80000.f, -90000.f, 0.f}, -60.f},
+			{{12000.f, -12000.f, 0.f}, 15.f},
+			{{-14000.f, 14000.f, 0.f}, -30.f},
+			{{20000.f, 16000.f, 0.f}, 45.f},
+			{{-18000.f, -14000.f, 0.f}, 120.f},
+			{{16000.f, -18000.f, 0.f}, -60.f},
 		};
 		for (const FTowerDef& T : Towers)
 		{
@@ -108,10 +108,10 @@ void AExoLevelBuilder::PlacePOIs()
 		DepotP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		struct FDepotDef { FVector Pos; float Yaw; };
 		FDepotDef Depots[] = {
-			{{-50000.f, 30000.f, 0.f}, 20.f},
-			{{40000.f, -50000.f, 0.f}, -35.f},
-			{{-20000.f, -30000.f, 0.f}, 60.f},
-			{{70000.f, 50000.f, 0.f}, -10.f},
+			{{-10000.f, 6000.f, 0.f}, 20.f},
+			{{8000.f, -10000.f, 0.f}, -35.f},
+			{{-4000.f, -6000.f, 0.f}, 60.f},
+			{{14000.f, 10000.f, 0.f}, -10.f},
 		};
 		for (const FDepotDef& D : Depots)
 		{
@@ -129,7 +129,7 @@ void AExoLevelBuilder::PlacePOIs()
 		MineP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AExoMiningExcavation* Mine = GetWorld()->SpawnActor<AExoMiningExcavation>(
 			AExoMiningExcavation::StaticClass(),
-			FVector(-40000.f, -60000.f, 0.f),
+			FVector(-8000.f, -12000.f, 0.f),
 			FRotator(0.f, 15.f, 0.f), MineP);
 		if (Mine) Mine->BuildSite();
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed mining excavation site"));
@@ -141,19 +141,19 @@ void AExoLevelBuilder::PlacePOIs()
 		TowerP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		struct FGTDef { FVector Pos; float Yaw; };
 		FGTDef GuardTowers[] = {
-			{{10000.f, 10000.f, 0.f}, 45.f},
-			{{-10000.f, -10000.f, 0.f}, 225.f},
-			{{5000.f, 78000.f, 0.f}, 180.f},
-			{{78000.f, 5000.f, 0.f}, 270.f},
-			{{-78000.f, -5000.f, 0.f}, 90.f},
-			{{-5000.f, -78000.f, 0.f}, 0.f},
-			{{50000.f, 50000.f, 0.f}, -45.f},
-			{{-60000.f, -50000.f, 0.f}, 135.f},
+			{{2000.f, 2000.f, 0.f}, 45.f},
+			{{-2000.f, -2000.f, 0.f}, 225.f},
+			{{1000.f, 15600.f, 0.f}, 180.f},
+			{{15600.f, 1000.f, 0.f}, 270.f},
+			{{-15600.f, -1000.f, 0.f}, 90.f},
+			{{-1000.f, -15600.f, 0.f}, 0.f},
+			{{10000.f, 10000.f, 0.f}, -45.f},
+			{{-12000.f, -10000.f, 0.f}, 135.f},
 			// Additional open-field guard towers for map density
-			{{35000.f, -35000.f, 0.f}, 315.f},
-			{{-35000.f, 35000.f, 0.f}, 135.f},
-			{{70000.f, -70000.f, 0.f}, 315.f},
-			{{-70000.f, 70000.f, 0.f}, 135.f},
+			{{7000.f, -7000.f, 0.f}, 315.f},
+			{{-7000.f, 7000.f, 0.f}, 135.f},
+			{{14000.f, -14000.f, 0.f}, 315.f},
+			{{-14000.f, 14000.f, 0.f}, 135.f},
 		};
 		for (const FGTDef& GT : GuardTowers)
 		{
@@ -171,14 +171,14 @@ void AExoLevelBuilder::PlacePOIs()
 		TermP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		struct FTermDef { FVector Pos; EPowerUpType Type; };
 		FTermDef Terminals[] = {
-			{{2500.f, -1000.f, 10.f}, EPowerUpType::SpeedBoost},
-			{{-2500.f, 1000.f, 10.f}, EPowerUpType::DamageBoost},
-			{{4000.f, 80000.f, 10.f}, EPowerUpType::ShieldRecharge},
-			{{-4000.f, -81000.f, 10.f}, EPowerUpType::OverheatReset},
-			{{80000.f, 2000.f, 10.f}, EPowerUpType::SpeedBoost},
-			{{-81000.f, -2000.f, 10.f}, EPowerUpType::DamageBoost},
-			{{45000.f, 46000.f, 10.f}, EPowerUpType::ShieldRecharge},
-			{{-55000.f, -54000.f, 10.f}, EPowerUpType::OverheatReset},
+			{{500.f, -200.f, 10.f}, EPowerUpType::SpeedBoost},
+			{{-500.f, 200.f, 10.f}, EPowerUpType::DamageBoost},
+			{{800.f, NorthY, 10.f}, EPowerUpType::ShieldRecharge},
+			{{-800.f, SouthY - 200.f, 10.f}, EPowerUpType::OverheatReset},
+			{{EastX, 400.f, 10.f}, EPowerUpType::SpeedBoost},
+			{{WestX - 200.f, -400.f, 10.f}, EPowerUpType::DamageBoost},
+			{{9000.f, 9200.f, 10.f}, EPowerUpType::ShieldRecharge},
+			{{-11000.f, -10800.f, 10.f}, EPowerUpType::OverheatReset},
 		};
 		for (const FTermDef& T : Terminals)
 		{

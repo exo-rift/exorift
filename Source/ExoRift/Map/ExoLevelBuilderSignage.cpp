@@ -18,42 +18,42 @@ void AExoLevelBuilder::BuildSignage()
 	// Central Hub — "COMMAND" sign at entrance
 	SpawnCompoundSign(FVector(4500.f, 0.f, 1500.f), 0.f, CyanSign);
 	// North — "INDUSTRIAL" sign
-	SpawnCompoundSign(FVector(0.f, 73000.f, 1500.f), 180.f, GreenSign);
+	SpawnCompoundSign(FVector(0.f, 14600.f, 1500.f), 180.f, GreenSign);
 	// South — "RESEARCH" sign
-	SpawnCompoundSign(FVector(0.f, -73000.f, 1500.f), 0.f, CyanSign);
+	SpawnCompoundSign(FVector(0.f, -14600.f, 1500.f), 0.f, CyanSign);
 	// East — "POWER" sign
-	SpawnCompoundSign(FVector(73000.f, 0.f, 1500.f), -90.f, AmberSign);
+	SpawnCompoundSign(FVector(14600.f, 0.f, 1500.f), -90.f, AmberSign);
 	// West — "BARRACKS" sign
-	SpawnCompoundSign(FVector(-73000.f, 0.f, 1500.f), 90.f, RedSign);
+	SpawnCompoundSign(FVector(-14600.f, 0.f, 1500.f), 90.f, RedSign);
 
 	// === LANDING PADS ===
 	// Hub helipad already exists — add ground markings
 	SpawnLandingPad(FVector(0.f, 0.f, GroundZ + 3.f), 3000.f);
 	// North compound landing pad
-	SpawnLandingPad(FVector(5000.f, 85000.f, GroundZ + 3.f), 2500.f);
+	SpawnLandingPad(FVector(1000.f, 17000.f, GroundZ + 3.f), 2500.f);
 	// South research LZ
-	SpawnLandingPad(FVector(-6000.f, -85000.f, GroundZ + 3.f), 2000.f);
+	SpawnLandingPad(FVector(-1200.f, -17000.f, GroundZ + 3.f), 2000.f);
 	// East power station pad
-	SpawnLandingPad(FVector(85000.f, 5000.f, GroundZ + 3.f), 2200.f);
+	SpawnLandingPad(FVector(17000.f, 1000.f, GroundZ + 3.f), 2200.f);
 
 	// === DIRECTION MARKERS ===
 	// Road signs pointing between compounds
 	FLinearColor ArrowColor(0.15f, 0.4f, 0.8f);
 
 	// From hub, pointing to North
-	SpawnDirectionMarker(FVector(0.f, 20000.f, GroundZ + 4.f), 0.f, ArrowColor);
+	SpawnDirectionMarker(FVector(0.f, 4000.f, GroundZ + 4.f), 0.f, ArrowColor);
 	// From hub, pointing to South
-	SpawnDirectionMarker(FVector(0.f, -20000.f, GroundZ + 4.f), 180.f, ArrowColor);
+	SpawnDirectionMarker(FVector(0.f, -4000.f, GroundZ + 4.f), 180.f, ArrowColor);
 	// From hub, pointing to East
-	SpawnDirectionMarker(FVector(20000.f, 0.f, GroundZ + 4.f), -90.f, ArrowColor);
+	SpawnDirectionMarker(FVector(4000.f, 0.f, GroundZ + 4.f), -90.f, ArrowColor);
 	// From hub, pointing to West
-	SpawnDirectionMarker(FVector(-20000.f, 0.f, GroundZ + 4.f), 90.f, ArrowColor);
+	SpawnDirectionMarker(FVector(-4000.f, 0.f, GroundZ + 4.f), 90.f, ArrowColor);
 
 	// Intersection markers along diagonals
-	SpawnDirectionMarker(FVector(40000.f, 40000.f, GroundZ + 4.f), -45.f, ArrowColor);
-	SpawnDirectionMarker(FVector(-40000.f, -40000.f, GroundZ + 4.f), 135.f, ArrowColor);
-	SpawnDirectionMarker(FVector(-40000.f, 40000.f, GroundZ + 4.f), 45.f, ArrowColor);
-	SpawnDirectionMarker(FVector(40000.f, -40000.f, GroundZ + 4.f), -135.f, ArrowColor);
+	SpawnDirectionMarker(FVector(8000.f, 8000.f, GroundZ + 4.f), -45.f, ArrowColor);
+	SpawnDirectionMarker(FVector(-8000.f, -8000.f, GroundZ + 4.f), 135.f, ArrowColor);
+	SpawnDirectionMarker(FVector(-8000.f, 8000.f, GroundZ + 4.f), 45.f, ArrowColor);
+	SpawnDirectionMarker(FVector(8000.f, -8000.f, GroundZ + 4.f), -135.f, ArrowColor);
 
 	// === PERIMETER WARNING MARKERS ===
 	// Large red warning stripes near map edge

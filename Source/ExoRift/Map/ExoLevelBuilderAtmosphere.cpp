@@ -15,10 +15,10 @@ void AExoLevelBuilder::BuildAtmosphere()
 {
 	// === HOLOGRAPHIC DISPLAYS — floating data screens near key locations ===
 	SpawnHolographicDisplay(FVector(0.f, 0.f, 400.f), 0.f, 1.f);         // Central hub
-	SpawnHolographicDisplay(FVector(-2500.f, 80000.f, 300.f), 30.f, 0.8f); // North compound
-	SpawnHolographicDisplay(FVector(3000.f, -80000.f, 300.f), -20.f, 0.9f); // South research
-	SpawnHolographicDisplay(FVector(80000.f, 1500.f, 350.f), 45.f, 1.1f);  // East power
-	SpawnHolographicDisplay(FVector(-80000.f, -2000.f, 300.f), -60.f, 0.7f); // West barracks
+	SpawnHolographicDisplay(FVector(-2500.f, NorthY, 300.f), 30.f, 0.8f); // North compound
+	SpawnHolographicDisplay(FVector(3000.f, SouthY, 300.f), -20.f, 0.9f); // South research
+	SpawnHolographicDisplay(FVector(EastX, 1500.f, 350.f), 45.f, 1.1f);  // East power
+	SpawnHolographicDisplay(FVector(WestX, -2000.f, 300.f), -60.f, 0.7f); // West barracks
 
 	// === SPOTLIGHT BEAMS — vertical search/beacon lights ===
 	FLinearColor CoolWhite(0.7f, 0.8f, 1.f);
@@ -27,47 +27,47 @@ void AExoLevelBuilder::BuildAtmosphere()
 
 	SpawnSpotlightBeam(FVector(5000.f, 5000.f, 10.f), 3000.f, CoolWhite);
 	SpawnSpotlightBeam(FVector(-5000.f, -5000.f, 10.f), 2800.f, CoolWhite);
-	SpawnSpotlightBeam(FVector(82000.f, 3000.f, 10.f), 3500.f, WarnOrange);    // Power station
-	SpawnSpotlightBeam(FVector(-82000.f, 0.f, 10.f), 2500.f, TacBlue);          // Barracks
-	SpawnSpotlightBeam(FVector(0.f, 82000.f, 10.f), 3200.f, WarnOrange);        // North
-	SpawnSpotlightBeam(FVector(0.f, -82000.f, 10.f), 2800.f, TacBlue);          // South
+	SpawnSpotlightBeam(FVector(EastX + 2000.f, 3000.f, 10.f), 3500.f, WarnOrange);    // Power station
+	SpawnSpotlightBeam(FVector(WestX - 2000.f, 0.f, 10.f), 2500.f, TacBlue);          // Barracks
+	SpawnSpotlightBeam(FVector(0.f, NorthY + 2000.f, 10.f), 3200.f, WarnOrange);        // North
+	SpawnSpotlightBeam(FVector(0.f, SouthY - 2000.f, 10.f), 2800.f, TacBlue);          // South
 	// Outer perimeter beacons
-	SpawnSpotlightBeam(FVector(150000.f, 0.f, 10.f), 4000.f, WarnOrange);
-	SpawnSpotlightBeam(FVector(-150000.f, 0.f, 10.f), 4000.f, WarnOrange);
-	SpawnSpotlightBeam(FVector(0.f, 150000.f, 10.f), 4000.f, WarnOrange);
-	SpawnSpotlightBeam(FVector(0.f, -150000.f, 10.f), 4000.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(MapHalfSize * 0.75f, 0.f, 10.f), 4000.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(-MapHalfSize * 0.75f, 0.f, 10.f), 4000.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(0.f, MapHalfSize * 0.75f, 10.f), 4000.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(0.f, -MapHalfSize * 0.75f, 10.f), 4000.f, WarnOrange);
 	// Wilderness beacons — distant towers visible from open fields
-	SpawnSpotlightBeam(FVector(100000.f, 100000.f, 10.f), 3500.f, TacBlue);
-	SpawnSpotlightBeam(FVector(-100000.f, -100000.f, 10.f), 3500.f, TacBlue);
-	SpawnSpotlightBeam(FVector(100000.f, -100000.f, 10.f), 3200.f, CoolWhite);
-	SpawnSpotlightBeam(FVector(-100000.f, 100000.f, 10.f), 3200.f, CoolWhite);
+	SpawnSpotlightBeam(FVector(CornerDist * 0.7f, CornerDist * 0.7f, 10.f), 3500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(-CornerDist * 0.7f, -CornerDist * 0.7f, 10.f), 3500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(CornerDist * 0.7f, -CornerDist * 0.7f, 10.f), 3200.f, CoolWhite);
+	SpawnSpotlightBeam(FVector(-CornerDist * 0.7f, CornerDist * 0.7f, 10.f), 3200.f, CoolWhite);
 	// Mid-field navigation beacons
-	SpawnSpotlightBeam(FVector(40000.f, 40000.f, 10.f), 2500.f, TacBlue);
-	SpawnSpotlightBeam(FVector(-40000.f, -40000.f, 10.f), 2500.f, CoolWhite);
-	SpawnSpotlightBeam(FVector(40000.f, -40000.f, 10.f), 2200.f, WarnOrange);
-	SpawnSpotlightBeam(FVector(-40000.f, 40000.f, 10.f), 2200.f, TacBlue);
+	SpawnSpotlightBeam(FVector(8000.f, 8000.f, 10.f), 2500.f, TacBlue);
+	SpawnSpotlightBeam(FVector(-8000.f, -8000.f, 10.f), 2500.f, CoolWhite);
+	SpawnSpotlightBeam(FVector(8000.f, -8000.f, 10.f), 2200.f, WarnOrange);
+	SpawnSpotlightBeam(FVector(-8000.f, 8000.f, 10.f), 2200.f, TacBlue);
 
 	// === ENERGY CONDUITS — glowing pipes connecting buildings ===
 	FLinearColor ConduitCyan(0.1f, 0.6f, 0.8f);
 	FLinearColor ConduitOrange(0.8f, 0.3f, 0.05f);
 
 	// Hub to north
-	SpawnEnergyConduit(FVector(0.f, 5000.f, 150.f), FVector(0.f, 30000.f, 150.f), ConduitCyan);
+	SpawnEnergyConduit(FVector(0.f, 5000.f, 150.f), FVector(0.f, NorthY * 0.4f, 150.f), ConduitCyan);
 	// Hub to east
-	SpawnEnergyConduit(FVector(5000.f, 0.f, 150.f), FVector(30000.f, 0.f, 150.f), ConduitCyan);
+	SpawnEnergyConduit(FVector(5000.f, 0.f, 150.f), FVector(EastX * 0.4f, 0.f, 150.f), ConduitCyan);
 	// Hub to south
-	SpawnEnergyConduit(FVector(0.f, -5000.f, 150.f), FVector(0.f, -30000.f, 150.f), ConduitOrange);
+	SpawnEnergyConduit(FVector(0.f, -5000.f, 150.f), FVector(0.f, SouthY * 0.4f, 150.f), ConduitOrange);
 	// Hub to west
-	SpawnEnergyConduit(FVector(-5000.f, 0.f, 150.f), FVector(-30000.f, 0.f, 150.f), ConduitOrange);
+	SpawnEnergyConduit(FVector(-5000.f, 0.f, 150.f), FVector(WestX * 0.4f, 0.f, 150.f), ConduitOrange);
 	// Inter-compound conduits — linking adjacent bases
 	// North to East (diagonal)
-	SpawnEnergyConduit(FVector(15000.f, 65000.f, 200.f), FVector(65000.f, 15000.f, 200.f), ConduitCyan);
+	SpawnEnergyConduit(FVector(3000.f, NorthY - 3000.f, 200.f), FVector(EastX - 3000.f, 3000.f, 200.f), ConduitCyan);
 	// East to South (diagonal)
-	SpawnEnergyConduit(FVector(65000.f, -15000.f, 200.f), FVector(15000.f, -65000.f, 200.f), ConduitOrange);
+	SpawnEnergyConduit(FVector(EastX - 3000.f, -3000.f, 200.f), FVector(3000.f, SouthY + 3000.f, 200.f), ConduitOrange);
 	// South to West (diagonal)
-	SpawnEnergyConduit(FVector(-15000.f, -65000.f, 200.f), FVector(-65000.f, -15000.f, 200.f), ConduitCyan);
+	SpawnEnergyConduit(FVector(-3000.f, SouthY + 3000.f, 200.f), FVector(WestX + 3000.f, -3000.f, 200.f), ConduitCyan);
 	// West to North (diagonal)
-	SpawnEnergyConduit(FVector(-65000.f, 15000.f, 200.f), FVector(-15000.f, 65000.f, 200.f), ConduitOrange);
+	SpawnEnergyConduit(FVector(WestX + 3000.f, 3000.f, 200.f), FVector(-3000.f, NorthY - 3000.f, 200.f), ConduitOrange);
 
 	// === NEON ACCENT TUBES — decorative glowing strips on buildings ===
 	FLinearColor NeonCyan(0.05f, 0.8f, 1.f);
@@ -81,16 +81,16 @@ void AExoLevelBuilder::BuildAtmosphere()
 	SpawnNeonTube(FVector(0.f, -4500.f, 200.f), FVector(5.f, 0.08f, 0.08f), 0.f, NeonMagenta);
 
 	// North compound accents
-	SpawnNeonTube(FVector(-5000.f, 82000.f, 300.f), FVector(0.06f, 4.f, 0.06f), 0.f, NeonGold);
-	SpawnNeonTube(FVector(5000.f, 82000.f, 300.f), FVector(0.06f, 4.f, 0.06f), 0.f, NeonCyan);
+	SpawnNeonTube(FVector(-5000.f, NorthY + 2000.f, 300.f), FVector(0.06f, 4.f, 0.06f), 0.f, NeonGold);
+	SpawnNeonTube(FVector(5000.f, NorthY + 2000.f, 300.f), FVector(0.06f, 4.f, 0.06f), 0.f, NeonCyan);
 
 	// Power station warning strips
-	SpawnNeonTube(FVector(83000.f, -3000.f, 200.f), FVector(0.06f, 0.06f, 3.f), 0.f, NeonGold);
-	SpawnNeonTube(FVector(83000.f, 3000.f, 200.f), FVector(0.06f, 0.06f, 3.f), 0.f, NeonGold);
+	SpawnNeonTube(FVector(EastX + 3000.f, -3000.f, 200.f), FVector(0.06f, 0.06f, 3.f), 0.f, NeonGold);
+	SpawnNeonTube(FVector(EastX + 3000.f, 3000.f, 200.f), FVector(0.06f, 0.06f, 3.f), 0.f, NeonGold);
 
 	// Barracks entrance markers
-	SpawnNeonTube(FVector(-83000.f, -5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
-	SpawnNeonTube(FVector(-83000.f, 5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
+	SpawnNeonTube(FVector(WestX - 3000.f, -5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
+	SpawnNeonTube(FVector(WestX - 3000.f, 5000.f, 180.f), FVector(0.06f, 0.06f, 2.5f), 0.f, NeonMagenta);
 
 	// === FLICKERING LIGHTS — damaged fixtures for atmosphere ===
 	FActorSpawnParameters FlickerParams;
@@ -99,15 +99,15 @@ void AExoLevelBuilder::BuildAtmosphere()
 	struct FFlickerDef { FVector Pos; FLinearColor Color; float Intensity; };
 	TArray<FFlickerDef> Flickers = {
 		// Industrial compound — damaged amber lights
-		{{-4000.f, 79000.f, 500.f}, FLinearColor(1.f, 0.6f, 0.15f), 6000.f},
-		{{6000.f, 81000.f, 450.f}, FLinearColor(1.f, 0.5f, 0.1f), 5000.f},
+		{{-4000.f, NorthY - 1000.f, 500.f}, FLinearColor(1.f, 0.6f, 0.15f), 6000.f},
+		{{6000.f, NorthY + 1000.f, 450.f}, FLinearColor(1.f, 0.5f, 0.1f), 5000.f},
 		// Barracks corridor — red alert flickers
-		{{-79000.f, 3000.f, 400.f}, FLinearColor(1.f, 0.15f, 0.1f), 7000.f},
-		{{-81000.f, -4000.f, 400.f}, FLinearColor(1.f, 0.2f, 0.1f), 5500.f},
+		{{WestX + 1000.f, 3000.f, 400.f}, FLinearColor(1.f, 0.15f, 0.1f), 7000.f},
+		{{WestX - 1000.f, -4000.f, 400.f}, FLinearColor(1.f, 0.2f, 0.1f), 5500.f},
 		// Tunnel entrance — unstable white
-		{{40000.f, -40000.f, 300.f}, FLinearColor(0.8f, 0.85f, 1.f), 4000.f},
+		{{8000.f, -8000.f, 300.f}, FLinearColor(0.8f, 0.85f, 1.f), 4000.f},
 		// Research labs — flickering green
-		{{1000.f, -81000.f, 450.f}, FLinearColor(0.3f, 1.f, 0.4f), 5000.f},
+		{{1000.f, SouthY - 1000.f, 450.f}, FLinearColor(0.3f, 1.f, 0.4f), 5000.f},
 	};
 
 	for (const FFlickerDef& F : Flickers)
@@ -127,13 +127,13 @@ void AExoLevelBuilder::BuildAtmosphere()
 			// Hub — large central display
 			{{0.f, -6000.f, 1200.f}, 0.f, FLinearColor(0.1f, 0.6f, 1.f), 5000.f, 2500.f},
 			// North compound — industrial amber
-			{{-5000.f, 80000.f, 800.f}, 90.f, FLinearColor(1.f, 0.6f, 0.1f), 3500.f, 1800.f},
+			{{-5000.f, NorthY, 800.f}, 90.f, FLinearColor(1.f, 0.6f, 0.1f), 3500.f, 1800.f},
 			// East power station — electric blue
-			{{80000.f, -5000.f, 900.f}, 0.f, FLinearColor(0.15f, 0.4f, 1.f), 3000.f, 1500.f},
+			{{EastX, -5000.f, 900.f}, 0.f, FLinearColor(0.15f, 0.4f, 1.f), 3000.f, 1500.f},
 			// South labs — green data
-			{{4000.f, -80000.f, 700.f}, 180.f, FLinearColor(0.2f, 0.9f, 0.4f), 3500.f, 2000.f},
+			{{4000.f, SouthY, 700.f}, 180.f, FLinearColor(0.2f, 0.9f, 0.4f), 3500.f, 2000.f},
 			// West barracks — red alert
-			{{-80000.f, 4000.f, 800.f}, 270.f, FLinearColor(1.f, 0.25f, 0.15f), 3000.f, 1500.f},
+			{{WestX, 4000.f, 800.f}, 270.f, FLinearColor(1.f, 0.25f, 0.15f), 3000.f, 1500.f},
 		};
 
 		for (const FBoardDef& B : Boards)
@@ -158,22 +158,22 @@ void AExoLevelBuilder::BuildAtmosphere()
 			{{-2000.f, -3000.f, 250.f}, FRotator(0.f, 45.f, 0.f),
 				FLinearColor(1.f, 0.6f, 0.1f), 3.5f},
 			// North industrial — exposed wiring
-			{{5000.f, 79000.f, 400.f}, FRotator(0.f, 0.f, 0.f),
+			{{5000.f, NorthY - 1000.f, 400.f}, FRotator(0.f, 0.f, 0.f),
 				FLinearColor(1.f, 0.5f, 0.1f), 2.5f},
-			{{-3000.f, 82000.f, 200.f}, FRotator(0.f, 180.f, 0.f),
+			{{-3000.f, NorthY + 2000.f, 200.f}, FRotator(0.f, 180.f, 0.f),
 				FLinearColor(1.f, 0.7f, 0.2f), 5.f},
 			// East power — overloaded conduit
-			{{81000.f, -2000.f, 350.f}, FRotator(0.f, -90.f, 0.f),
+			{{EastX + 1000.f, -2000.f, 350.f}, FRotator(0.f, -90.f, 0.f),
 				FLinearColor(0.2f, 0.5f, 1.f), 2.f},
-			{{79000.f, 3000.f, 500.f}, FRotator(-30.f, 0.f, 0.f),
+			{{EastX - 1000.f, 3000.f, 500.f}, FRotator(-30.f, 0.f, 0.f),
 				FLinearColor(0.4f, 0.6f, 1.f), 3.f},
 			// South labs — containment breach sparks
-			{{2000.f, -81000.f, 300.f}, FRotator(0.f, 90.f, 0.f),
+			{{2000.f, SouthY - 1000.f, 300.f}, FRotator(0.f, 90.f, 0.f),
 				FLinearColor(0.3f, 1.f, 0.4f), 4.5f},
 			// West barracks — battle damage
-			{{-81000.f, 5000.f, 250.f}, FRotator(0.f, 0.f, 0.f),
+			{{WestX - 1000.f, 5000.f, 250.f}, FRotator(0.f, 0.f, 0.f),
 				FLinearColor(1.f, 0.3f, 0.1f), 3.f},
-			{{-79000.f, -3000.f, 400.f}, FRotator(0.f, 270.f, 0.f),
+			{{WestX + 1000.f, -3000.f, 400.f}, FRotator(0.f, 270.f, 0.f),
 				FLinearColor(1.f, 0.4f, 0.15f), 6.f},
 		};
 
@@ -198,18 +198,18 @@ void AExoLevelBuilder::BuildAtmosphere()
 			// Hub — energy coil at center
 			{{0.f, 3000.f, 200.f}, 2, FLinearColor(0.2f, 0.8f, 1.f), 40.f, 1.2f},
 			// North — industrial exhaust fan
-			{{-4000.f, 81000.f, 600.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 120.f, 1.0f},
-			{{4000.f, 79000.f, 500.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 90.f, 0.8f},
+			{{-4000.f, NorthY + 1000.f, 600.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 120.f, 1.0f},
+			{{4000.f, NorthY - 1000.f, 500.f}, 0, FLinearColor(0.5f, 0.5f, 0.5f), 90.f, 0.8f},
 			// East — power coils
-			{{82000.f, 0.f, 400.f}, 2, FLinearColor(0.4f, 0.6f, 1.f), 60.f, 1.0f},
-			{{78000.f, -4000.f, 350.f}, 2, FLinearColor(0.3f, 0.5f, 1.f), 45.f, 0.7f},
+			{{EastX + 2000.f, 0.f, 400.f}, 2, FLinearColor(0.4f, 0.6f, 1.f), 60.f, 1.0f},
+			{{EastX - 2000.f, -4000.f, 350.f}, 2, FLinearColor(0.3f, 0.5f, 1.f), 45.f, 0.7f},
 			// South — research scanner dish
-			{{0.f, -82000.f, 500.f}, 1, FLinearColor(0.3f, 1.f, 0.4f), 8.f, 1.3f},
+			{{0.f, SouthY - 2000.f, 500.f}, 1, FLinearColor(0.3f, 1.f, 0.4f), 8.f, 1.3f},
 			// West — barracks antenna
-			{{-82000.f, 0.f, 600.f}, 1, FLinearColor(1.f, 0.3f, 0.1f), 12.f, 1.0f},
+			{{WestX - 2000.f, 0.f, 600.f}, 1, FLinearColor(1.f, 0.3f, 0.1f), 12.f, 1.0f},
 			// Corner outposts — small dishes
-			{{120000.f, 120000.f, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
-			{{-120000.f, -120000.f, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
+			{{CornerDist, CornerDist, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
+			{{-CornerDist, -CornerDist, 400.f}, 1, FLinearColor(0.5f, 0.5f, 0.6f), 20.f, 0.6f},
 		};
 
 		for (const FPropDef& P : PropDefs)
@@ -231,13 +231,13 @@ void AExoLevelBuilder::BuildAtmosphere()
 			// Hub entrance (south-facing)
 			{{4000.f, -3000.f, 10.f}, 0.f, 600.f, 350.f, FLinearColor(0.2f, 0.5f, 1.f)},
 			// North compound main entry
-			{{-10000.f, 76000.f, 10.f}, 0.f, 800.f, 400.f, FLinearColor(1.f, 0.5f, 0.1f)},
+			{{-10000.f, NorthY - 4000.f, 10.f}, 0.f, 800.f, 400.f, FLinearColor(1.f, 0.5f, 0.1f)},
 			// South research lab entry
-			{{-9000.f, -80000.f, 10.f}, 90.f, 600.f, 350.f, FLinearColor(0.3f, 1.f, 0.4f)},
+			{{-9000.f, SouthY, 10.f}, 90.f, 600.f, 350.f, FLinearColor(0.3f, 1.f, 0.4f)},
 			// East power station entry
-			{{80000.f, -4000.f, 10.f}, 90.f, 700.f, 400.f, FLinearColor(1.f, 0.3f, 0.1f)},
+			{{EastX, -4000.f, 10.f}, 90.f, 700.f, 400.f, FLinearColor(1.f, 0.3f, 0.1f)},
 			// West barracks entry (between guard posts)
-			{{-80000.f, 6000.f, 10.f}, 0.f, 800.f, 350.f, FLinearColor(0.2f, 0.4f, 1.f)},
+			{{WestX, 6000.f, 10.f}, 0.f, 800.f, 350.f, FLinearColor(0.2f, 0.4f, 1.f)},
 		};
 
 		for (const FGateDef& G : Gates)

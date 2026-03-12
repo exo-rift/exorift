@@ -29,22 +29,22 @@ void AExoLevelBuilder::SpawnBuilding(const FVector& Center, const FVector& Size,
 	// Derive accent color from building position for compound-specific identity
 	FLinearColor AccentGlow(0.1f, 0.5f, 1.2f); // Default: blue
 	FLinearColor WinGlow(0.06f, 0.15f, 0.35f);
-	if (Center.Y > 40000.f)
+	if (Center.Y > 8000.f)
 	{	// North compound — amber industrial
 		AccentGlow = FLinearColor(1.2f, 0.6f, 0.12f);
 		WinGlow = FLinearColor(0.3f, 0.15f, 0.04f);
 	}
-	else if (Center.Y < -40000.f)
+	else if (Center.Y < -8000.f)
 	{	// South compound — teal research
 		AccentGlow = FLinearColor(0.15f, 1.0f, 0.7f);
 		WinGlow = FLinearColor(0.04f, 0.25f, 0.18f);
 	}
-	else if (Center.X > 40000.f)
+	else if (Center.X > 8000.f)
 	{	// East compound — red power
 		AccentGlow = FLinearColor(1.2f, 0.25f, 0.15f);
 		WinGlow = FLinearColor(0.3f, 0.06f, 0.04f);
 	}
-	else if (Center.X < -40000.f)
+	else if (Center.X < -8000.f)
 	{	// West compound — green military
 		AccentGlow = FLinearColor(0.2f, 1.0f, 0.3f);
 		WinGlow = FLinearColor(0.05f, 0.25f, 0.08f);

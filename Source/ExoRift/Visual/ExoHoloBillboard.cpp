@@ -42,7 +42,7 @@ AExoHoloBillboard::AExoHoloBillboard()
 
 	ScreenGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("Glow"));
 	ScreenGlow->SetupAttachment(ScreenMesh);
-	ScreenGlow->SetIntensity(30000.f);
+	ScreenGlow->SetIntensity(5000.f);
 	ScreenGlow->SetAttenuationRadius(5000.f);
 	ScreenGlow->CastShadows = false;
 

@@ -66,8 +66,6 @@ AExoShieldShatter::AExoShieldShatter()
 
 void AExoShieldShatter::InitShatter(const FVector& HitDirection)
 {
-	FLinearColor ShieldBlue(0.2f, 0.5f, 1.f);
-
 	UMaterialInterface* EmissiveMat = FExoMaterialFactory::GetEmissiveAdditive();
 	if (!EmissiveMat) return;
 

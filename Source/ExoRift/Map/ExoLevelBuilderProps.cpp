@@ -10,62 +10,62 @@ void AExoLevelBuilder::BuildProps()
 {
 	// === STREET LIGHTS along main routes ===
 	// North-South road
-	for (float Y = -70000.f; Y <= 70000.f; Y += 10000.f)
+	for (float Y = -14000.f; Y <= 14000.f; Y += 2000.f)
 	{
-		SpawnLightPost(FVector(2000.f, Y, GroundZ), 1200.f,
+		SpawnLightPost(FVector(400.f, Y, GroundZ), 1200.f,
 			FLinearColor(0.6f, 0.8f, 1.f));
-		SpawnLightPost(FVector(-2000.f, Y, GroundZ), 1200.f,
+		SpawnLightPost(FVector(-400.f, Y, GroundZ), 1200.f,
 			FLinearColor(0.6f, 0.8f, 1.f));
 	}
 
 	// East-West road
-	for (float X = -70000.f; X <= 70000.f; X += 10000.f)
+	for (float X = -14000.f; X <= 14000.f; X += 2000.f)
 	{
-		if (FMath::Abs(X) < 3000.f) continue; // Skip center intersection
-		SpawnLightPost(FVector(X, 2000.f, GroundZ), 1200.f,
+		if (FMath::Abs(X) < 600.f) continue; // Skip center intersection
+		SpawnLightPost(FVector(X, 400.f, GroundZ), 1200.f,
 			FLinearColor(0.6f, 0.8f, 1.f));
 	}
 
 	// === COMPOUND ACCENT LIGHTS ===
 	// Red warning lights on towers
-	SpawnLightPost(FVector(0.f, 85000.f, 5000.f), 0.f,
+	SpawnLightPost(FVector(0.f, 17000.f, 5000.f), 0.f,
 		FLinearColor(1.f, 0.1f, 0.05f)); // North tower top
-	SpawnLightPost(FVector(85000.f, 3000.f, 6000.f), 0.f,
+	SpawnLightPost(FVector(17000.f, 600.f, 6000.f), 0.f,
 		FLinearColor(1.f, 0.1f, 0.05f)); // East tower
-	SpawnLightPost(FVector(85000.f, -5000.f, 6000.f), 0.f,
+	SpawnLightPost(FVector(17000.f, -1000.f, 6000.f), 0.f,
 		FLinearColor(1.f, 0.1f, 0.05f)); // East tower 2
 
 	// Green landing pad lights at center hub
 	for (int32 i = 0; i < 4; i++)
 	{
 		float Angle = (PI * 0.5f) * i + PI * 0.25f;
-		FVector Pos(FMath::Cos(Angle) * 5500.f, FMath::Sin(Angle) * 4500.f, GroundZ);
+		FVector Pos(FMath::Cos(Angle) * 1100.f, FMath::Sin(Angle) * 900.f, GroundZ);
 		SpawnLightPost(Pos, 200.f, FLinearColor(0.1f, 1.f, 0.3f));
 	}
 
 	// === ANTENNAS ===
 	SpawnAntenna(FVector(0.f, 0.f, 4000.f), 3000.f);         // Central hub roof
-	SpawnAntenna(FVector(80000.f, 0.f, 3500.f), 2500.f);     // East compound
-	SpawnAntenna(FVector(-80000.f, 0.f, 1800.f), 2000.f);    // West compound
-	SpawnAntenna(FVector(0.f, 80000.f, 3000.f), 2000.f);     // North compound
-	SpawnAntenna(FVector(120000.f, 120000.f, 2000.f), 1500.f); // NE outpost
+	SpawnAntenna(FVector(16000.f, 0.f, 3500.f), 2500.f);     // East compound
+	SpawnAntenna(FVector(-16000.f, 0.f, 1800.f), 2000.f);    // West compound
+	SpawnAntenna(FVector(0.f, 16000.f, 3000.f), 2000.f);     // North compound
+	SpawnAntenna(FVector(24000.f, 24000.f, 2000.f), 1500.f); // NE outpost
 
 	// === PIPES connecting compounds ===
 	// Central hub to North compound (elevated pipe)
-	SpawnPipeRun(FVector(0.f, 6000.f, 1500.f), FVector(0.f, 75000.f, 1500.f), 80.f);
+	SpawnPipeRun(FVector(0.f, 1200.f, 1500.f), FVector(0.f, 15000.f, 1500.f), 80.f);
 
 	// Central hub to East compound
-	SpawnPipeRun(FVector(6000.f, 0.f, 1200.f), FVector(75000.f, 0.f, 1200.f), 80.f);
+	SpawnPipeRun(FVector(1200.f, 0.f, 1200.f), FVector(15000.f, 0.f, 1200.f), 80.f);
 
 	// Ground-level pipes near industrial areas
-	SpawnPipeRun(FVector(-82000.f, -10000.f, 200.f), FVector(-82000.f, 10000.f, 200.f), 60.f);
-	SpawnPipeRun(FVector(78000.f, -7000.f, 200.f), FVector(83000.f, -7000.f, 200.f), 50.f);
+	SpawnPipeRun(FVector(-16400.f, -2000.f, 200.f), FVector(-16400.f, 2000.f, 200.f), 60.f);
+	SpawnPipeRun(FVector(15600.f, -1400.f, 200.f), FVector(16600.f, -1400.f, 200.f), 50.f);
 
 	// === SATELLITE DISHES on corner outposts ===
-	float CornerDist = 120000.f;
+	float CDist = AExoLevelBuilder::CornerDist;
 	FVector CornerPositions[] = {
-		{CornerDist, CornerDist, 2000.f}, {-CornerDist, CornerDist, 2000.f},
-		{CornerDist, -CornerDist, 2000.f}, {-CornerDist, -CornerDist, 2000.f}
+		{CDist, CDist, 2000.f}, {-CDist, CDist, 2000.f},
+		{CDist, -CDist, 2000.f}, {-CDist, -CDist, 2000.f}
 	};
 	for (const FVector& CP : CornerPositions)
 	{
@@ -94,10 +94,10 @@ void AExoLevelBuilder::BuildProps()
 	struct FBollardRow { FVector Start; FVector End; int32 Count; };
 	TArray<FBollardRow> Bollards = {
 		// Roundabout perimeter
-		{{14000.f, 0.f, GroundZ}, {10000.f, 10000.f, GroundZ}, 5},
-		{{0.f, 14000.f, GroundZ}, {-10000.f, 10000.f, GroundZ}, 5},
-		{{-14000.f, 0.f, GroundZ}, {-10000.f, -10000.f, GroundZ}, 5},
-		{{0.f, -14000.f, GroundZ}, {10000.f, -10000.f, GroundZ}, 5},
+		{{2800.f, 0.f, GroundZ}, {2000.f, 2000.f, GroundZ}, 5},
+		{{0.f, 2800.f, GroundZ}, {-2000.f, 2000.f, GroundZ}, 5},
+		{{-2800.f, 0.f, GroundZ}, {-2000.f, -2000.f, GroundZ}, 5},
+		{{0.f, -2800.f, GroundZ}, {2000.f, -2000.f, GroundZ}, 5},
 	};
 	for (const auto& BR : Bollards)
 	{
@@ -130,19 +130,19 @@ void AExoLevelBuilder::BuildProps()
 	struct FContainer { FVector Pos; float Yaw; FLinearColor Color; };
 	TArray<FContainer> Containers = {
 		// North compound dock
-		{{-8000.f, 84000.f, 300.f},  10.f,  FLinearColor(0.15f, 0.06f, 0.03f)},
-		{{-5000.f, 84000.f, 300.f},  5.f,   FLinearColor(0.03f, 0.08f, 0.12f)},
-		{{-6500.f, 84000.f, 900.f},  8.f,   FLinearColor(0.1f, 0.1f, 0.04f)}, // stacked
+		{{-1600.f, 16800.f, 300.f},  10.f,  FLinearColor(0.15f, 0.06f, 0.03f)},
+		{{-1000.f, 16800.f, 300.f},  5.f,   FLinearColor(0.03f, 0.08f, 0.12f)},
+		{{-1300.f, 16800.f, 900.f},  8.f,   FLinearColor(0.1f, 0.1f, 0.04f)}, // stacked
 		// East compound yard
-		{{82000.f, 6000.f, 300.f},   85.f,  FLinearColor(0.04f, 0.1f, 0.05f)},
-		{{82000.f, 8000.f, 300.f},   90.f,  FLinearColor(0.12f, 0.04f, 0.04f)},
+		{{16400.f, 1200.f, 300.f},   85.f,  FLinearColor(0.04f, 0.1f, 0.05f)},
+		{{16400.f, 1600.f, 300.f},   90.f,  FLinearColor(0.12f, 0.04f, 0.04f)},
 		// West compound parade ground
-		{{-78000.f, -8000.f, 300.f}, 0.f,   FLinearColor(0.06f, 0.06f, 0.08f)},
-		{{-78000.f, 8000.f, 300.f},  0.f,   FLinearColor(0.08f, 0.06f, 0.03f)},
+		{{-15600.f, -1600.f, 300.f}, 0.f,   FLinearColor(0.06f, 0.06f, 0.08f)},
+		{{-15600.f, 1600.f, 300.f},  0.f,   FLinearColor(0.08f, 0.06f, 0.03f)},
 		// South compound
-		{{6000.f, -83000.f, 300.f},  -25.f, FLinearColor(0.03f, 0.06f, 0.1f)},
+		{{1200.f, -16600.f, 300.f},  -25.f, FLinearColor(0.03f, 0.06f, 0.1f)},
 		// Central hub
-		{{6500.f, 3000.f, 300.f},    45.f,  FLinearColor(0.1f, 0.08f, 0.04f)},
+		{{1300.f, 600.f, 300.f},     45.f,  FLinearColor(0.1f, 0.08f, 0.04f)},
 	};
 	for (int32 ci = 0; ci < Containers.Num(); ci++)
 	{
@@ -184,10 +184,10 @@ void AExoLevelBuilder::BuildProps()
 
 	struct FWreckData { FVector Pos; float Yaw; float Tilt; };
 	TArray<FWreckData> Wrecks = {
-		{{15000.f, 3000.f, GroundZ}, 35.f, 3.f},
-		{{-25000.f, -1500.f, GroundZ}, -10.f, -2.f},
-		{{45000.f, 45000.f, GroundZ}, 70.f, 5.f},
-		{{-60000.f, -50000.f, GroundZ}, 140.f, -4.f},
+		{{3000.f, 600.f, GroundZ}, 35.f, 3.f},
+		{{-5000.f, -300.f, GroundZ}, -10.f, -2.f},
+		{{9000.f, 9000.f, GroundZ}, 70.f, 5.f},
+		{{-12000.f, -10000.f, GroundZ}, 140.f, -4.f},
 	};
 	for (int32 wi = 0; wi < Wrecks.Num(); wi++)
 	{
@@ -234,16 +234,16 @@ void AExoLevelBuilder::BuildProps()
 	};
 
 	// Road checkpoint barricades
-	SpawnBarricade(FVector(30000.f, 2000.f, GroundZ), 0.f, 600.f);
-	SpawnBarricade(FVector(30000.f, -2000.f, GroundZ), 0.f, 600.f);
-	SpawnBarricade(FVector(-30000.f, 1500.f, GroundZ), 10.f, 500.f);
-	SpawnBarricade(FVector(-30000.f, -1500.f, GroundZ), -5.f, 500.f);
+	SpawnBarricade(FVector(6000.f, 400.f, GroundZ), 0.f, 600.f);
+	SpawnBarricade(FVector(6000.f, -400.f, GroundZ), 0.f, 600.f);
+	SpawnBarricade(FVector(-6000.f, 300.f, GroundZ), 10.f, 500.f);
+	SpawnBarricade(FVector(-6000.f, -300.f, GroundZ), -5.f, 500.f);
 	// North approach
-	SpawnBarricade(FVector(2500.f, 40000.f, GroundZ), 85.f, 700.f);
-	SpawnBarricade(FVector(-2500.f, 40000.f, GroundZ), 95.f, 500.f);
+	SpawnBarricade(FVector(500.f, 8000.f, GroundZ), 85.f, 700.f);
+	SpawnBarricade(FVector(-500.f, 8000.f, GroundZ), 95.f, 500.f);
 	// South approach
-	SpawnBarricade(FVector(1500.f, -45000.f, GroundZ), 90.f, 600.f);
-	SpawnBarricade(FVector(-1500.f, -45000.f, GroundZ), 80.f, 600.f);
+	SpawnBarricade(FVector(300.f, -9000.f, GroundZ), 90.f, 600.f);
+	SpawnBarricade(FVector(-300.f, -9000.f, GroundZ), 80.f, 600.f);
 
 	// === DAMAGED WALL SECTIONS — battle-scarred concrete ===
 	auto SpawnDamagedWall = [&](const FVector& Pos, float Yaw)
@@ -271,11 +271,11 @@ void AExoLevelBuilder::BuildProps()
 		}
 	};
 
-	SpawnDamagedWall(FVector(20000.f, 20000.f, GroundZ), 30.f);
-	SpawnDamagedWall(FVector(-40000.f, 30000.f, GroundZ), -15.f);
-	SpawnDamagedWall(FVector(60000.f, -20000.f, GroundZ), 75.f);
-	SpawnDamagedWall(FVector(-20000.f, -60000.f, GroundZ), 120.f);
-	SpawnDamagedWall(FVector(35000.f, -55000.f, GroundZ), 45.f);
+	SpawnDamagedWall(FVector(4000.f, 4000.f, GroundZ), 30.f);
+	SpawnDamagedWall(FVector(-8000.f, 6000.f, GroundZ), -15.f);
+	SpawnDamagedWall(FVector(12000.f, -4000.f, GroundZ), 75.f);
+	SpawnDamagedWall(FVector(-4000.f, -12000.f, GroundZ), 120.f);
+	SpawnDamagedWall(FVector(7000.f, -11000.f, GroundZ), 45.f);
 
 	// === QUATERNIUS CRATES & CONTAINERS at cargo areas ===
 	if (bHasQuaterniusAssets)
@@ -283,33 +283,33 @@ void AExoLevelBuilder::BuildProps()
 		if (QT_PropsContainerFull)
 		{
 			// North compound cargo staging
-			SpawnRawMesh(FVector(-6000.f, 85000.f, 0.f), FVector(2.f), FRotator(0.f, 10.f, 0.f), QT_PropsContainerFull);
-			SpawnRawMesh(FVector(-3000.f, 85000.f, 0.f), FVector(2.f), FRotator(0.f, -5.f, 0.f), QT_PropsContainerFull);
+			SpawnRawMesh(FVector(-1200.f, 17000.f, 0.f), FVector(2.f), FRotator(0.f, 10.f, 0.f), QT_PropsContainerFull);
+			SpawnRawMesh(FVector(-600.f, 17000.f, 0.f), FVector(2.f), FRotator(0.f, -5.f, 0.f), QT_PropsContainerFull);
 			// East power yard
-			SpawnRawMesh(FVector(83000.f, -3000.f, 0.f), FVector(2.f), FRotator(0.f, 85.f, 0.f), QT_PropsContainerFull);
+			SpawnRawMesh(FVector(16600.f, -600.f, 0.f), FVector(2.f), FRotator(0.f, 85.f, 0.f), QT_PropsContainerFull);
 		}
 		if (QT_PropsCrate)
 		{
 			// Central hub interior crates
-			SpawnRawMesh(FVector(5000.f, 2000.f, 0.f), FVector(1.5f), FRotator(0.f, 20.f, 0.f), QT_PropsCrate);
-			SpawnRawMesh(FVector(5000.f, -2000.f, 0.f), FVector(1.5f), FRotator(0.f, -15.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(1000.f, 400.f, 0.f), FVector(1.5f), FRotator(0.f, 20.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(1000.f, -400.f, 0.f), FVector(1.5f), FRotator(0.f, -15.f, 0.f), QT_PropsCrate);
 			// West barracks supply crates
-			SpawnRawMesh(FVector(-79000.f, 7000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsCrate);
-			SpawnRawMesh(FVector(-79000.f, -7000.f, 0.f), FVector(1.5f), FRotator(0.f, 30.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(-15800.f, 1400.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsCrate);
+			SpawnRawMesh(FVector(-15800.f, -1400.f, 0.f), FVector(1.5f), FRotator(0.f, 30.f, 0.f), QT_PropsCrate);
 		}
 		if (QT_PropsComputer)
 		{
 			// South research lab computers
-			SpawnRawMesh(FVector(2000.f, -81000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsComputer);
-			SpawnRawMesh(FVector(-4000.f, -80000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsComputer);
+			SpawnRawMesh(FVector(400.f, -16200.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsComputer);
+			SpawnRawMesh(FVector(-800.f, -16000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsComputer);
 		}
 		if (QT_PropsShelf)
 		{
 			// North warehouse storage shelves
-			SpawnRawMesh(FVector(-7000.f, 82000.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
-			SpawnRawMesh(FVector(-7000.f, 83500.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
+			SpawnRawMesh(FVector(-1400.f, 16400.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
+			SpawnRawMesh(FVector(-1400.f, 16700.f, 0.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_PropsShelf);
 			// East compound
-			SpawnRawMesh(FVector(80000.f, 4000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsShelf);
+			SpawnRawMesh(FVector(16000.f, 800.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_PropsShelf);
 		}
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Quaternius props placed at compounds"));
 	}

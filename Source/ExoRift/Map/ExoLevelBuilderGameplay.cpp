@@ -24,7 +24,7 @@ void AExoLevelBuilder::PlaceSpawnPoints()
 	for (int32 i = 0; i < NumSpawns; i++)
 	{
 		float Angle = (2.f * PI * i) / NumSpawns;
-		float Jitter = FMath::RandRange(-15000.f, 15000.f);
+		float Jitter = FMath::RandRange(-3000.f, 3000.f);
 		FVector Pos(
 			FMath::Cos(Angle) * (SpawnRing + Jitter),
 			FMath::Sin(Angle) * (SpawnRing + Jitter),
@@ -43,7 +43,7 @@ void AExoLevelBuilder::PlaceSpawnPoints()
 	for (int32 i = 0; i < 4; i++)
 	{
 		float Angle = (PI * 0.5f) * i;
-		FVector Pos(FMath::Cos(Angle) * 3000.f, FMath::Sin(Angle) * 3000.f, GroundZ + 100.f);
+		FVector Pos(FMath::Cos(Angle) * 600.f, FMath::Sin(Angle) * 600.f, GroundZ + 100.f);
 		AExoSpawnPoint* SP = GetWorld()->SpawnActor<AExoSpawnPoint>(
 			AExoSpawnPoint::StaticClass(), Pos, FRotator::ZeroRotator, Params);
 		if (SP)
@@ -74,10 +74,10 @@ void AExoLevelBuilder::PlaceLootSpawners()
 
 	// Loot at each compound
 	FVector CompoundCenters[] = {
-		{0.f, 80000.f, GroundZ + 50.f},     // North
-		{0.f, -80000.f, GroundZ + 50.f},    // South
-		{80000.f, 0.f, GroundZ + 50.f},     // East
-		{-80000.f, 0.f, GroundZ + 50.f},    // West
+		{0.f, NorthY, GroundZ + 50.f},     // North
+		{0.f, SouthY, GroundZ + 50.f},    // South
+		{EastX, 0.f, GroundZ + 50.f},     // East
+		{WestX, 0.f, GroundZ + 50.f},    // West
 	};
 
 	for (const FVector& CC : CompoundCenters)
@@ -114,23 +114,23 @@ void AExoLevelBuilder::PlaceLootSpawners()
 	// Loot containers (openable crates) inside buildings
 	TArray<FVector> ContainerPositions = {
 		// Central hub
-		{2000.f, 1000.f, GroundZ + 50.f}, {-2000.f, -1500.f, GroundZ + 50.f},
-		{500.f, -500.f, GroundZ + 2550.f}, // Second floor
+		{400.f, 200.f, GroundZ + 50.f}, {-400.f, -300.f, GroundZ + 50.f},
+		{100.f, -100.f, GroundZ + 2550.f}, // Second floor
 		// North compound
-		{-3000.f, 81000.f, GroundZ + 50.f}, {4000.f, 79000.f, GroundZ + 50.f},
+		{-600.f, 16200.f, GroundZ + 50.f}, {800.f, 15800.f, GroundZ + 50.f},
 		// South compound
-		{2000.f, -81000.f, GroundZ + 50.f}, {-5000.f, -79000.f, GroundZ + 50.f},
+		{400.f, -16200.f, GroundZ + 50.f}, {-1000.f, -15800.f, GroundZ + 50.f},
 		// East compound
-		{81000.f, -1000.f, GroundZ + 50.f}, {79000.f, 2000.f, GroundZ + 50.f},
+		{16200.f, -200.f, GroundZ + 50.f}, {15800.f, 400.f, GroundZ + 50.f},
 		// West compound
-		{-81000.f, -2000.f, GroundZ + 50.f}, {-79000.f, 3000.f, GroundZ + 50.f},
+		{-16200.f, -400.f, GroundZ + 50.f}, {-15800.f, 600.f, GroundZ + 50.f},
 		// Corner outposts
-		{121000.f, 121000.f, GroundZ + 50.f}, {-121000.f, 121000.f, GroundZ + 50.f},
-		{121000.f, -121000.f, GroundZ + 50.f}, {-121000.f, -121000.f, GroundZ + 50.f},
+		{24200.f, 24200.f, GroundZ + 50.f}, {-24200.f, 24200.f, GroundZ + 50.f},
+		{24200.f, -24200.f, GroundZ + 50.f}, {-24200.f, -24200.f, GroundZ + 50.f},
 		// Scattered buildings
-		{40000.f, 40000.f, GroundZ + 50.f}, {-50000.f, 50000.f, GroundZ + 50.f},
-		{60000.f, -40000.f, GroundZ + 50.f}, {-30000.f, -50000.f, GroundZ + 50.f},
-		{20000.f, -70000.f, GroundZ + 50.f},
+		{8000.f, 8000.f, GroundZ + 50.f}, {-10000.f, 10000.f, GroundZ + 50.f},
+		{12000.f, -8000.f, GroundZ + 50.f}, {-6000.f, -10000.f, GroundZ + 50.f},
+		{4000.f, -14000.f, GroundZ + 50.f},
 	};
 
 	for (const FVector& Pos : ContainerPositions)
@@ -151,10 +151,10 @@ void AExoLevelBuilder::PlaceHazardZones()
 
 	struct FHazardDef { FVector Pos; EHazardType Type; float Radius; FString Name; };
 	TArray<FHazardDef> Hazards = {
-		{{-50000.f, 50000.f, 0.f}, EHazardType::Radiation, 8000.f, TEXT("Reactor Leak")},
-		{{60000.f, -60000.f, 0.f}, EHazardType::Electric,  6000.f, TEXT("Power Surge")},
-		{{-100000.f, -40000.f, 0.f}, EHazardType::Toxic,   7000.f, TEXT("Toxic Waste")},
-		{{40000.f, 100000.f, 0.f}, EHazardType::Fire,      5000.f, TEXT("Fuel Fire")},
+		{{-10000.f, 10000.f, 0.f}, EHazardType::Radiation, 8000.f, TEXT("Reactor Leak")},
+		{{12000.f, -12000.f, 0.f}, EHazardType::Electric,  6000.f, TEXT("Power Surge")},
+		{{-20000.f, -8000.f, 0.f}, EHazardType::Toxic,   7000.f, TEXT("Toxic Waste")},
+		{{8000.f, 20000.f, 0.f}, EHazardType::Fire,      5000.f, TEXT("Fuel Fire")},
 	};
 
 	for (const auto& H : Hazards)
@@ -187,18 +187,18 @@ void AExoLevelBuilder::PlaceExplodingBarrels()
 	// Barrels near compounds and structures
 	TArray<FVector> BarrelPositions = {
 		// Central hub
-		{4000.f, 2000.f, GroundZ}, {-3000.f, -1500.f, GroundZ},
+		{800.f, 400.f, GroundZ}, {-600.f, -300.f, GroundZ},
 		// North compound
-		{2000.f, 82000.f, GroundZ}, {-7000.f, 78000.f, GroundZ},
+		{400.f, 16400.f, GroundZ}, {-1400.f, 15600.f, GroundZ},
 		// South compound
-		{5000.f, -82000.f, GroundZ}, {-4000.f, -78000.f, GroundZ},
+		{1000.f, -16400.f, GroundZ}, {-800.f, -15600.f, GroundZ},
 		// East
-		{82000.f, 2000.f, GroundZ}, {78000.f, -4000.f, GroundZ},
+		{16400.f, 400.f, GroundZ}, {15600.f, -800.f, GroundZ},
 		// West
-		{-82000.f, 3000.f, GroundZ}, {-78000.f, -2000.f, GroundZ},
+		{-16400.f, 600.f, GroundZ}, {-15600.f, -400.f, GroundZ},
 		// Scattered
-		{30000.f, 30000.f, GroundZ}, {-40000.f, -60000.f, GroundZ},
-		{70000.f, 50000.f, GroundZ}, {-60000.f, 70000.f, GroundZ},
+		{6000.f, 6000.f, GroundZ}, {-8000.f, -12000.f, GroundZ},
+		{14000.f, 10000.f, GroundZ}, {-12000.f, 14000.f, GroundZ},
 	};
 
 	for (const FVector& Pos : BarrelPositions)
@@ -223,11 +223,11 @@ void AExoLevelBuilder::PlaceCoverElements()
 	struct FCoverWall { FVector A; FVector B; float H; };
 	TArray<FCoverWall> CoverWalls = {
 		// Center to North street
-		{{-1500.f, 15000.f, 0.f}, {-1500.f, 25000.f, 0.f}, 800.f},
-		{{1500.f, 35000.f, 0.f},  {1500.f, 45000.f, 0.f},  800.f},
+		{{-300.f, 3000.f, 0.f}, {-300.f, 5000.f, 0.f}, 800.f},
+		{{300.f, 7000.f, 0.f},  {300.f, 9000.f, 0.f},  800.f},
 		// Center to East street
-		{{20000.f, -1200.f, 0.f}, {30000.f, -1200.f, 0.f}, 800.f},
-		{{40000.f, 1200.f, 0.f},  {50000.f, 1200.f, 0.f},  800.f},
+		{{4000.f, -240.f, 0.f}, {6000.f, -240.f, 0.f}, 800.f},
+		{{8000.f, 240.f, 0.f},  {10000.f, 240.f, 0.f},  800.f},
 	};
 	for (const auto& W : CoverWalls)
 	{

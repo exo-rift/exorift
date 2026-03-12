@@ -15,14 +15,14 @@ void AExoLevelBuilder::BuildWaterFeatures()
 	float RiverWidth = 4000.f;
 	int32 RiverPoints = 8;
 	FVector RiverPath[] = {
-		{-150000.f, 150000.f, GroundZ - 100.f},
-		{-100000.f, 100000.f, GroundZ - 100.f},
-		{-60000.f, 70000.f, GroundZ - 100.f},
-		{-30000.f, 40000.f, GroundZ - 100.f},
-		{20000.f, -20000.f, GroundZ - 100.f},
-		{60000.f, -50000.f, GroundZ - 100.f},
-		{100000.f, -80000.f, GroundZ - 100.f},
-		{150000.f, -120000.f, GroundZ - 100.f},
+		{-30000.f, 30000.f, GroundZ - 100.f},
+		{-20000.f, 20000.f, GroundZ - 100.f},
+		{-12000.f, 14000.f, GroundZ - 100.f},
+		{-6000.f, 8000.f, GroundZ - 100.f},
+		{4000.f, -4000.f, GroundZ - 100.f},
+		{12000.f, -10000.f, GroundZ - 100.f},
+		{20000.f, -16000.f, GroundZ - 100.f},
+		{30000.f, -24000.f, GroundZ - 100.f},
 	};
 
 	for (int32 i = 0; i < RiverPoints - 1; i++)
@@ -94,7 +94,7 @@ void AExoLevelBuilder::BuildWaterFeatures()
 
 	// Industrial cooling pond near East compound
 	UStaticMeshComponent* Pond = SpawnStaticMesh(
-		FVector(85000.f, 10000.f, GroundZ - 50.f),
+		FVector(17000.f, 2000.f, GroundZ - 50.f),
 		FVector(60.f, 40.f, 0.1f), FRotator::ZeroRotator, CylinderMesh,
 		FLinearColor(0.03f, 0.06f, 0.08f));
 	if (Pond && WaterMat)
@@ -112,7 +112,7 @@ void AExoLevelBuilder::BuildWaterFeatures()
 	// Pond ambient glow
 	UPointLightComponent* PondGlow = NewObject<UPointLightComponent>(this);
 	PondGlow->SetupAttachment(RootComponent);
-	PondGlow->SetWorldLocation(FVector(85000.f, 10000.f, GroundZ));
+	PondGlow->SetWorldLocation(FVector(17000.f, 2000.f, GroundZ));
 	PondGlow->SetIntensity(2000.f);
 	PondGlow->SetAttenuationRadius(3000.f);
 	PondGlow->SetLightColor(FLinearColor(0.05f, 0.15f, 0.3f));
@@ -134,34 +134,34 @@ void AExoLevelBuilder::BuildFoliage()
 	};
 	TArray<FCrystalCluster> Clusters = {
 		// Blue — river banks, water edges
-		{{-50000.f, 50000.f, GroundZ}, 6, 3000.f,
+		{{-10000.f, 10000.f, GroundZ}, 6, 3000.f,
 			{0.1f, 0.3f, 0.6f}, {0.1f, 0.3f, 0.8f}},
-		{{-90000.f, 90000.f, GroundZ}, 5, 4000.f,
+		{{-18000.f, 18000.f, GroundZ}, 5, 4000.f,
 			{0.08f, 0.25f, 0.55f}, {0.1f, 0.3f, 0.7f}},
-		{{30000.f, -30000.f, GroundZ}, 3, 2000.f,
+		{{6000.f, -6000.f, GroundZ}, 3, 2000.f,
 			{0.12f, 0.35f, 0.7f}, {0.1f, 0.3f, 0.8f}},
 		// Red/orange — fire hazard zone, near bombardment craters
-		{{40000.f, 100000.f, GroundZ}, 5, 3500.f,
+		{{8000.f, 20000.f, GroundZ}, 5, 3500.f,
 			{0.6f, 0.12f, 0.03f}, {0.8f, 0.15f, 0.05f}},
-		{{75000.f, 30000.f, GroundZ}, 4, 2500.f,
+		{{15000.f, 6000.f, GroundZ}, 4, 2500.f,
 			{0.5f, 0.1f, 0.02f}, {0.7f, 0.12f, 0.04f}},
 		// Green — toxic/radiation zones
-		{{-110000.f, -70000.f, GroundZ}, 5, 3000.f,
+		{{-22000.f, -14000.f, GroundZ}, 5, 3000.f,
 			{0.08f, 0.4f, 0.06f}, {0.1f, 0.5f, 0.08f}},
-		{{-60000.f, -45000.f, GroundZ}, 4, 2800.f,
+		{{-12000.f, -9000.f, GroundZ}, 4, 2800.f,
 			{0.06f, 0.35f, 0.05f}, {0.08f, 0.45f, 0.06f}},
 		// Amber — industrial north compound outskirts
-		{{10000.f, 60000.f, GroundZ}, 4, 3000.f,
+		{{2000.f, 12000.f, GroundZ}, 4, 3000.f,
 			{0.5f, 0.3f, 0.05f}, {0.7f, 0.4f, 0.08f}},
-		{{-20000.f, 70000.f, GroundZ}, 3, 2000.f,
+		{{-4000.f, 14000.f, GroundZ}, 3, 2000.f,
 			{0.45f, 0.25f, 0.04f}, {0.6f, 0.35f, 0.06f}},
 		// Purple — exotic ordnance impact sites
-		{{60000.f, -60000.f, GroundZ}, 4, 2500.f,
+		{{12000.f, -12000.f, GroundZ}, 4, 2500.f,
 			{0.25f, 0.06f, 0.4f}, {0.35f, 0.08f, 0.55f}},
-		{{-95000.f, -30000.f, GroundZ}, 3, 2000.f,
+		{{-19000.f, -6000.f, GroundZ}, 3, 2000.f,
 			{0.2f, 0.05f, 0.35f}, {0.3f, 0.07f, 0.5f}},
 		// White/silver — recent kinetic impact sites
-		{{95000.f, 10000.f, GroundZ}, 3, 1800.f,
+		{{19000.f, 2000.f, GroundZ}, 3, 1800.f,
 			{0.4f, 0.38f, 0.35f}, {0.5f, 0.48f, 0.45f}},
 	};
 
@@ -230,16 +230,16 @@ void AExoLevelBuilder::BuildFoliage()
 	// Rocky outcrops — natural cover in open fields between compounds
 	struct FOutcrop { FVector Pos; float Scale; float Yaw; };
 	TArray<FOutcrop> Outcrops = {
-		{{20000.f, 20000.f, GroundZ}, 1.2f, 30.f},
-		{{-25000.f, -20000.f, GroundZ}, 1.0f, 120.f},
-		{{45000.f, -15000.f, GroundZ}, 1.5f, -45.f},
-		{{-15000.f, 45000.f, GroundZ}, 0.8f, 60.f},
-		{{60000.f, 30000.f, GroundZ}, 1.3f, 15.f},
-		{{-30000.f, 60000.f, GroundZ}, 1.1f, -30.f},
-		{{70000.f, -40000.f, GroundZ}, 0.9f, 75.f},
-		{{-45000.f, -70000.f, GroundZ}, 1.4f, 150.f},
-		{{-80000.f, 40000.f, GroundZ}, 1.0f, -80.f},
-		{{35000.f, 70000.f, GroundZ}, 1.2f, 45.f},
+		{{4000.f, 4000.f, GroundZ}, 1.2f, 30.f},
+		{{-5000.f, -4000.f, GroundZ}, 1.0f, 120.f},
+		{{9000.f, -3000.f, GroundZ}, 1.5f, -45.f},
+		{{-3000.f, 9000.f, GroundZ}, 0.8f, 60.f},
+		{{12000.f, 6000.f, GroundZ}, 1.3f, 15.f},
+		{{-6000.f, 12000.f, GroundZ}, 1.1f, -30.f},
+		{{14000.f, -8000.f, GroundZ}, 0.9f, 75.f},
+		{{-9000.f, -14000.f, GroundZ}, 1.4f, 150.f},
+		{{-16000.f, 8000.f, GroundZ}, 1.0f, -80.f},
+		{{7000.f, 14000.f, GroundZ}, 1.2f, 45.f},
 	};
 	FLinearColor RockDark(0.035f, 0.04f, 0.045f);
 	FLinearColor RockMed(0.05f, 0.055f, 0.06f);
@@ -293,12 +293,12 @@ void AExoLevelBuilder::BuildFoliage()
 	UMaterialInterface* FungalMat = FExoMaterialFactory::GetLitEmissive();
 	struct FFungal { FVector Pos; FLinearColor Color; };
 	TArray<FFungal> Fungi = {
-		{{-35000.f, 15000.f, GroundZ}, {0.06f, 0.12f, 0.04f}},
-		{{25000.f, -45000.f, GroundZ}, {0.04f, 0.1f, 0.08f}},
-		{{-70000.f, -20000.f, GroundZ}, {0.08f, 0.06f, 0.12f}},
-		{{55000.f, 55000.f, GroundZ}, {0.05f, 0.1f, 0.05f}},
-		{{-15000.f, -55000.f, GroundZ}, {0.1f, 0.06f, 0.04f}},
-		{{80000.f, -60000.f, GroundZ}, {0.04f, 0.08f, 0.1f}},
+		{{-7000.f, 3000.f, GroundZ}, {0.06f, 0.12f, 0.04f}},
+		{{5000.f, -9000.f, GroundZ}, {0.04f, 0.1f, 0.08f}},
+		{{-14000.f, -4000.f, GroundZ}, {0.08f, 0.06f, 0.12f}},
+		{{11000.f, 11000.f, GroundZ}, {0.05f, 0.1f, 0.05f}},
+		{{-3000.f, -11000.f, GroundZ}, {0.1f, 0.06f, 0.04f}},
+		{{16000.f, -12000.f, GroundZ}, {0.04f, 0.08f, 0.1f}},
 	};
 	for (const auto& F : Fungi)
 	{

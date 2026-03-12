@@ -142,10 +142,10 @@ void FExoMinimap::DrawPOILabels(AHUD* HUD, UFont* Font, const FMinimapConfig& Co
 	struct FPOI { FString Label; FVector WorldPos; };
 	static const FPOI POIs[] = {
 		{TEXT("CMD"), FVector(0.f, 0.f, 0.f)},
-		{TEXT("IND"), FVector(0.f, 80000.f, 0.f)},
-		{TEXT("LAB"), FVector(0.f, -80000.f, 0.f)},
-		{TEXT("PWR"), FVector(80000.f, 0.f, 0.f)},
-		{TEXT("BAR"), FVector(-80000.f, 0.f, 0.f)},
+		{TEXT("IND"), FVector(0.f, 16000.f, 0.f)},
+		{TEXT("LAB"), FVector(0.f, -16000.f, 0.f)},
+		{TEXT("PWR"), FVector(16000.f, 0.f, 0.f)},
+		{TEXT("BAR"), FVector(-16000.f, 0.f, 0.f)},
 	};
 
 	for (const auto& P : POIs)

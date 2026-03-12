@@ -170,7 +170,7 @@ void AExoGuardTower::BuildTower()
 	Spot->SetupAttachment(RootComponent);
 	Spot->SetRelativeLocation(FVector(LegInset, 0.f, DeckHeight + 260.f));
 	Spot->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-	Spot->SetIntensity(30000.f);
+	Spot->SetIntensity(5000.f);
 	Spot->SetAttenuationRadius(3000.f);
 	Spot->SetOuterConeAngle(30.f);
 	Spot->SetInnerConeAngle(18.f);

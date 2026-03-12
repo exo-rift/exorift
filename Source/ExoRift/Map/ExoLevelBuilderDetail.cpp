@@ -11,10 +11,10 @@ void AExoLevelBuilder::BuildGroundDetail()
 {
 	// Sci-fi floor panels around each compound
 	SpawnFloorPanels(FVector(0.f, 0.f, 2.f), 6000.f, 24);          // Central hub
-	SpawnFloorPanels(FVector(0.f, 80000.f, 2.f), 5000.f, 18);      // North
-	SpawnFloorPanels(FVector(0.f, -80000.f, 2.f), 4500.f, 16);     // South
-	SpawnFloorPanels(FVector(80000.f, 0.f, 2.f), 5000.f, 18);      // East
-	SpawnFloorPanels(FVector(-80000.f, 0.f, 2.f), 4000.f, 14);     // West
+	SpawnFloorPanels(FVector(0.f, NorthY, 2.f), 5000.f, 18);      // North
+	SpawnFloorPanels(FVector(0.f, SouthY, 2.f), 4500.f, 16);     // South
+	SpawnFloorPanels(FVector(EastX, 0.f, 2.f), 5000.f, 18);      // East
+	SpawnFloorPanels(FVector(WestX, 0.f, 2.f), 4000.f, 14);     // West
 
 	// Energy pylons at key intersections and compound entries
 	FLinearColor CyanGlow(0.1f, 0.6f, 1.f);
@@ -28,29 +28,29 @@ void AExoLevelBuilder::BuildGroundDetail()
 	SpawnEnergyPylon(FVector(-5000.f, -4000.f, 0.f), 800.f, CyanGlow);
 
 	// North compound gate pylons
-	SpawnEnergyPylon(FVector(-4000.f, 73000.f, 0.f), 1000.f, TealGlow);
-	SpawnEnergyPylon(FVector(4000.f, 73000.f, 0.f), 1000.f, TealGlow);
+	SpawnEnergyPylon(FVector(-4000.f, NorthY - 3000.f, 0.f), 1000.f, TealGlow);
+	SpawnEnergyPylon(FVector(4000.f, NorthY - 3000.f, 0.f), 1000.f, TealGlow);
 
 	// East power station pylons — amber warning glow
-	SpawnEnergyPylon(FVector(73000.f, -3000.f, 0.f), 1200.f, AmberGlow);
-	SpawnEnergyPylon(FVector(73000.f, 3000.f, 0.f), 1200.f, AmberGlow);
+	SpawnEnergyPylon(FVector(EastX - 3000.f, -3000.f, 0.f), 1200.f, AmberGlow);
+	SpawnEnergyPylon(FVector(EastX - 3000.f, 3000.f, 0.f), 1200.f, AmberGlow);
 
 	// South research lab entry
-	SpawnEnergyPylon(FVector(3000.f, -73000.f, 0.f), 900.f, CyanGlow);
-	SpawnEnergyPylon(FVector(-3000.f, -73000.f, 0.f), 900.f, CyanGlow);
+	SpawnEnergyPylon(FVector(3000.f, SouthY + 3000.f, 0.f), 900.f, CyanGlow);
+	SpawnEnergyPylon(FVector(-3000.f, SouthY + 3000.f, 0.f), 900.f, CyanGlow);
 
 	// West barracks
-	SpawnEnergyPylon(FVector(-73000.f, 5000.f, 0.f), 700.f, TealGlow);
-	SpawnEnergyPylon(FVector(-73000.f, -5000.f, 0.f), 700.f, TealGlow);
+	SpawnEnergyPylon(FVector(WestX + 3000.f, 5000.f, 0.f), 700.f, TealGlow);
+	SpawnEnergyPylon(FVector(WestX + 3000.f, -5000.f, 0.f), 700.f, TealGlow);
 
 	// Craters scattered across the battlefield
-	SpawnCrater(FVector(25000.f, 15000.f, 0.f), 2000.f);
-	SpawnCrater(FVector(-35000.f, -25000.f, 0.f), 3000.f);
-	SpawnCrater(FVector(55000.f, -30000.f, 0.f), 1500.f);
-	SpawnCrater(FVector(-15000.f, 60000.f, 0.f), 2500.f);
-	SpawnCrater(FVector(70000.f, 70000.f, 0.f), 1800.f);
-	SpawnCrater(FVector(-90000.f, -60000.f, 0.f), 3500.f);
-	SpawnCrater(FVector(40000.f, -80000.f, 0.f), 2200.f);
+	SpawnCrater(FVector(5000.f, 3000.f, 0.f), 2000.f);
+	SpawnCrater(FVector(-7000.f, -5000.f, 0.f), 3000.f);
+	SpawnCrater(FVector(11000.f, -6000.f, 0.f), 1500.f);
+	SpawnCrater(FVector(-3000.f, 12000.f, 0.f), 2500.f);
+	SpawnCrater(FVector(14000.f, 14000.f, 0.f), 1800.f);
+	SpawnCrater(FVector(-18000.f, -12000.f, 0.f), 3500.f);
+	SpawnCrater(FVector(8000.f, SouthY, 0.f), 2200.f);
 
 	// === AMBIENT GROUND LIGHTS ===
 	// Very subtle ground-level lights at compound approaches only (not open field)
@@ -60,13 +60,13 @@ void AExoLevelBuilder::BuildGroundDetail()
 		{{15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 800.f, 2000.f},
 		{{-15000.f, 0.f, 20.f}, {0.1f, 0.3f, 0.8f}, 800.f, 2000.f},
 		// North industrial — warm amber
-		{{0.f, 70000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 600.f, 2000.f},
+		{{0.f, 14000.f, 20.f}, {0.8f, 0.5f, 0.1f}, 600.f, 2000.f},
 		// South research — teal
-		{{0.f, -70000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 600.f, 2000.f},
+		{{0.f, -14000.f, 20.f}, {0.1f, 0.6f, 0.5f}, 600.f, 2000.f},
 		// East power — red warning
-		{{70000.f, 0.f, 20.f}, {0.8f, 0.15f, 0.05f}, 700.f, 2000.f},
+		{{14000.f, 0.f, 20.f}, {0.8f, 0.15f, 0.05f}, 700.f, 2000.f},
 		// West barracks — green
-		{{-70000.f, 0.f, 20.f}, {0.1f, 0.5f, 0.2f}, 600.f, 2000.f},
+		{{-14000.f, 0.f, 20.f}, {0.1f, 0.5f, 0.2f}, 600.f, 2000.f},
 	};
 	for (const auto& G : Glows)
 	{
@@ -83,28 +83,28 @@ void AExoLevelBuilder::BuildGroundDetail()
 	// Ground mist pools — low-lying glowing haze near water and valleys
 	SpawnGroundMist(FVector(30000.f, -20000.f, 5.f), 4000.f, FLinearColor(0.1f, 0.15f, 0.25f));
 	SpawnGroundMist(FVector(-20000.f, 30000.f, 5.f), 3500.f, FLinearColor(0.1f, 0.15f, 0.25f));
-	SpawnGroundMist(FVector(80000.f, 5000.f, 5.f), 5000.f, FLinearColor(0.15f, 0.1f, 0.08f));
-	SpawnGroundMist(FVector(-5000.f, -80000.f, 5.f), 3000.f, FLinearColor(0.08f, 0.15f, 0.12f));
-	SpawnGroundMist(FVector(-80000.f, 8000.f, 5.f), 3000.f, FLinearColor(0.08f, 0.12f, 0.08f));
+	SpawnGroundMist(FVector(EastX, 5000.f, 5.f), 5000.f, FLinearColor(0.15f, 0.1f, 0.08f));
+	SpawnGroundMist(FVector(-5000.f, SouthY, 5.f), 3000.f, FLinearColor(0.08f, 0.15f, 0.12f));
+	SpawnGroundMist(FVector(WestX, 8000.f, 5.f), 3000.f, FLinearColor(0.08f, 0.12f, 0.08f));
 	// River channel mist
-	SpawnGroundMist(FVector(40000.f, -40000.f, 10.f), 6000.f, FLinearColor(0.08f, 0.1f, 0.2f));
-	SpawnGroundMist(FVector(-40000.f, 40000.f, 10.f), 5000.f, FLinearColor(0.08f, 0.1f, 0.2f));
+	SpawnGroundMist(FVector(8000.f, -8000.f, 10.f), 6000.f, FLinearColor(0.08f, 0.1f, 0.2f));
+	SpawnGroundMist(FVector(-8000.f, 8000.f, 10.f), 5000.f, FLinearColor(0.08f, 0.1f, 0.2f));
 
 	// Ground clutter — small debris near compounds
 	SpawnGroundClutter(FVector(0.f, 0.f, 0.f), 8000.f, 30);          // Hub
-	SpawnGroundClutter(FVector(0.f, 80000.f, 0.f), 6000.f, 25);      // North
-	SpawnGroundClutter(FVector(0.f, -80000.f, 0.f), 6000.f, 20);     // South
-	SpawnGroundClutter(FVector(80000.f, 0.f, 0.f), 6000.f, 22);      // East
-	SpawnGroundClutter(FVector(-80000.f, 0.f, 0.f), 5000.f, 18);     // West
+	SpawnGroundClutter(FVector(0.f, NorthY, 0.f), 6000.f, 25);      // North
+	SpawnGroundClutter(FVector(0.f, SouthY, 0.f), 6000.f, 20);     // South
+	SpawnGroundClutter(FVector(EastX, 0.f, 0.f), 6000.f, 22);      // East
+	SpawnGroundClutter(FVector(WestX, 0.f, 0.f), 5000.f, 18);     // West
 
 	// Hazard floor markings near dangerous areas
 	FLinearColor YellowStripe(0.6f, 0.5f, 0.05f);
 	struct FHazardMark { FVector Pos; float Yaw; };
 	TArray<FHazardMark> Marks = {
-		{{-50000.f, 50000.f, 3.f}, 0.f},    // Radiation zone
-		{{60000.f, -60000.f, 3.f}, 45.f},    // Electric zone
-		{{-100000.f, -40000.f, 3.f}, -15.f}, // Toxic zone
-		{{40000.f, 100000.f, 3.f}, 30.f},    // Fire zone
+		{{-10000.f, 10000.f, 3.f}, 0.f},    // Radiation zone
+		{{12000.f, -12000.f, 3.f}, 45.f},    // Electric zone
+		{{-20000.f, -8000.f, 3.f}, -15.f}, // Toxic zone
+		{{8000.f, 20000.f, 3.f}, 30.f},    // Fire zone
 	};
 	// Hazard-specific tint colors for area lighting
 	FLinearColor HazardTints[] = {

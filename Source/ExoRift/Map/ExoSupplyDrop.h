@@ -105,7 +105,7 @@ protected:
 	float BeaconRange = 30000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
-	float BeaconIntensity = 50000.f;
+	float BeaconIntensity = 4000.f;
 
 private:
 	ESupplyDropState CurrentState = ESupplyDropState::Falling;

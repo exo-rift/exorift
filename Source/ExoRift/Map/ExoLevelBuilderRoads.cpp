@@ -23,25 +23,25 @@ void AExoLevelBuilder::BuildRoads()
 
 	// === COMPOUND ACCESS ROADS ===
 	// NE diagonal to NE outpost
-	SpawnRoadSegment(FVector(10000.f, 10000.f, GroundZ),
-		FVector(100000.f, 100000.f, GroundZ), 2000.f);
+	SpawnRoadSegment(FVector(2000.f, 2000.f, GroundZ),
+		FVector(20000.f, 20000.f, GroundZ), 2000.f);
 
 	// SW diagonal to SW outpost
-	SpawnRoadSegment(FVector(-10000.f, -10000.f, GroundZ),
-		FVector(-100000.f, -100000.f, GroundZ), 2000.f);
+	SpawnRoadSegment(FVector(-2000.f, -2000.f, GroundZ),
+		FVector(-20000.f, -20000.f, GroundZ), 2000.f);
 
 	// NW diagonal
-	SpawnRoadSegment(FVector(-10000.f, 10000.f, GroundZ),
-		FVector(-100000.f, 100000.f, GroundZ), 2000.f);
+	SpawnRoadSegment(FVector(-2000.f, 2000.f, GroundZ),
+		FVector(-20000.f, 20000.f, GroundZ), 2000.f);
 
 	// SE diagonal
-	SpawnRoadSegment(FVector(10000.f, -10000.f, GroundZ),
-		FVector(100000.f, -100000.f, GroundZ), 2000.f);
+	SpawnRoadSegment(FVector(2000.f, -2000.f, GroundZ),
+		FVector(20000.f, -20000.f, GroundZ), 2000.f);
 
 	// === BRIDGES over terrain patches ===
-	SpawnBridge(FVector(-80000.f, -55000.f, GroundZ), FVector(-80000.f, -65000.f, GroundZ),
+	SpawnBridge(FVector(-16000.f, -11000.f, GroundZ), FVector(-16000.f, -13000.f, GroundZ),
 		2500.f, 400.f);
-	SpawnBridge(FVector(55000.f, 80000.f, GroundZ), FVector(65000.f, 80000.f, GroundZ),
+	SpawnBridge(FVector(11000.f, 16000.f, GroundZ), FVector(13000.f, 16000.f, GroundZ),
 		2500.f, 350.f);
 
 	// === CENTER ROUNDABOUT ===

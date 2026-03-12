@@ -62,11 +62,11 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Place campsites near compounds
-	SpawnCampsite(FVector(4000.f, 75000.f, GroundZ), 30.f);     // North compound outskirts
-	SpawnCampsite(FVector(-74000.f, 5000.f, GroundZ), -45.f);   // West compound
-	SpawnCampsite(FVector(72000.f, -6000.f, GroundZ), 110.f);   // East compound
-	SpawnCampsite(FVector(-35000.f, -72000.f, GroundZ), 200.f); // South approach
-	SpawnCampsite(FVector(12000.f, 12000.f, GroundZ), 0.f);     // Near hub
+	SpawnCampsite(FVector(800.f, 15000.f, GroundZ), 30.f);     // North compound outskirts
+	SpawnCampsite(FVector(-14800.f, 1000.f, GroundZ), -45.f);   // West compound
+	SpawnCampsite(FVector(14400.f, -1200.f, GroundZ), 110.f);   // East compound
+	SpawnCampsite(FVector(-7000.f, -14400.f, GroundZ), 200.f); // South approach
+	SpawnCampsite(FVector(2400.f, 2400.f, GroundZ), 0.f);     // Near hub
 
 	// ================================================================
 	// 2. BATTLE DAMAGE MARKINGS — bullet holes, cracked floor panels
@@ -107,16 +107,16 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Bullet holes on building walls near compounds
-	SpawnBulletHoleCluster(FVector(2000.f, 78000.f, 250.f), 0.f, 6);
-	SpawnBulletHoleCluster(FVector(78000.f, 2000.f, 300.f), 90.f, 5);
-	SpawnBulletHoleCluster(FVector(-78000.f, -3000.f, 200.f), 180.f, 7);
-	SpawnBulletHoleCluster(FVector(-2000.f, -78000.f, 280.f), 270.f, 4);
+	SpawnBulletHoleCluster(FVector(400.f, 15600.f, 250.f), 0.f, 6);
+	SpawnBulletHoleCluster(FVector(15600.f, 400.f, 300.f), 90.f, 5);
+	SpawnBulletHoleCluster(FVector(-15600.f, -600.f, 200.f), 180.f, 7);
+	SpawnBulletHoleCluster(FVector(-400.f, -15600.f, 280.f), 270.f, 4);
 
 	// Cracked floor panels
-	SpawnCrackedFloor(FVector(5000.f, 82000.f, GroundZ), 10.f);
-	SpawnCrackedFloor(FVector(83000.f, -3000.f, GroundZ), 45.f);
-	SpawnCrackedFloor(FVector(-82000.f, 4000.f, GroundZ), -15.f);
-	SpawnCrackedFloor(FVector(-1000.f, 2000.f, GroundZ), 0.f);
+	SpawnCrackedFloor(FVector(1000.f, 16400.f, GroundZ), 10.f);
+	SpawnCrackedFloor(FVector(16600.f, -600.f, GroundZ), 45.f);
+	SpawnCrackedFloor(FVector(-16400.f, 800.f, GroundZ), -15.f);
+	SpawnCrackedFloor(FVector(-200.f, 400.f, GroundZ), 0.f);
 
 	// ================================================================
 	// 3. ABANDONED VEHICLES — wrecked hover vehicles
@@ -148,10 +148,10 @@ void AExoLevelBuilder::BuildStorytelling()
 			FLinearColor(0.02f, 0.025f, 0.035f));
 	};
 
-	SpawnWreckedHover(FVector(-6000.f, 70000.f, GroundZ), 55.f, 8.f);
-	SpawnWreckedHover(FVector(75000.f, 8000.f, GroundZ), -30.f, -6.f);
-	SpawnWreckedHover(FVector(-42000.f, -75000.f, GroundZ), 160.f, 10.f);
-	SpawnWreckedHover(FVector(8000.f, -5000.f, GroundZ), 90.f, -4.f);
+	SpawnWreckedHover(FVector(-1200.f, 14000.f, GroundZ), 55.f, 8.f);
+	SpawnWreckedHover(FVector(15000.f, 1600.f, GroundZ), -30.f, -6.f);
+	SpawnWreckedHover(FVector(-8400.f, -15000.f, GroundZ), 160.f, 10.f);
+	SpawnWreckedHover(FVector(1600.f, -1000.f, GroundZ), 90.f, -4.f);
 
 	// ================================================================
 	// 4. SCIENCE EQUIPMENT — overturned lab tables, broken monitors,
@@ -209,10 +209,10 @@ void AExoLevelBuilder::BuildStorytelling()
 			FLinearColor(0.06f, 0.06f, 0.07f));
 	};
 
-	SpawnLabSite(FVector(3000.f, 83000.f, GroundZ), 0.f);     // North compound interior
-	SpawnLabSite(FVector(84000.f, -2000.f, GroundZ), 90.f);   // East compound
-	SpawnLabSite(FVector(-83000.f, 3000.f, GroundZ), -90.f);  // West compound
-	SpawnLabSite(FVector(2000.f, -3000.f, GroundZ), 45.f);    // Central hub
+	SpawnLabSite(FVector(600.f, 16600.f, GroundZ), 0.f);     // North compound interior
+	SpawnLabSite(FVector(16800.f, -400.f, GroundZ), 90.f);   // East compound
+	SpawnLabSite(FVector(-16600.f, 600.f, GroundZ), -90.f);  // West compound
+	SpawnLabSite(FVector(400.f, -600.f, GroundZ), 45.f);    // Central hub
 
 	// ================================================================
 	// 5. WARNING BARRIERS — yellow/black striped barriers near hazards,
@@ -276,15 +276,15 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Standing barriers near hazard zones
-	SpawnWarningBarrier(FVector(-6000.f, 82000.f, GroundZ), 0.f, false);
-	SpawnWarningBarrier(FVector(82000.f, 6000.f, GroundZ), 90.f, false);
-	SpawnWarningBarrier(FVector(-82000.f, -6000.f, GroundZ), 180.f, false);
+	SpawnWarningBarrier(FVector(-1200.f, 16400.f, GroundZ), 0.f, false);
+	SpawnWarningBarrier(FVector(16400.f, 1200.f, GroundZ), 90.f, false);
+	SpawnWarningBarrier(FVector(-16400.f, -1200.f, GroundZ), 180.f, false);
 
 	// Knocked-over barriers — signs of recent conflict
-	SpawnWarningBarrier(FVector(6000.f, 78000.f, GroundZ), 20.f, true);
-	SpawnWarningBarrier(FVector(78000.f, -6000.f, GroundZ), 75.f, true);
-	SpawnWarningBarrier(FVector(-38000.f, -78000.f, GroundZ), 150.f, true);
-	SpawnWarningBarrier(FVector(3000.f, 5000.f, GroundZ), -10.f, true);
+	SpawnWarningBarrier(FVector(1200.f, 15600.f, GroundZ), 20.f, true);
+	SpawnWarningBarrier(FVector(15600.f, -1200.f, GroundZ), 75.f, true);
+	SpawnWarningBarrier(FVector(-7600.f, -15600.f, GroundZ), 150.f, true);
+	SpawnWarningBarrier(FVector(600.f, 1000.f, GroundZ), -10.f, true);
 
 	UE_LOG(LogExoRift, Log,
 		TEXT("LevelBuilder: Environmental storytelling props placed"));

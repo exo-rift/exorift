@@ -287,7 +287,7 @@ void AExoDropPod::UpdateLandedSequence(float DeltaTime)
 	if (ThrusterLight)
 	{
 		float Fade = FMath::Max(0.f, 1.f - LandedTimer * 2.f);
-		ThrusterLight->SetIntensity(180000.f * Fade);
+		ThrusterLight->SetIntensity(8000.f * Fade);
 	}
 	if (ThrusterFlame)
 	{

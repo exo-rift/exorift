@@ -18,7 +18,7 @@ void AExoLevelBuilder::BuildCatwalks()
 	SpawnObservationDeck(FVector(5000.f, 3000.f, 2500.f), 1500.f, 0.f);
 
 	// === NORTH COMPOUND — industrial catwalks between warehouse roofs ===
-	float NY = 80000.f;
+	float NY = NorthY;
 	// Warehouse-to-warehouse catwalk at gantry height
 	SpawnCatwalk(FVector(-5000.f, NY, 3000.f), FVector(5000.f, NY, 2000.f), 250.f);
 	// Gantry walkway extensions
@@ -28,7 +28,7 @@ void AExoLevelBuilder::BuildCatwalks()
 	SpawnCatwalk(FVector(0.f, NY - 4000.f, 1580.f), FVector(0.f, NY + 5000.f, 5000.f), 180.f);
 
 	// === SOUTH COMPOUND — research lab connectors ===
-	float SY = -80000.f;
+	float SY = SouthY;
 	// Lab-to-lab elevated bridge
 	SpawnCatwalk(FVector(3000.f, SY + 3500.f, 2200.f),
 		FVector(-6000.f, SY + 2000.f, 1800.f), 300.f);
@@ -38,7 +38,7 @@ void AExoLevelBuilder::BuildCatwalks()
 	SpawnObservationDeck(FVector(3000.f, SY, 2800.f), 2000.f, 0.f);
 
 	// === EAST COMPOUND — power station catwalks ===
-	float EX = 80000.f;
+	float EX = EastX;
 	// Tower-to-tower catwalk
 	SpawnCatwalk(FVector(EX + 5000.f, 3000.f, 6000.f),
 		FVector(EX + 5000.f, -5000.f, 6000.f), 200.f);
@@ -50,7 +50,7 @@ void AExoLevelBuilder::BuildCatwalks()
 		FVector(EX + 8000.f, 6000.f, 4000.f), 150.f);
 
 	// === WEST COMPOUND — barracks connectors ===
-	float WX = -80000.f;
+	float WX = WestX;
 	// Connect barracks rooftops via walkways
 	for (int32 i = 0; i < 3; i++)
 	{
@@ -63,7 +63,6 @@ void AExoLevelBuilder::BuildCatwalks()
 		FVector(WX, -7500.f, 1800.f), 180.f);
 
 	// === CORNER OUTPOST elevated connectors ===
-	float CornerDist = 120000.f;
 	FVector Corners[] = {
 		{CornerDist, CornerDist, 0.f}, {-CornerDist, CornerDist, 0.f},
 		{CornerDist, -CornerDist, 0.f}, {-CornerDist, -CornerDist, 0.f}
@@ -80,11 +79,11 @@ void AExoLevelBuilder::BuildCatwalks()
 
 	// === ZIPLINE ANCHORS — tall poles at key connection points ===
 	FVector ZipHub(0.f, 0.f, 6000.f);
-	FVector ZipNorth(0.f, 85000.f, 5000.f);
-	FVector ZipEastN(85000.f, 3000.f, 6000.f);
-	FVector ZipEastS(85000.f, -5000.f, 6000.f);
-	FVector ZipWestS(-83000.f, -12000.f, 4000.f);
-	FVector ZipWestN(-83000.f, 12000.f, 4000.f);
+	FVector ZipNorth(0.f, NorthY + 5000.f, 5000.f);
+	FVector ZipEastN(EastX + 5000.f, 3000.f, 6000.f);
+	FVector ZipEastS(EastX + 5000.f, -5000.f, 6000.f);
+	FVector ZipWestS(WestX - 3000.f, -12000.f, 4000.f);
+	FVector ZipWestN(WestX - 3000.f, 12000.f, 4000.f);
 
 	SpawnZiplineAnchor(ZipHub);
 	SpawnZiplineAnchor(ZipNorth);

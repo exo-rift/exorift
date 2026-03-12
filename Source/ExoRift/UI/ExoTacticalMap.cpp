@@ -94,17 +94,17 @@ void FExoTacticalMap::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 	struct FMapLoc { FString Name; FVector Pos; };
 	TArray<FMapLoc> Locs = {
 		{TEXT("COMMAND CENTER"), FVector(0.f, 0.f, 0.f)},
-		{TEXT("INDUSTRIAL"), FVector(0.f, 80000.f, 0.f)},
-		{TEXT("RESEARCH LABS"), FVector(0.f, -80000.f, 0.f)},
-		{TEXT("POWER STATION"), FVector(80000.f, 0.f, 0.f)},
-		{TEXT("BARRACKS"), FVector(-80000.f, 0.f, 0.f)},
-		{TEXT("OUTPOST A"), FVector(120000.f, 120000.f, 0.f)},
-		{TEXT("OUTPOST B"), FVector(-120000.f, 120000.f, 0.f)},
-		{TEXT("OUTPOST C"), FVector(120000.f, -120000.f, 0.f)},
-		{TEXT("OUTPOST D"), FVector(-120000.f, -120000.f, 0.f)},
-		{TEXT("CROSSROADS"), FVector(40000.f, 40000.f, 0.f)},
-		{TEXT("THE RUINS"), FVector(-50000.f, 50000.f, 0.f)},
-		{TEXT("SCRAPYARD"), FVector(60000.f, -40000.f, 0.f)},
+		{TEXT("INDUSTRIAL"), FVector(0.f, 16000.f, 0.f)},
+		{TEXT("RESEARCH LABS"), FVector(0.f, -16000.f, 0.f)},
+		{TEXT("POWER STATION"), FVector(16000.f, 0.f, 0.f)},
+		{TEXT("BARRACKS"), FVector(-16000.f, 0.f, 0.f)},
+		{TEXT("OUTPOST A"), FVector(24000.f, 24000.f, 0.f)},
+		{TEXT("OUTPOST B"), FVector(-24000.f, 24000.f, 0.f)},
+		{TEXT("OUTPOST C"), FVector(24000.f, -24000.f, 0.f)},
+		{TEXT("OUTPOST D"), FVector(-24000.f, -24000.f, 0.f)},
+		{TEXT("CROSSROADS"), FVector(8000.f, 8000.f, 0.f)},
+		{TEXT("THE RUINS"), FVector(-10000.f, 10000.f, 0.f)},
+		{TEXT("SCRAPYARD"), FVector(12000.f, -8000.f, 0.f)},
 	};
 
 	for (const FMapLoc& L : Locs)

@@ -161,7 +161,7 @@ void AExoSupplyDrop::BuildCrateMesh()
 	BeaconFlashLight = NewObject<UPointLightComponent>(this);
 	BeaconFlashLight->SetupAttachment(RootComponent);
 	BeaconFlashLight->SetRelativeLocation(FVector(0.f, 0.f, 1600.f));
-	BeaconFlashLight->SetIntensity(120000.f);
+	BeaconFlashLight->SetIntensity(4000.f);
 	BeaconFlashLight->SetAttenuationRadius(15000.f);
 	BeaconFlashLight->SetLightColor(FLinearColor(1.f, 0.1f, 0.1f));
 	BeaconFlashLight->CastShadows = false;

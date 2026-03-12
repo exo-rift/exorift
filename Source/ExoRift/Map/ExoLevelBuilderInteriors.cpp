@@ -15,21 +15,21 @@ void AExoLevelBuilder::BuildInteriors()
 	SpawnConsole(FVector(-2000.f, 500.f, 1210.f), 180.f);
 
 	// North compound — industrial workstations
-	SpawnConsole(FVector(-2000.f, 81000.f, 10.f), -15.f);
-	SpawnConsole(FVector(3000.f, 79000.f, 10.f), 15.f);
+	SpawnConsole(FVector(-2000.f, NorthY + 1000.f, 10.f), -15.f);
+	SpawnConsole(FVector(3000.f, NorthY - 1000.f, 10.f), 15.f);
 
 	// South research — lab benches
-	SpawnConsole(FVector(3500.f, -80500.f, 10.f), 0.f);
-	SpawnConsole(FVector(3500.f, -79500.f, 10.f), 0.f);
-	SpawnConsole(FVector(-5500.f, -78500.f, 10.f), 90.f);
+	SpawnConsole(FVector(3500.f, SouthY - 500.f, 10.f), 0.f);
+	SpawnConsole(FVector(3500.f, SouthY + 500.f, 10.f), 0.f);
+	SpawnConsole(FVector(-5500.f, SouthY + 1500.f, 10.f), 90.f);
 
 	// East power station
-	SpawnConsole(FVector(81000.f, 0.f, 10.f), -45.f);
-	SpawnConsole(FVector(79000.f, 2500.f, 10.f), 0.f);
+	SpawnConsole(FVector(EastX + 1000.f, 0.f, 10.f), -45.f);
+	SpawnConsole(FVector(EastX - 1000.f, 2500.f, 10.f), 0.f);
 
 	// West barracks
-	SpawnConsole(FVector(-81500.f, -3000.f, 10.f), 90.f);
-	SpawnConsole(FVector(-78500.f, 3000.f, 10.f), -90.f);
+	SpawnConsole(FVector(WestX - 1500.f, -3000.f, 10.f), 90.f);
+	SpawnConsole(FVector(WestX + 1500.f, 3000.f, 10.f), -90.f);
 
 	FLinearColor DarkMetal(0.06f, 0.06f, 0.08f);
 	FLinearColor CrateColor(0.08f, 0.07f, 0.06f);
@@ -60,8 +60,8 @@ void AExoLevelBuilder::BuildInteriors()
 	SpawnServerRack(FVector(-3000.f, -900.f, 10.f), 0.f);
 	SpawnServerRack(FVector(-3000.f, -300.f, 10.f), 0.f);
 	// East power station
-	SpawnServerRack(FVector(79500.f, -2000.f, 10.f), 90.f);
-	SpawnServerRack(FVector(79500.f, -1200.f, 10.f), 90.f);
+	SpawnServerRack(FVector(EastX - 500.f, -2000.f, 10.f), 90.f);
+	SpawnServerRack(FVector(EastX - 500.f, -1200.f, 10.f), 90.f);
 
 	// === WORKBENCHES — flat tables with tools ===
 	auto SpawnBench = [&](const FVector& Pos, float Yaw, const FLinearColor& ToolCol)
@@ -90,14 +90,14 @@ void AExoLevelBuilder::BuildInteriors()
 		}
 	};
 	// North warehouse workbenches
-	SpawnBench(FVector(-7000.f, 80000.f, 10.f), 0.f,
+	SpawnBench(FVector(-7000.f, NorthY, 10.f), 0.f,
 		FLinearColor(0.6f, 0.3f, 0.05f));
-	SpawnBench(FVector(-7000.f, 81500.f, 10.f), 0.f,
+	SpawnBench(FVector(-7000.f, NorthY + 1500.f, 10.f), 0.f,
 		FLinearColor(0.6f, 0.3f, 0.05f));
 	// South lab benches
-	SpawnBench(FVector(1000.f, -80000.f, 10.f), 90.f,
+	SpawnBench(FVector(1000.f, SouthY, 10.f), 90.f,
 		FLinearColor(0.05f, 0.4f, 0.6f));
-	SpawnBench(FVector(1000.f, -81500.f, 10.f), 90.f,
+	SpawnBench(FVector(1000.f, SouthY - 1500.f, 10.f), 90.f,
 		FLinearColor(0.05f, 0.4f, 0.6f));
 
 	// === MEDICAL STATION — red-cross marked cabinet with green glow ===
@@ -138,9 +138,9 @@ void AExoLevelBuilder::BuildInteriors()
 		ML->CastShadows = false;
 		ML->RegisterComponent();
 	};
-	SpawnMedStation(FVector(-79500.f, -7500.f, 10.f), 90.f);
-	SpawnMedStation(FVector(-79500.f, 2500.f, 10.f), 90.f);
-	SpawnMedStation(FVector(2500.f, -82000.f, 10.f), 0.f);
+	SpawnMedStation(FVector(WestX + 500.f, -7500.f, 10.f), 90.f);
+	SpawnMedStation(FVector(WestX + 500.f, 2500.f, 10.f), 90.f);
+	SpawnMedStation(FVector(2500.f, SouthY - 2000.f, 10.f), 0.f);
 	SpawnMedStation(FVector(-2000.f, 2500.f, 10.f), 180.f);
 
 	// === CRATE STACKS ===
@@ -149,12 +149,12 @@ void AExoLevelBuilder::BuildInteriors()
 		{{3500.f, 2500.f, 80.f}, {2.f, 1.f, 1.6f}, 5.f},
 		{{3500.f, -2500.f, 80.f}, {1.5f, 1.2f, 1.6f}, -10.f},
 		{{-3000.f, 2000.f, 80.f}, {2.f, 1.5f, 1.f}, 0.f},
-		{{-3500.f, 82000.f, 80.f}, {3.f, 1.5f, 2.f}, 15.f},
-		{{2000.f, 83000.f, 80.f}, {2.f, 2.f, 1.2f}, 0.f},
-		{{5000.f, -81500.f, 80.f}, {1.5f, 1.5f, 2.5f}, 0.f},
-		{{82000.f, -3000.f, 80.f}, {2.5f, 1.f, 1.8f}, -45.f},
-		{{-79000.f, -5000.f, 80.f}, {1.5f, 1.5f, 1.5f}, 25.f},
-		{{-82000.f, 5000.f, 80.f}, {2.f, 1.f, 2.f}, 0.f},
+		{{-3500.f, NorthY + 2000.f, 80.f}, {3.f, 1.5f, 2.f}, 15.f},
+		{{2000.f, NorthY + 3000.f, 80.f}, {2.f, 2.f, 1.2f}, 0.f},
+		{{5000.f, SouthY - 1500.f, 80.f}, {1.5f, 1.5f, 2.5f}, 0.f},
+		{{EastX + 2000.f, -3000.f, 80.f}, {2.5f, 1.f, 1.8f}, -45.f},
+		{{WestX + 1000.f, -5000.f, 80.f}, {1.5f, 1.5f, 1.5f}, 25.f},
+		{{WestX - 2000.f, 5000.f, 80.f}, {2.f, 1.f, 2.f}, 0.f},
 	};
 	for (const auto& C : Crates)
 		SpawnStaticMesh(C.Pos, C.Scale, FRotator(0.f, C.Yaw, 0.f), CubeMesh, CrateColor);
@@ -162,7 +162,7 @@ void AExoLevelBuilder::BuildInteriors()
 	// === WEAPON RACKS — angled display stands (west barracks) ===
 	for (int32 i = 0; i < 3; i++)
 	{
-		FVector RackPos(-80500.f, -6000.f + i * 2500.f, 10.f);
+		FVector RackPos(WestX - 500.f, -6000.f + i * 2500.f, 10.f);
 		SpawnStaticMesh(RackPos + FVector(0.f, 0.f, 60.f),
 			FVector(0.15f, 1.2f, 1.2f), FRotator(15.f, 90.f, 0.f),
 			CubeMesh, FLinearColor(0.09f, 0.09f, 0.1f));
@@ -201,9 +201,9 @@ void AExoLevelBuilder::BuildInteriors()
 	SpawnChair(FVector(2000.f, -1500.f, 10.f) + FVector(100.f, 0.f, 0.f), 180.f);
 	SpawnChair(FVector(-1500.f, 0.f, 10.f) + FVector(0.f, 100.f, 0.f), -90.f);
 	// North compound
-	SpawnChair(FVector(-2000.f, 81000.f, 10.f) + FVector(100.f, 0.f, 0.f), 165.f);
+	SpawnChair(FVector(-2000.f, NorthY + 1000.f, 10.f) + FVector(100.f, 0.f, 0.f), 165.f);
 	// East power
-	SpawnChair(FVector(81000.f, 0.f, 10.f) + FVector(80.f, 80.f, 0.f), -135.f);
+	SpawnChair(FVector(EastX + 1000.f, 0.f, 10.f) + FVector(80.f, 80.f, 0.f), -135.f);
 
 	// === LOCKERS — barracks personal storage ===
 	auto SpawnLockerRow = [&](const FVector& Start, float Yaw, int32 Count)
@@ -224,9 +224,9 @@ void AExoLevelBuilder::BuildInteriors()
 		}
 	};
 	// West barracks locker rows
-	SpawnLockerRow(FVector(-81000.f, -8000.f, 10.f), 0.f, 5);
-	SpawnLockerRow(FVector(-79000.f, -8000.f, 10.f), 180.f, 5);
-	SpawnLockerRow(FVector(-81000.f, 6000.f, 10.f), 0.f, 4);
+	SpawnLockerRow(FVector(WestX - 1000.f, -8000.f, 10.f), 0.f, 5);
+	SpawnLockerRow(FVector(WestX + 1000.f, -8000.f, 10.f), 180.f, 5);
+	SpawnLockerRow(FVector(WestX - 1000.f, 6000.f, 10.f), 0.f, 4);
 
 	// === BUNK BEDS — barracks sleeping quarters ===
 	auto SpawnBunk = [&](const FVector& Pos, float Yaw)
@@ -253,10 +253,10 @@ void AExoLevelBuilder::BuildInteriors()
 					FVector(0.04f, 0.04f, 1.5f), R, CylinderMesh, Frame);
 	};
 	// Barracks bunks
-	SpawnBunk(FVector(-82000.f, -3000.f, 10.f), 0.f);
-	SpawnBunk(FVector(-82000.f, -1500.f, 10.f), 0.f);
-	SpawnBunk(FVector(-82000.f, 0.f, 10.f), 0.f);
-	SpawnBunk(FVector(-82000.f, 1500.f, 10.f), 0.f);
+	SpawnBunk(FVector(WestX - 2000.f, -3000.f, 10.f), 0.f);
+	SpawnBunk(FVector(WestX - 2000.f, -1500.f, 10.f), 0.f);
+	SpawnBunk(FVector(WestX - 2000.f, 0.f, 10.f), 0.f);
+	SpawnBunk(FVector(WestX - 2000.f, 1500.f, 10.f), 0.f);
 
 	// === MONITOR ARRAY — multi-screen wall display in hub ===
 	{
@@ -314,7 +314,7 @@ void AExoLevelBuilder::BuildInteriors()
 	// === LAB EQUIPMENT — south research compound ===
 	{
 		// Centrifuge — short cylinder with emissive ring
-		FVector CentPos(-3000.f, -80500.f, 10.f);
+		FVector CentPos(-3000.f, SouthY - 500.f, 10.f);
 		SpawnStaticMesh(CentPos + FVector(0.f, 0.f, 40.f),
 			FVector(0.5f, 0.5f, 0.4f), FRotator::ZeroRotator,
 			CylinderMesh, DarkMetal);
@@ -335,7 +335,7 @@ void AExoLevelBuilder::BuildInteriors()
 		// Specimen containers — glass-like cylinders with glow
 		for (int32 i = 0; i < 3; i++)
 		{
-			FVector ContPos(-4000.f + i * 500.f, -81500.f, 10.f);
+			FVector ContPos(-4000.f + i * 500.f, SouthY - 1500.f, 10.f);
 			SpawnStaticMesh(ContPos + FVector(0.f, 0.f, 50.f),
 				FVector(0.2f, 0.2f, 1.0f), FRotator::ZeroRotator,
 				CylinderMesh, FLinearColor(0.08f, 0.12f, 0.15f));
@@ -368,7 +368,7 @@ void AExoLevelBuilder::BuildInteriors()
 	};
 	SpawnShelf(FVector(4000.f, 1000.f, 10.f), 0.f, 3);
 	SpawnShelf(FVector(4000.f, -1000.f, 10.f), 0.f, 3);
-	SpawnShelf(FVector(-5000.f, 79500.f, 10.f), 90.f, 4);
+	SpawnShelf(FVector(-5000.f, NorthY - 500.f, 10.f), 90.f, 4);
 
 	// === QUATERNIUS INTERIOR MESHES — floor tiles, wall details, doors ===
 	if (bHasQuaterniusAssets)
@@ -397,7 +397,7 @@ void AExoLevelBuilder::BuildInteriors()
 		if (QT_FloorBasic)
 		{
 			for (int32 FX = 0; FX < 3; FX++)
-				SpawnRawMesh(FVector(3000.f + FX * 800.f, -80500.f, 5.f),
+				SpawnRawMesh(FVector(3000.f + FX * 800.f, SouthY - 500.f, 5.f),
 					FVector(2.f), FRotator::ZeroRotator, QT_FloorBasic);
 		}
 
@@ -406,7 +406,7 @@ void AExoLevelBuilder::BuildInteriors()
 		{
 			SpawnRawMesh(FVector(3800.f, 0.f, 150.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), QT_DetailVent1);
 			SpawnRawMesh(FVector(-3800.f, 0.f, 150.f), FVector(1.5f), FRotator(0.f, -90.f, 0.f), QT_DetailVent1);
-			SpawnRawMesh(FVector(-5000.f, 80500.f, 150.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_DetailVent1);
+			SpawnRawMesh(FVector(-5000.f, NorthY + 500.f, 150.f), FVector(1.5f), FRotator(0.f, 0.f, 0.f), QT_DetailVent1);
 		}
 
 		// Exposed pipes along walls — industrial look
@@ -415,14 +415,14 @@ void AExoLevelBuilder::BuildInteriors()
 			SpawnRawMesh(FVector(0.f, 2800.f, 200.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DetailPipesLong);
 			SpawnRawMesh(FVector(0.f, -2800.f, 200.f), FVector(2.f), FRotator(0.f, 180.f, 0.f), QT_DetailPipesLong);
 			// North warehouse pipes
-			SpawnRawMesh(FVector(-5000.f, 82000.f, 200.f), FVector(2.f), FRotator(0.f, 90.f, 0.f), QT_DetailPipesLong);
+			SpawnRawMesh(FVector(-5000.f, NorthY + 2000.f, 200.f), FVector(2.f), FRotator(0.f, 90.f, 0.f), QT_DetailPipesLong);
 		}
 
 		// Roof tile with pipes — over East power station interior
 		if (QT_RoofPipes)
 		{
-			SpawnRawMesh(FVector(80000.f, 0.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
-			SpawnRawMesh(FVector(80000.f, 2000.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
+			SpawnRawMesh(FVector(EastX, 0.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
+			SpawnRawMesh(FVector(EastX, 2000.f, 3500.f), FVector(2.f), FRotator::ZeroRotator, QT_RoofPipes);
 		}
 
 		// Interior doors (Quaternius doors between rooms)
@@ -434,7 +434,7 @@ void AExoLevelBuilder::BuildInteriors()
 		if (QT_DoorDoubleL)
 		{
 			// Wide doorways in North warehouse
-			SpawnRawMesh(FVector(-5000.f, 84000.f, 0.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DoorDoubleL);
+			SpawnRawMesh(FVector(-5000.f, NorthY + 4000.f, 0.f), FVector(2.f), FRotator(0.f, 0.f, 0.f), QT_DoorDoubleL);
 		}
 
 		UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Quaternius interior tiles, vents, pipes placed"));
@@ -447,6 +447,6 @@ void AExoLevelBuilder::BuildInteriors()
 		SpawnRawMesh(FVector(3000.f, 0.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), KN_Door);
 		SpawnRawMesh(FVector(-3000.f, 0.f, 0.f), FVector(1.5f), FRotator(0.f, -90.f, 0.f), KN_Door);
 		// South lab internal doors
-		SpawnRawMesh(FVector(3000.f, -80000.f, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), KN_Door);
+		SpawnRawMesh(FVector(3000.f, SouthY, 0.f), FVector(1.5f), FRotator(0.f, 90.f, 0.f), KN_Door);
 	}
 }

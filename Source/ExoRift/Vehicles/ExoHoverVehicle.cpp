@@ -86,7 +86,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	HeadlightL->SetupAttachment(VehicleMesh);
 	HeadlightL->SetRelativeLocation(FVector(90.f, -30.f, 5.f));
 	HeadlightL->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
-	HeadlightL->SetIntensity(180000.f);
+	HeadlightL->SetIntensity(15000.f);
 	HeadlightL->SetOuterConeAngle(30.f);
 	HeadlightL->SetInnerConeAngle(15.f);
 	HeadlightL->SetAttenuationRadius(5000.f);
@@ -97,7 +97,7 @@ AExoHoverVehicle::AExoHoverVehicle()
 	HeadlightR->SetupAttachment(VehicleMesh);
 	HeadlightR->SetRelativeLocation(FVector(90.f, 30.f, 5.f));
 	HeadlightR->SetRelativeRotation(FRotator(-5.f, 0.f, 0.f));
-	HeadlightR->SetIntensity(180000.f);
+	HeadlightR->SetIntensity(15000.f);
 	HeadlightR->SetOuterConeAngle(30.f);
 	HeadlightR->SetInnerConeAngle(15.f);
 	HeadlightR->SetAttenuationRadius(5000.f);

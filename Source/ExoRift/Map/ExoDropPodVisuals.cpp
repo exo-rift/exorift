@@ -158,11 +158,11 @@ void AExoDropPod::UpdateThrusterVFX(float DeltaTime, float BrakeAlpha)
 
 	float TargetIntensity = 0.f;
 	if (Phase == EDropPodPhase::FreeFall)
-		TargetIntensity = 11000.f;
+		TargetIntensity = 3000.f;
 	else if (Phase == EDropPodPhase::Braking)
-		TargetIntensity = FMath::Lerp(11000.f, 180000.f, BrakeAlpha);
+		TargetIntensity = FMath::Lerp(3000.f, 8000.f, BrakeAlpha);
 	else if (Phase == EDropPodPhase::Landing)
-		TargetIntensity = 180000.f;
+		TargetIntensity = 8000.f;
 
 	ThrusterLight->SetIntensity(FMath::FInterpTo(
 		ThrusterLight->Intensity, TargetIntensity, DeltaTime, 4.f));

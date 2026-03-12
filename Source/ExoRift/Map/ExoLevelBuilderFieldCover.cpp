@@ -14,31 +14,31 @@ void AExoLevelBuilder::BuildFieldCover()
 	struct FRockCluster { FVector Pos; float Scale; float Yaw; };
 	TArray<FRockCluster> RockClusters = {
 		// Between center and north compound
-		{{-5000.f, 30000.f, 0.f}, 1.2f, 15.f},
-		{{8000.f, 50000.f, 0.f}, 0.9f, 45.f},
-		{{-12000.f, 60000.f, 0.f}, 1.4f, 110.f},
+		{{-1000.f, 6000.f, 0.f}, 1.2f, 15.f},
+		{{1600.f, 10000.f, 0.f}, 0.9f, 45.f},
+		{{-2400.f, 12000.f, 0.f}, 1.4f, 110.f},
 		// Between center and south compound
-		{{6000.f, -35000.f, 0.f}, 1.1f, 200.f},
-		{{-10000.f, -55000.f, 0.f}, 1.3f, 75.f},
-		{{15000.f, -65000.f, 0.f}, 0.8f, 320.f},
+		{{1200.f, -7000.f, 0.f}, 1.1f, 200.f},
+		{{-2000.f, -11000.f, 0.f}, 1.3f, 75.f},
+		{{3000.f, -13000.f, 0.f}, 0.8f, 320.f},
 		// Between center and east compound
-		{{35000.f, 8000.f, 0.f}, 1.0f, 155.f},
-		{{55000.f, -5000.f, 0.f}, 1.5f, 270.f},
-		{{45000.f, 12000.f, 0.f}, 0.7f, 90.f},
+		{{7000.f, 1600.f, 0.f}, 1.0f, 155.f},
+		{{11000.f, -1000.f, 0.f}, 1.5f, 270.f},
+		{{9000.f, 2400.f, 0.f}, 0.7f, 90.f},
 		// Between center and west compound
-		{{-30000.f, -8000.f, 0.f}, 1.1f, 340.f},
-		{{-50000.f, 10000.f, 0.f}, 1.3f, 60.f},
-		{{-65000.f, -15000.f, 0.f}, 0.9f, 180.f},
+		{{-6000.f, -1600.f, 0.f}, 1.1f, 340.f},
+		{{-10000.f, 2000.f, 0.f}, 1.3f, 60.f},
+		{{-13000.f, -3000.f, 0.f}, 0.9f, 180.f},
 		// Diagonal corridors
-		{{30000.f, 30000.f, 0.f}, 1.0f, 225.f},
-		{{-35000.f, 35000.f, 0.f}, 1.2f, 135.f},
-		{{40000.f, -40000.f, 0.f}, 1.1f, 315.f},
-		{{-45000.f, -40000.f, 0.f}, 0.8f, 50.f},
+		{{6000.f, 6000.f, 0.f}, 1.0f, 225.f},
+		{{-7000.f, 7000.f, 0.f}, 1.2f, 135.f},
+		{{8000.f, -8000.f, 0.f}, 1.1f, 315.f},
+		{{-9000.f, -8000.f, 0.f}, 0.8f, 50.f},
 		// Outer ring
-		{{90000.f, 50000.f, 0.f}, 1.4f, 170.f},
-		{{-80000.f, 60000.f, 0.f}, 1.0f, 290.f},
-		{{70000.f, -70000.f, 0.f}, 1.3f, 100.f},
-		{{-90000.f, -50000.f, 0.f}, 1.1f, 240.f},
+		{{18000.f, 10000.f, 0.f}, 1.4f, 170.f},
+		{{-16000.f, 12000.f, 0.f}, 1.0f, 290.f},
+		{{14000.f, -14000.f, 0.f}, 1.3f, 100.f},
+		{{-18000.f, -10000.f, 0.f}, 1.1f, 240.f},
 	};
 	for (const auto& RC : RockClusters)
 	{
@@ -48,17 +48,17 @@ void AExoLevelBuilder::BuildFieldCover()
 	// === RUINED STRUCTURES — collapsed buildings in the wasteland ===
 	struct FRuin { FVector Pos; float Scale; float Yaw; };
 	TArray<FRuin> Ruins = {
-		{{20000.f, 40000.f, 0.f}, 1.0f, 30.f},
-		{{-25000.f, -45000.f, 0.f}, 0.8f, 145.f},
-		{{50000.f, 50000.f, 0.f}, 1.2f, 260.f},
-		{{-60000.f, -60000.f, 0.f}, 0.9f, 80.f},
-		{{60000.f, -20000.f, 0.f}, 1.1f, 195.f},
-		{{-40000.f, 25000.f, 0.f}, 0.7f, 310.f},
+		{{4000.f, 8000.f, 0.f}, 1.0f, 30.f},
+		{{-5000.f, -9000.f, 0.f}, 0.8f, 145.f},
+		{{10000.f, 10000.f, 0.f}, 1.2f, 260.f},
+		{{-12000.f, -12000.f, 0.f}, 0.9f, 80.f},
+		{{12000.f, -4000.f, 0.f}, 1.1f, 195.f},
+		{{-8000.f, 5000.f, 0.f}, 0.7f, 310.f},
 		// Near compound approaches
-		{{10000.f, 65000.f, 0.f}, 1.0f, 0.f},
-		{{65000.f, -10000.f, 0.f}, 0.85f, 90.f},
-		{{-15000.f, -65000.f, 0.f}, 1.1f, 180.f},
-		{{-65000.f, 8000.f, 0.f}, 0.95f, 270.f},
+		{{2000.f, 13000.f, 0.f}, 1.0f, 0.f},
+		{{13000.f, -2000.f, 0.f}, 0.85f, 90.f},
+		{{-3000.f, -13000.f, 0.f}, 1.1f, 180.f},
+		{{-13000.f, 1600.f, 0.f}, 0.95f, 270.f},
 	};
 	for (const auto& R : Ruins)
 	{
@@ -149,17 +149,17 @@ void AExoLevelBuilder::BuildFieldCover()
 	struct FRoutePylon { FVector Pos; FLinearColor Color; };
 	TArray<FRoutePylon> RoutePylons = {
 		// Center → North road
-		{{0.f, 20000.f, 0.f}, RouteBlue}, {{0.f, 40000.f, 0.f}, RouteBlue},
-		{{0.f, 60000.f, 0.f}, RouteBlue},
+		{{0.f, 4000.f, 0.f}, RouteBlue}, {{0.f, 8000.f, 0.f}, RouteBlue},
+		{{0.f, 12000.f, 0.f}, RouteBlue},
 		// Center → South road
-		{{0.f, -20000.f, 0.f}, RouteBlue}, {{0.f, -40000.f, 0.f}, RouteBlue},
-		{{0.f, -60000.f, 0.f}, RouteBlue},
+		{{0.f, -4000.f, 0.f}, RouteBlue}, {{0.f, -8000.f, 0.f}, RouteBlue},
+		{{0.f, -12000.f, 0.f}, RouteBlue},
 		// Center → East road
-		{{20000.f, 0.f, 0.f}, RouteBlue}, {{40000.f, 0.f, 0.f}, RouteBlue},
-		{{60000.f, 0.f, 0.f}, RouteBlue},
+		{{4000.f, 0.f, 0.f}, RouteBlue}, {{8000.f, 0.f, 0.f}, RouteBlue},
+		{{12000.f, 0.f, 0.f}, RouteBlue},
 		// Center → West road
-		{{-20000.f, 0.f, 0.f}, RouteBlue}, {{-40000.f, 0.f, 0.f}, RouteBlue},
-		{{-60000.f, 0.f, 0.f}, RouteBlue},
+		{{-4000.f, 0.f, 0.f}, RouteBlue}, {{-8000.f, 0.f, 0.f}, RouteBlue},
+		{{-12000.f, 0.f, 0.f}, RouteBlue},
 	};
 	for (const auto& RP : RoutePylons)
 	{
