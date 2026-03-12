@@ -39,9 +39,9 @@ void AExoLevelBuilder::BuildRoads()
 		FVector(20000.f, -20000.f, GroundZ), 2000.f);
 
 	// === BRIDGES over terrain patches ===
-	SpawnBridge(FVector(-16000.f, -11000.f, GroundZ), FVector(-16000.f, -13000.f, GroundZ),
+	SpawnBridge(FVector(WestX, -11000.f, GroundZ), FVector(WestX, -13000.f, GroundZ),
 		2500.f, 400.f);
-	SpawnBridge(FVector(11000.f, 16000.f, GroundZ), FVector(13000.f, 16000.f, GroundZ),
+	SpawnBridge(FVector(11000.f, NorthY, GroundZ), FVector(13000.f, NorthY, GroundZ),
 		2500.f, 350.f);
 
 	// === CENTER ROUNDABOUT ===

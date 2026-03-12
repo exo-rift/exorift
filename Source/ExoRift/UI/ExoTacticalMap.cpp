@@ -30,7 +30,7 @@ void FExoTacticalMap::Draw(AHUD* HUD, UCanvas* Canvas, UFont* Font,
 	float MapSize = FMath::Min(SX, SY) * 0.75f;
 	float MapR = MapSize * 0.5f;
 	FVector2D MC(SX * 0.5f, SY * 0.5f);
-	float WorldR = 200000.f; // Map half-size in world units
+	float WorldR = 40000.f; // Map half-size in world units
 
 	// Map border
 	FLinearColor BorderCol(0.2f, 0.4f, 0.7f, 0.6f);

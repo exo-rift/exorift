@@ -197,7 +197,7 @@ void AExoHUD::DrawHUD()
 	if (FExoTacticalMap::bIsOpen)
 	{
 		FVector MapPlayerPos = GetOwningPawn() ? GetOwningPawn()->GetActorLocation() : FVector::ZeroVector;
-		float ZR = 200000.f;
+		float ZR = 40000.f;
 		FVector ZC = FVector::ZeroVector;
 		float NZR = 0.f;
 		FVector NZC = FVector::ZeroVector;

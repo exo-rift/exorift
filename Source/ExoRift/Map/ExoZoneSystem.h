@@ -67,13 +67,13 @@ protected:
 	int32 CurrentStage = -1;
 
 	UPROPERTY(Replicated)
-	float CurrentRadius = 200000.f;
+	float CurrentRadius = 40000.f;
 
 	UPROPERTY(Replicated)
 	FVector2D CurrentCenter = FVector2D::ZeroVector;
 
 	UPROPERTY(Replicated)
-	float TargetRadius = 200000.f;
+	float TargetRadius = 40000.f;
 
 	UPROPERTY(Replicated)
 	FVector2D TargetCenter = FVector2D::ZeroVector;

@@ -44,7 +44,7 @@ FTransform AExoGameMode::GetNextSpawnTransform() const
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AExoSpawnPoint::StaticClass(), SpawnPoints);
 	if (SpawnPoints.Num() > 0)
 		return SpawnPoints[FMath::RandRange(0, SpawnPoints.Num() - 1)]->GetActorTransform();
-	return FTransform(FVector(FMath::RandRange(-200000.f, 200000.f), FMath::RandRange(-200000.f, 200000.f), 1000.f));
+	return FTransform(FVector(FMath::RandRange(-40000.f, 40000.f), FMath::RandRange(-40000.f, 40000.f), 1000.f));
 }
 
 void AExoGameMode::SetWarmupInvulnerability(AExoCharacter* Char, bool bEnable)

@@ -22,7 +22,7 @@ public:
 	int32 VehicleCount = 5;
 
 	UPROPERTY(EditAnywhere, Category = "Vehicles")
-	float SpawnRadius = 100000.f;
+	float SpawnRadius = 20000.f;
 
 protected:
 	virtual void BeginPlay() override;

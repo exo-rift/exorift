@@ -62,10 +62,10 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Place campsites near compounds
-	SpawnCampsite(FVector(800.f, 15000.f, GroundZ), 30.f);     // North compound outskirts
-	SpawnCampsite(FVector(-14800.f, 1000.f, GroundZ), -45.f);   // West compound
-	SpawnCampsite(FVector(14400.f, -1200.f, GroundZ), 110.f);   // East compound
-	SpawnCampsite(FVector(-7000.f, -14400.f, GroundZ), 200.f); // South approach
+	SpawnCampsite(FVector(800.f, NorthY - 1000.f, GroundZ), 30.f);     // North compound outskirts
+	SpawnCampsite(FVector(WestX + 1200.f, 1000.f, GroundZ), -45.f);   // West compound
+	SpawnCampsite(FVector(EastX - 1600.f, -1200.f, GroundZ), 110.f);   // East compound
+	SpawnCampsite(FVector(-7000.f, SouthY + 1600.f, GroundZ), 200.f); // South approach
 	SpawnCampsite(FVector(2400.f, 2400.f, GroundZ), 0.f);     // Near hub
 
 	// ================================================================
@@ -107,15 +107,15 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Bullet holes on building walls near compounds
-	SpawnBulletHoleCluster(FVector(400.f, 15600.f, 250.f), 0.f, 6);
-	SpawnBulletHoleCluster(FVector(15600.f, 400.f, 300.f), 90.f, 5);
-	SpawnBulletHoleCluster(FVector(-15600.f, -600.f, 200.f), 180.f, 7);
-	SpawnBulletHoleCluster(FVector(-400.f, -15600.f, 280.f), 270.f, 4);
+	SpawnBulletHoleCluster(FVector(400.f, NorthY - 400.f, 250.f), 0.f, 6);
+	SpawnBulletHoleCluster(FVector(EastX - 400.f, 400.f, 300.f), 90.f, 5);
+	SpawnBulletHoleCluster(FVector(WestX + 400.f, -600.f, 200.f), 180.f, 7);
+	SpawnBulletHoleCluster(FVector(-400.f, SouthY + 400.f, 280.f), 270.f, 4);
 
 	// Cracked floor panels
-	SpawnCrackedFloor(FVector(1000.f, 16400.f, GroundZ), 10.f);
-	SpawnCrackedFloor(FVector(16600.f, -600.f, GroundZ), 45.f);
-	SpawnCrackedFloor(FVector(-16400.f, 800.f, GroundZ), -15.f);
+	SpawnCrackedFloor(FVector(1000.f, NorthY + 400.f, GroundZ), 10.f);
+	SpawnCrackedFloor(FVector(EastX + 600.f, -600.f, GroundZ), 45.f);
+	SpawnCrackedFloor(FVector(WestX - 400.f, 800.f, GroundZ), -15.f);
 	SpawnCrackedFloor(FVector(-200.f, 400.f, GroundZ), 0.f);
 
 	// ================================================================
@@ -148,9 +148,9 @@ void AExoLevelBuilder::BuildStorytelling()
 			FLinearColor(0.02f, 0.025f, 0.035f));
 	};
 
-	SpawnWreckedHover(FVector(-1200.f, 14000.f, GroundZ), 55.f, 8.f);
-	SpawnWreckedHover(FVector(15000.f, 1600.f, GroundZ), -30.f, -6.f);
-	SpawnWreckedHover(FVector(-8400.f, -15000.f, GroundZ), 160.f, 10.f);
+	SpawnWreckedHover(FVector(-1200.f, NorthY - 2000.f, GroundZ), 55.f, 8.f);
+	SpawnWreckedHover(FVector(EastX - 1000.f, 1600.f, GroundZ), -30.f, -6.f);
+	SpawnWreckedHover(FVector(-8400.f, SouthY + 1000.f, GroundZ), 160.f, 10.f);
 	SpawnWreckedHover(FVector(1600.f, -1000.f, GroundZ), 90.f, -4.f);
 
 	// ================================================================
@@ -209,9 +209,9 @@ void AExoLevelBuilder::BuildStorytelling()
 			FLinearColor(0.06f, 0.06f, 0.07f));
 	};
 
-	SpawnLabSite(FVector(600.f, 16600.f, GroundZ), 0.f);     // North compound interior
-	SpawnLabSite(FVector(16800.f, -400.f, GroundZ), 90.f);   // East compound
-	SpawnLabSite(FVector(-16600.f, 600.f, GroundZ), -90.f);  // West compound
+	SpawnLabSite(FVector(600.f, NorthY + 600.f, GroundZ), 0.f);     // North compound interior
+	SpawnLabSite(FVector(EastX + 800.f, -400.f, GroundZ), 90.f);   // East compound
+	SpawnLabSite(FVector(WestX - 600.f, 600.f, GroundZ), -90.f);  // West compound
 	SpawnLabSite(FVector(400.f, -600.f, GroundZ), 45.f);    // Central hub
 
 	// ================================================================
@@ -276,14 +276,14 @@ void AExoLevelBuilder::BuildStorytelling()
 	};
 
 	// Standing barriers near hazard zones
-	SpawnWarningBarrier(FVector(-1200.f, 16400.f, GroundZ), 0.f, false);
-	SpawnWarningBarrier(FVector(16400.f, 1200.f, GroundZ), 90.f, false);
-	SpawnWarningBarrier(FVector(-16400.f, -1200.f, GroundZ), 180.f, false);
+	SpawnWarningBarrier(FVector(-1200.f, NorthY + 400.f, GroundZ), 0.f, false);
+	SpawnWarningBarrier(FVector(EastX + 400.f, 1200.f, GroundZ), 90.f, false);
+	SpawnWarningBarrier(FVector(WestX - 400.f, -1200.f, GroundZ), 180.f, false);
 
 	// Knocked-over barriers — signs of recent conflict
-	SpawnWarningBarrier(FVector(1200.f, 15600.f, GroundZ), 20.f, true);
-	SpawnWarningBarrier(FVector(15600.f, -1200.f, GroundZ), 75.f, true);
-	SpawnWarningBarrier(FVector(-7600.f, -15600.f, GroundZ), 150.f, true);
+	SpawnWarningBarrier(FVector(1200.f, NorthY - 400.f, GroundZ), 20.f, true);
+	SpawnWarningBarrier(FVector(EastX - 400.f, -1200.f, GroundZ), 75.f, true);
+	SpawnWarningBarrier(FVector(-7600.f, SouthY + 400.f, GroundZ), 150.f, true);
 	SpawnWarningBarrier(FVector(600.f, 1000.f, GroundZ), -10.f, true);
 
 	UE_LOG(LogExoRift, Log,

@@ -17,24 +17,24 @@ void AExoLevelBuilder::BuildTunnels()
 	SpawnTunnelEntrance(FVector(-2000.f, 0.f, 0.f), 270.f);  // West exit
 
 	// Compound tunnel entrances
-	SpawnTunnelEntrance(FVector(0.f, 16000.f - 2000.f, 0.f), 180.f); // North compound
-	SpawnTunnelEntrance(FVector(0.f, -16000.f + 2000.f, 0.f), 0.f);   // South compound
-	SpawnTunnelEntrance(FVector(16000.f - 1600.f, 0.f, 0.f), 270.f);  // East compound
-	SpawnTunnelEntrance(FVector(-16000.f + 1200.f, 0.f, 0.f), 90.f);  // West compound
+	SpawnTunnelEntrance(FVector(0.f, NorthY - 2000.f, 0.f), 180.f); // North compound
+	SpawnTunnelEntrance(FVector(0.f, SouthY + 2000.f, 0.f), 0.f);   // South compound
+	SpawnTunnelEntrance(FVector(EastX - 1600.f, 0.f, 0.f), 270.f);  // East compound
+	SpawnTunnelEntrance(FVector(WestX + 1200.f, 0.f, 0.f), 90.f);  // West compound
 
 	// === Tunnel segments connecting compounds to hub ===
 
 	// Hub to North (along Y axis)
-	SpawnTunnelSegment(FVector(0.f, 2000.f, -300.f), FVector(0.f, 14000.f, -300.f));
+	SpawnTunnelSegment(FVector(0.f, 2000.f, -300.f), FVector(0.f, NorthY - 2000.f, -300.f));
 
 	// Hub to South
-	SpawnTunnelSegment(FVector(0.f, -2000.f, -300.f), FVector(0.f, -14000.f, -300.f));
+	SpawnTunnelSegment(FVector(0.f, -2000.f, -300.f), FVector(0.f, SouthY + 2000.f, -300.f));
 
 	// Hub to East
-	SpawnTunnelSegment(FVector(2000.f, 0.f, -300.f), FVector(14400.f, 0.f, -300.f));
+	SpawnTunnelSegment(FVector(2000.f, 0.f, -300.f), FVector(EastX - 1600.f, 0.f, -300.f));
 
 	// Hub to West
-	SpawnTunnelSegment(FVector(-2000.f, 0.f, -300.f), FVector(-14800.f, 0.f, -300.f));
+	SpawnTunnelSegment(FVector(-2000.f, 0.f, -300.f), FVector(WestX + 1200.f, 0.f, -300.f));
 
 	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Tunnel network placed"));
 }

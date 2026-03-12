@@ -18,23 +18,23 @@ void AExoLevelBuilder::BuildSignage()
 	// Central Hub — "COMMAND" sign at entrance
 	SpawnCompoundSign(FVector(4500.f, 0.f, 1500.f), 0.f, CyanSign);
 	// North — "INDUSTRIAL" sign
-	SpawnCompoundSign(FVector(0.f, 14600.f, 1500.f), 180.f, GreenSign);
+	SpawnCompoundSign(FVector(0.f, NorthY - 1400.f, 1500.f), 180.f, GreenSign);
 	// South — "RESEARCH" sign
-	SpawnCompoundSign(FVector(0.f, -14600.f, 1500.f), 0.f, CyanSign);
+	SpawnCompoundSign(FVector(0.f, SouthY + 1400.f, 1500.f), 0.f, CyanSign);
 	// East — "POWER" sign
-	SpawnCompoundSign(FVector(14600.f, 0.f, 1500.f), -90.f, AmberSign);
+	SpawnCompoundSign(FVector(EastX - 1400.f, 0.f, 1500.f), -90.f, AmberSign);
 	// West — "BARRACKS" sign
-	SpawnCompoundSign(FVector(-14600.f, 0.f, 1500.f), 90.f, RedSign);
+	SpawnCompoundSign(FVector(WestX + 1400.f, 0.f, 1500.f), 90.f, RedSign);
 
 	// === LANDING PADS ===
 	// Hub helipad already exists — add ground markings
 	SpawnLandingPad(FVector(0.f, 0.f, GroundZ + 3.f), 3000.f);
 	// North compound landing pad
-	SpawnLandingPad(FVector(1000.f, 17000.f, GroundZ + 3.f), 2500.f);
+	SpawnLandingPad(FVector(1000.f, NorthY + 1000.f, GroundZ + 3.f), 2500.f);
 	// South research LZ
-	SpawnLandingPad(FVector(-1200.f, -17000.f, GroundZ + 3.f), 2000.f);
+	SpawnLandingPad(FVector(-1200.f, SouthY - 1000.f, GroundZ + 3.f), 2000.f);
 	// East power station pad
-	SpawnLandingPad(FVector(17000.f, 1000.f, GroundZ + 3.f), 2200.f);
+	SpawnLandingPad(FVector(EastX + 1000.f, 1000.f, GroundZ + 3.f), 2200.f);
 
 	// === DIRECTION MARKERS ===
 	// Road signs pointing between compounds

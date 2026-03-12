@@ -68,10 +68,10 @@ void AExoSupplyDropManager::SpawnDrop()
 	}
 	else
 	{
-		// Fallback: random position in a 4km area
+		// Fallback: random position within map bounds
 		SpawnLocation = FVector(
-			FMath::FRandRange(-200000.f, 200000.f),
-			FMath::FRandRange(-200000.f, 200000.f),
+			FMath::FRandRange(-40000.f, 40000.f),
+			FMath::FRandRange(-40000.f, 40000.f),
 			DropAltitude);
 	}
 

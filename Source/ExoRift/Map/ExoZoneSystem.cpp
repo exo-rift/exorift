@@ -73,7 +73,7 @@ void AExoZoneSystem::Tick(float DeltaTime)
 void AExoZoneSystem::StartZoneSequence()
 {
 	bIsActive = true;
-	CurrentRadius = 200000.f;
+	CurrentRadius = 40000.f;
 	CurrentCenter = FVector2D::ZeroVector;
 	CurrentStage = -1;
 	AdvanceStage();
@@ -111,7 +111,7 @@ void AExoZoneSystem::TickShrink(float DeltaTime)
 	float Alpha = FMath::Clamp(StageTimer / Stage.ShrinkDuration, 0.f, 1.f);
 
 	// Smoothly interpolate radius and center
-	float StartRadius = (CurrentStage == 0) ? 200000.f : Stages[CurrentStage - 1].Radius;
+	float StartRadius = (CurrentStage == 0) ? 40000.f : Stages[CurrentStage - 1].Radius;
 	FVector2D StartCenter = (CurrentStage == 0) ? FVector2D::ZeroVector : Stages[CurrentStage - 1].Center;
 
 	CurrentRadius = FMath::Lerp(StartRadius, TargetRadius, Alpha);
