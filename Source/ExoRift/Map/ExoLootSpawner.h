@@ -25,7 +25,7 @@ public:
 
 	/** Radius from this actor's location to scatter pickups within. */
 	UPROPERTY(EditAnywhere, Category = "Loot")
-	float SpawnRadius = 150000.f;
+	float SpawnRadius = 20000.f;
 
 	/** Rarity weight distribution: Common, Rare, Epic, Legendary. */
 	UPROPERTY(EditAnywhere, Category = "Loot")

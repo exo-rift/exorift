@@ -45,13 +45,13 @@ protected:
 	int32 MinPlayersToStart = 1;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BR")
-	float WaitingDuration = 10.f;
+	float WaitingDuration = 5.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BR")
-	float DropPhaseDuration = 15.f;
+	float DropPhaseDuration = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BR")
-	int32 TargetBotCount = 20;
+	int32 TargetBotCount = 30;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BR")
 	float EndGameDuration = 15.f;

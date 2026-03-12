@@ -7,6 +7,7 @@
 #include "Player/ExoDecoyActor.h"
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
+#include "Player/ExoInventoryComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -180,6 +181,41 @@ void AExoBotController::TickFullAI(float DeltaTime)
 		ReactionTimer -= DeltaTime;
 		if (ReactionTimer <= 0.f) bReactionPending = false;
 		else return;
+	}
+
+	// Unarmed bots flee from combat and aggressively seek weapons
+	bool bIsUnarmed = true;
+	if (UExoInventoryComponent* Inv = Bot->GetInventoryComponent())
+		bIsUnarmed = (Inv->GetCurrentWeapon() == nullptr);
+
+	// Unarmed bots flee from threats and desperately seek weapons
+	if (bIsUnarmed)
+	{
+		StopFiring();
+		LookForLoot();
+
+		if (CurrentTarget)
+		{
+			float DistToThreat = FVector::Dist(Bot->GetActorLocation(), CurrentTarget->GetActorLocation());
+			if (DistToThreat < 4000.f)
+			{
+				// Flee from nearby enemy while sprinting
+				Bot->StartSprint();
+				if (LootTarget)
+					MoveToActor(LootTarget, 100.f); // Run toward weapon
+				else
+					SeekCover(); // No weapon nearby — just run
+				return;
+			}
+		}
+
+		// No immediate threat — calmly seek weapons
+		Bot->StopSprint();
+		if (LootTarget)
+			MoveToActor(LootTarget, 100.f);
+		else
+			WanderRandomly();
+		return;
 	}
 
 	if (CurrentTarget)

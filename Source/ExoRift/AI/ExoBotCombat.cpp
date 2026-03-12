@@ -6,6 +6,7 @@
 #include "Map/ExoZoneSystem.h"
 #include "Weapons/ExoWeaponPickup.h"
 #include "Weapons/ExoGrenadeComponent.h"
+#include "Player/ExoInventoryComponent.h"
 #include "Visual/ExoWeatherSystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "NavigationSystem.h"
@@ -240,16 +241,34 @@ void AExoBotController::LookForLoot()
 {
 	LootSearchTimer -= GetWorld()->GetDeltaSeconds();
 	if (LootSearchTimer > 0.f) return;
-	LootSearchTimer = 5.f;
+
+	// Unarmed bots search more aggressively (wider radius, faster retry)
+	AExoCharacter* BotChar = Cast<AExoCharacter>(GetPawn());
+	bool bUnarmed = true;
+	if (BotChar)
+		if (UExoInventoryComponent* Inv = BotChar->GetInventoryComponent())
+			bUnarmed = (Inv->GetCurrentWeapon() == nullptr);
+
+	LootSearchTimer = bUnarmed ? 1.f : 5.f;
+	float SearchRadius = bUnarmed ? 15000.f : 3000.f;
 
 	LootTarget = nullptr;
 	APawn* BotPawn = GetPawn();
 	if (!BotPawn) return;
 
-	float BestDist = 3000.f;
+	float BestDist = SearchRadius;
 	for (TActorIterator<AExoWeaponPickup> It(GetWorld()); It; ++It)
 	{
 		float Dist = FVector::Dist(BotPawn->GetActorLocation(), It->GetActorLocation());
+
+		// Auto-pickup when bot is close enough
+		if (Dist < 250.f && BotChar)
+		{
+			It->Interact(BotChar);
+			LootTarget = nullptr;
+			return;
+		}
+
 		if (Dist < BestDist)
 		{
 			BestDist = Dist;

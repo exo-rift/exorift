@@ -323,22 +323,8 @@ void UExoInventoryComponent::SpawnDefaultWeapons()
 	SpawnParams.Owner = Owner;
 	SpawnParams.Instigator = Cast<APawn>(Owner);
 
-	// Spawn rifle into slot 0 (Primary)
-	AExoWeaponRifle* Rifle = GetWorld()->SpawnActor<AExoWeaponRifle>(
-		AExoWeaponRifle::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
-	if (Rifle) AddWeapon(Rifle);
-
-	// Spawn pistol into slot 1 (Secondary)
-	AExoWeaponPistol* Pistol = GetWorld()->SpawnActor<AExoWeaponPistol>(
-		AExoWeaponPistol::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
-	if (Pistol) AddWeapon(Pistol);
-
-	// Spawn shotgun into slot 2 (Utility)
-	AExoWeaponShotgun* Shotgun = GetWorld()->SpawnActor<AExoWeaponShotgun>(
-		AExoWeaponShotgun::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
-	if (Shotgun) AddWeapon(Shotgun);
-
-	// Spawn melee weapon (Plasma Blade) — always available, not in a slot
+	// BR mode: players start empty-handed and must scavenge weapons from the ground.
+	// Only the Plasma Blade (melee) is available as a last resort.
 	AExoWeaponMelee* Melee = GetWorld()->SpawnActor<AExoWeaponMelee>(
 		AExoWeaponMelee::StaticClass(), Owner->GetActorLocation(), Owner->GetActorRotation(), SpawnParams);
 	if (Melee)
@@ -346,6 +332,6 @@ void UExoInventoryComponent::SpawnDefaultWeapons()
 		MeleeWeapon = Melee;
 		AttachWeaponToOwner(Melee);
 		Melee->SetActorHiddenInGame(true);
-		UE_LOG(LogExoRift, Log, TEXT("Inventory: spawned Plasma Blade (melee fallback)"));
+		UE_LOG(LogExoRift, Log, TEXT("Inventory: spawned Plasma Blade (melee only — BR scavenge mode)"));
 	}
 }

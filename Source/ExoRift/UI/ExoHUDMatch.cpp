@@ -139,6 +139,18 @@ void AExoHUD::DrawZoneWarning()
 		Zone = *It;
 		break;
 	}
+
+	// Update compass zone direction indicator
+	if (Zone)
+	{
+		FVector2D ZC = Zone->GetCurrentCenter();
+		FVector ToZone = FVector(ZC.X, ZC.Y, 0.f) - FVector(Char->GetActorLocation().X, Char->GetActorLocation().Y, 0.f);
+		if (!Zone->IsInsideZone(Char->GetActorLocation()) || Zone->IsShrinking())
+			Compass.SetZoneDirection(ToZone.Rotation().Yaw);
+		else
+			Compass.ClearZoneDirection();
+	}
+
 	if (!Zone || Zone->IsInsideZone(Char->GetActorLocation())) return;
 
 	float Time = GetWorld()->GetTimeSeconds();

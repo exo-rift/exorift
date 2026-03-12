@@ -19,6 +19,18 @@ void AExoHUD::DrawCrosshair()
 		CrosshairSpread = FMath::FInterpTo(CrosshairSpread,
 			Heat * 15.f, GetWorld()->GetDeltaSeconds(), 10.f);
 	}
+	else if (Char && Canvas)
+	{
+		// No weapon equipped — show "FIND A WEAPON" prompt
+		FVector2D Ctr = GetScreenCenter();
+		float Pulse = 0.7f + 0.3f * FMath::Abs(FMath::Sin(GetWorld()->GetTimeSeconds() * 2.5f));
+		FLinearColor WarnCol(1.f, 0.7f, 0.2f, Pulse);
+		DrawText(TEXT("FIND A WEAPON"), WarnCol, Ctr.X - 80.f, Ctr.Y + 40.f, HUDFont, 1.0f);
+
+		// Minimal dot crosshair for melee aiming
+		DrawRect(FLinearColor(0.7f, 0.7f, 0.7f, 0.5f), Ctr.X - 1.5f, Ctr.Y - 1.5f, 3.f, 3.f);
+		return; // Skip the full crosshair
+	}
 
 	// Sniper scope overlay — replaces normal crosshair
 	if (Char && Char->IsADS())

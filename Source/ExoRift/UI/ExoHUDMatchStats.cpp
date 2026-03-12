@@ -113,6 +113,45 @@ void AExoHUD::DrawAliveCount()
 	// === Sub-row: Damage dealt ===
 	FString DmgText = FString::Printf(TEXT("DMG  %d"), DmgVal);
 	DrawText(DmgText, FLinearColor(0.7f, 0.5f, 0.2f, 0.65f), PX + 14.f, Row2Y + RowH + 4.f, HUDFont, 0.6f);
+
+	// === FINAL CIRCLE TENSION — top 5 players remaining ===
+	if (AliveVal <= 5 && AliveVal > 1 &&
+		(GS->MatchPhase == EBRMatchPhase::Playing || GS->MatchPhase == EBRMatchPhase::ZoneShrinking))
+	{
+		float Time = GetWorld()->GetTimeSeconds();
+
+		// Heartbeat pulse — frequency increases as fewer players remain
+		float HeartRate = FMath::Lerp(1.5f, 3.5f, 1.f - (AliveVal - 2.f) / 3.f);
+		float Beat = FMath::Pow(FMath::Max(FMath::Sin(Time * HeartRate * PI), 0.f), 4.f);
+
+		// Red vignette edge pulse (subtle but noticeable)
+		float EdgeAlpha = 0.03f + Beat * 0.06f;
+		FLinearColor TensionEdge(0.8f, 0.15f, 0.1f, EdgeAlpha);
+		float EdgeW = 50.f + Beat * 15.f;
+		DrawRect(TensionEdge, 0.f, 0.f, EdgeW, Canvas->SizeY);
+		DrawRect(TensionEdge, Canvas->SizeX - EdgeW, 0.f, EdgeW, Canvas->SizeY);
+		DrawRect(TensionEdge, 0.f, 0.f, Canvas->SizeX, EdgeW * 0.4f);
+		DrawRect(TensionEdge, 0.f, Canvas->SizeY - EdgeW * 0.4f, Canvas->SizeX, EdgeW * 0.4f);
+
+		// "FINAL CIRCLE" banner — only show briefly on transition or when <=3
+		if (AliveVal <= 3)
+		{
+			float BannerAlpha = 0.6f + Beat * 0.3f;
+			FString FinalText = (AliveVal == 2) ? TEXT("FINAL SHOWDOWN") : TEXT("TOP 3");
+			float FW, FH;
+			GetTextSize(FinalText, FW, FH, HUDFont, 1.1f);
+			float BW = FW + 40.f, BH = FH + 12.f;
+			float BX = (Canvas->SizeX - BW) * 0.5f;
+			float BY = Canvas->SizeY * 0.18f;
+
+			DrawRect(FLinearColor(0.12f, 0.02f, 0.02f, BannerAlpha * 0.5f), BX, BY, BW, BH);
+			DrawRect(FLinearColor(1.f, 0.2f, 0.1f, BannerAlpha * 0.6f), BX, BY, BW, 2.f);
+			DrawRect(FLinearColor(1.f, 0.2f, 0.1f, BannerAlpha * 0.3f), BX, BY + BH - 1.f, BW, 1.f);
+
+			FLinearColor TextCol(1.f, 0.85f, 0.7f, BannerAlpha);
+			DrawText(FinalText, TextCol, BX + (BW - FW) * 0.5f, BY + (BH - FH) * 0.5f, HUDFont, 1.1f);
+		}
+	}
 }
 
 void AExoHUD::DrawKillCount()

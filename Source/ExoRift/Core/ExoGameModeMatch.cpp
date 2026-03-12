@@ -10,8 +10,30 @@
 #include "Kismet/GameplayStatics.h"
 #include "ExoRift.h"
 
+// Randomized bot names for immersion
+static const TCHAR* BotNamePool[] = {
+	TEXT("Spectre"), TEXT("Viper"), TEXT("Ghost"), TEXT("Reaper"), TEXT("Nova"),
+	TEXT("Havoc"), TEXT("Cipher"), TEXT("Blitz"), TEXT("Raven"), TEXT("Storm"),
+	TEXT("Wraith"), TEXT("Fury"), TEXT("Ember"), TEXT("Phantom"), TEXT("Dagger"),
+	TEXT("Prowler"), TEXT("Striker"), TEXT("Zenith"), TEXT("Apex"), TEXT("Titan"),
+	TEXT("Volt"), TEXT("Shard"), TEXT("Eclipse"), TEXT("Pulse"), TEXT("Void"),
+	TEXT("Crux"), TEXT("Nexus"), TEXT("Drift"), TEXT("Haze"), TEXT("Flare"),
+	TEXT("Jackal"), TEXT("Onyx"), TEXT("Talon"), TEXT("Vector"), TEXT("Omega"),
+	TEXT("Hex"), TEXT("Cobalt"), TEXT("Crimson"), TEXT("Neon"), TEXT("Frost")
+};
+static constexpr int32 BotNameCount = UE_ARRAY_COUNT(BotNamePool);
+
 void AExoGameMode::SpawnBots()
 {
+	// Shuffle name indices for unique names
+	TArray<int32> NameIndices;
+	for (int32 i = 0; i < BotNameCount; ++i) NameIndices.Add(i);
+	for (int32 i = NameIndices.Num() - 1; i > 0; --i)
+	{
+		int32 j = FMath::RandRange(0, i);
+		NameIndices.Swap(i, j);
+	}
+
 	FActorSpawnParameters SpawnParams;
 	for (int32 i = 0; i < TargetBotCount; i++)
 	{
@@ -25,7 +47,8 @@ void AExoGameMode::SpawnBots()
 		AlivePlayers.Add(BC);
 		if (AExoPlayerState* PS = BC->GetPlayerState<AExoPlayerState>())
 		{
-			PS->DisplayName = FString::Printf(TEXT("Bot_%02d"), i);
+			int32 NameIdx = NameIndices[i % BotNameCount];
+			PS->DisplayName = BotNamePool[NameIdx];
 			PS->bIsAlive = true;
 		}
 	}

@@ -11,7 +11,7 @@ AExoWeaponSniper::AExoWeaponSniper()
 	WeaponType = EWeaponType::Sniper;
 	bIsAutomatic = false;
 	FireRate = 1.f;
-	Damage = 120.f;
+	Damage = 95.f;
 	MaxRange = 80000.f;
 
 	// Heat system: 35/100 normalized to 0-1 range
@@ -36,7 +36,7 @@ AExoWeaponSniper::AExoWeaponSniper()
 	RecoilYawRange = 0.3f;
 
 	// Headshot
-	HeadshotMultiplier = 3.f;
+	HeadshotMultiplier = 2.5f;
 
 	// Damage falloff: full damage to 400m, falloff to 800m
 	FalloffStartRange = 40000.f;

@@ -154,12 +154,27 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 		if (AExoPlayerState* KPS = Killer->GetPlayerState<AExoPlayerState>()) KPS->Kills++;
 		if (AExoCharacter* KC = Cast<AExoCharacter>(Killer->GetPawn()))
 			if (UExoKillStreakComponent* SC = KC->GetKillStreakComponent()) SC->RegisterKill();
+
+		// Personal elimination notification for the killer (local player only)
+		APlayerController* KillerPC = Cast<APlayerController>(Killer);
+		if (KillerPC && KillerPC->IsLocalController())
+		{
+			FString VictimName = EliminatedPlayer->GetPlayerState<AExoPlayerState>()
+				? EliminatedPlayer->GetPlayerState<AExoPlayerState>()->DisplayName : TEXT("Unknown");
+			int32 KillCount = Killer->GetPlayerState<AExoPlayerState>()
+				? Killer->GetPlayerState<AExoPlayerState>()->Kills : 0;
+			PushNotification(GetWorld(),
+				FString::Printf(TEXT("Eliminated %s  [%d kills]"), *VictimName, KillCount),
+				FLinearColor(1.f, 0.85f, 0.2f, 1.f));
+		}
 	}
 	if (AExoGameState* GS = GetGameState<AExoGameState>())
 	{
 		FKillFeedEntry Entry;
-		Entry.KillerName = Killer ? Killer->GetPlayerState<AExoPlayerState>()->DisplayName : TEXT("Zone");
-		Entry.VictimName = EliminatedPlayer->GetPlayerState<AExoPlayerState>()->DisplayName;
+		AExoPlayerState* KillerPS = Killer ? Killer->GetPlayerState<AExoPlayerState>() : nullptr;
+		AExoPlayerState* VictimPS = EliminatedPlayer ? EliminatedPlayer->GetPlayerState<AExoPlayerState>() : nullptr;
+		Entry.KillerName = KillerPS ? KillerPS->DisplayName : TEXT("Zone");
+		Entry.VictimName = VictimPS ? VictimPS->DisplayName : TEXT("Unknown");
 		Entry.WeaponName = WeaponName;
 		Entry.Timestamp = GetWorld()->GetTimeSeconds();
 
@@ -187,12 +202,24 @@ void AExoGameMode::OnPlayerEliminated(AController* EliminatedPlayer, AController
 	if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
 		Music->NotifyAliveCountChanged(AliveCount, TotalPlayers);
 
-	// Milestone notifications
+	// Milestone notifications + late-game bot difficulty scaling
 	if (AliveCount == 10 || AliveCount == 5 || AliveCount == 3 || AliveCount == 2)
 	{
 		PushNotification(GetWorld(),
 			FString::Printf(TEXT("%d players remaining"), AliveCount),
 			FLinearColor(1.f, 0.7f, 0.2f, 1.f));
+
+		// Scale surviving bots to harder difficulty as match progresses
+		EBotDifficulty LateGameDiff = EBotDifficulty::Medium;
+		if (AliveCount <= 3)       LateGameDiff = EBotDifficulty::Elite;
+		else if (AliveCount <= 5)  LateGameDiff = EBotDifficulty::Hard;
+		else if (AliveCount <= 10) LateGameDiff = EBotDifficulty::Medium;
+
+		for (AController* C : AlivePlayers)
+		{
+			AExoBotController* Bot = Cast<AExoBotController>(C);
+			if (Bot) Bot->SetDifficulty(LateGameDiff);
+		}
 	}
 
 	CheckWinCondition();
@@ -336,6 +363,12 @@ void AExoGameMode::TickPlaying(float DeltaTime)
 	{
 		CurrentPhase = EBRMatchPhase::ZoneShrinking;
 		if (GS) GS->MatchPhase = EBRMatchPhase::ZoneShrinking;
+		// Zone shrink audio warning
+		if (UExoAudioManager* Audio = UExoAudioManager::Get(GetWorld()))
+			Audio->PlayZoneWarningSound();
+		PushNotification(GetWorld(),
+			FString::Printf(TEXT("Ring %d closing!"), ZoneSystem->GetCurrentStage() + 1),
+			FLinearColor(1.f, 0.4f, 0.2f, 1.f));
 		if (UExoMusicManager* Music = UExoMusicManager::Get(GetWorld()))
 			Music->SetZoneShrinking(true);
 	}

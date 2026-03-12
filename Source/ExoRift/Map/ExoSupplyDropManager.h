@@ -25,7 +25,7 @@ protected:
 	void CleanupDepletedDrops();
 
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
-	float DropInterval = 90.f;
+	float DropInterval = 60.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SupplyDrop")
 	int32 MaxActiveDrops = 3;

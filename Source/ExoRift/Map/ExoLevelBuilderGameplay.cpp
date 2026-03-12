@@ -61,15 +61,15 @@ void AExoLevelBuilder::PlaceLootSpawners()
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Central loot cluster — high tier
+	// Central loot cluster — high tier, generous for hot-droppers
 	AExoLootSpawner* CenterLoot = GetWorld()->SpawnActor<AExoLootSpawner>(
 		AExoLootSpawner::StaticClass(), FVector(0.f, 0.f, GroundZ + 50.f),
 		FRotator::ZeroRotator, Params);
 	if (CenterLoot)
 	{
-		CenterLoot->SpawnCount = 15;
+		CenterLoot->SpawnCount = 25;
 		CenterLoot->SpawnRadius = 12000.f;
-		CenterLoot->RarityWeights = {0.2f, 0.35f, 0.3f, 0.15f};
+		CenterLoot->RarityWeights = {0.15f, 0.35f, 0.3f, 0.2f};
 	}
 
 	// Loot at each compound
@@ -86,30 +86,32 @@ void AExoLevelBuilder::PlaceLootSpawners()
 			AExoLootSpawner::StaticClass(), CC, FRotator::ZeroRotator, Params);
 		if (LS)
 		{
-			LS->SpawnCount = 10;
+			LS->SpawnCount = 18;
 			LS->SpawnRadius = 15000.f;
-			LS->RarityWeights = {0.35f, 0.35f, 0.2f, 0.1f};
+			LS->RarityWeights = {0.3f, 0.35f, 0.25f, 0.1f};
 		}
 	}
 
-	// Scattered loot across the map
-	for (int32 i = 0; i < 8; i++)
+	// Scattered loot across the map — ensure weapons everywhere for BR scavenging
+	for (int32 i = 0; i < 16; i++)
 	{
+		float Angle = (2.f * PI * i) / 16.f;
+		float Radius = MapHalfSize * (0.3f + 0.5f * ((i % 3) / 2.f));
 		FVector Pos(
-			FMath::RandRange(-MapHalfSize * 0.8f, MapHalfSize * 0.8f),
-			FMath::RandRange(-MapHalfSize * 0.8f, MapHalfSize * 0.8f),
+			FMath::Cos(Angle) * Radius,
+			FMath::Sin(Angle) * Radius,
 			GroundZ + 50.f);
 
 		AExoLootSpawner* LS = GetWorld()->SpawnActor<AExoLootSpawner>(
 			AExoLootSpawner::StaticClass(), Pos, FRotator::ZeroRotator, Params);
 		if (LS)
 		{
-			LS->SpawnCount = 5;
-			LS->SpawnRadius = 8000.f;
+			LS->SpawnCount = 6;
+			LS->SpawnRadius = 6000.f;
 		}
 	}
 
-	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 13 loot spawners"));
+	UE_LOG(LogExoRift, Log, TEXT("LevelBuilder: Placed 21 loot spawners (~190 weapons)"));
 
 	// Loot containers (openable crates) inside buildings
 	TArray<FVector> ContainerPositions = {

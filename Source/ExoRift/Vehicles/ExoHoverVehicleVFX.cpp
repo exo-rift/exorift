@@ -10,9 +10,24 @@ void AExoHoverVehicle::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Dynamic materials for body and thrusters
+	// Try to use real KayKit SpaceTruck mesh
+	bool bHasRealVehicle = false;
+	UStaticMesh* RealVehicle = LoadObject<UStaticMesh>(nullptr,
+		TEXT("/Game/KayKit/SpaceBase/spacetruck"));
+	if (RealVehicle && VehicleMesh)
+	{
+		VehicleMesh->SetStaticMesh(RealVehicle);
+		// Hide primitive detail meshes — real mesh has details baked in
+		if (Windshield) Windshield->SetVisibility(false);
+		if (SidePanelL) SidePanelL->SetVisibility(false);
+		if (SidePanelR) SidePanelR->SetVisibility(false);
+		if (RearFin) RearFin->SetVisibility(false);
+		bHasRealVehicle = true;
+	}
+
+	// Dynamic materials for body and thrusters (only override if using primitive mesh)
 	UMaterialInterface* Base = VehicleMesh ? VehicleMesh->GetMaterial(0) : nullptr;
-	if (Base)
+	if (Base && !bHasRealVehicle)
 	{
 		BodyMat = UMaterialInstanceDynamic::Create(Base, this);
 		if (!BodyMat) { return; }

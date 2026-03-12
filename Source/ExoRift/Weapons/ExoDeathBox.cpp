@@ -67,6 +67,15 @@ void AExoDeathBox::InitFromPlayer(const FString& PlayerName,
 
 void AExoDeathBox::BuildVisuals()
 {
+	// Try real crate mesh for better silhouette (keep emissive override for visibility)
+	UStaticMesh* RealCrate = LoadObject<UStaticMesh>(nullptr,
+		TEXT("/Game/Meshes/Quaternius_SciFi/Props_Crate"));
+	if (RealCrate)
+	{
+		BoxBody->SetStaticMesh(RealCrate);
+		BoxLid->SetVisibility(false); // Real crate has its own lid geometry
+	}
+
 	UMaterialInterface* EmissiveOpaque = FExoMaterialFactory::GetEmissiveOpaque();
 	UMaterialInterface* EmissiveAdditive = FExoMaterialFactory::GetEmissiveAdditive();
 	if (!EmissiveOpaque || !EmissiveAdditive) return;

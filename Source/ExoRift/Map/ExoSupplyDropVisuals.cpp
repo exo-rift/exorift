@@ -175,9 +175,10 @@ void AExoSupplyDrop::SpawnLoot()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	// Spawn 2 weapons at Epic or Legendary rarity
+	// Spawn 2 weapons at Epic or Legendary rarity (all weapon types possible)
 	const EWeaponType WeaponTypes[] = {
-		EWeaponType::Rifle, EWeaponType::Pistol, EWeaponType::GrenadeLauncher };
+		EWeaponType::Rifle, EWeaponType::Pistol, EWeaponType::GrenadeLauncher,
+		EWeaponType::Sniper, EWeaponType::Shotgun, EWeaponType::SMG };
 	const EWeaponRarity HighRarities[] = {
 		EWeaponRarity::Epic, EWeaponRarity::Legendary };
 
@@ -191,7 +192,7 @@ void AExoSupplyDrop::SpawnLoot()
 			AExoWeaponPickup::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 		if (WeaponPickup)
 		{
-			WeaponPickup->WeaponType = WeaponTypes[FMath::RandRange(0, 2)];
+			WeaponPickup->WeaponType = WeaponTypes[FMath::RandRange(0, 5)];
 			WeaponPickup->Rarity = HighRarities[FMath::RandRange(0, 1)];
 		}
 	}

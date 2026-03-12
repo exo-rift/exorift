@@ -17,7 +17,7 @@ AExoWeaponShotgun::AExoWeaponShotgun()
 	WeaponType = EWeaponType::Shotgun;
 	bIsAutomatic = false;
 	FireRate = 1.5f;
-	Damage = 12.f; // Per pellet
+	Damage = 18.f; // Per pellet (8 pellets × 18 = 144 max point-blank)
 	MaxRange = 8000.f;
 	NumPellets = 8;
 	PelletSpreadAngle = 5.f;

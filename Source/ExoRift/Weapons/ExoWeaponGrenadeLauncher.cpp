@@ -8,7 +8,7 @@ AExoWeaponGrenadeLauncher::AExoWeaponGrenadeLauncher()
 	WeaponType = EWeaponType::GrenadeLauncher;
 	bIsAutomatic = false;
 	FireRate = 1.f;
-	Damage = 80.f;
+	Damage = 110.f;
 	MaxRange = 20000.f;
 	HeatPerShot = 0.35f;
 	CooldownRate = 0.12f;

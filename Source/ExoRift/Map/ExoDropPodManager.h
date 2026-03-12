@@ -23,7 +23,7 @@ protected:
 	float DropAltitude = 50000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drop")
-	float DropSpreadRadius = 150000.f;
+	float DropSpreadRadius = 25000.f;
 
 	UPROPERTY()
 	TArray<AExoDropPod*> ActivePods;

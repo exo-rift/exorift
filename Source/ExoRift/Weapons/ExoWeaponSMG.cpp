@@ -8,7 +8,7 @@ AExoWeaponSMG::AExoWeaponSMG()
 
 	// Very high fire rate
 	FireRate = 15.f;
-	Damage = 9.f;
+	Damage = 11.f; // 15 RPS × 11 = 165 DPS (rewards close-range aggression)
 
 	// Heat system — normalised 0-1 (4/100 per shot)
 	HeatPerShot = 0.04f;
